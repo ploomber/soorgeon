@@ -165,3 +165,37 @@ def test_inside_function_call(code, expected):
         leaf = leaf.get_next_leaf()
 
     assert static_analysis.inside_function_call(leaf) is expected
+
+
+exploratory = """
+import seaborn as sns
+from sklearn.datasets import load_iris
+
+df = load_iris(as_frame=True)['data']
+
+df = df[df['petal length (cm)'] > 2]
+
+sns.histplot(df['petal length (cm)'])
+"""
+
+
+@pytest.mark.parametrize('code_nb, code_task, expected', [
+    [
+        exploratory,
+        "df = load_iris(as_frame=True)['data']",
+        "from sklearn.datasets import load_iris",
+    ],
+    [
+        exploratory,
+        "df = df[df['petal length (cm)'] > 2]",
+        None,
+    ],
+    [
+        exploratory,
+        "sns.histplot(df['petal length (cm)'])",
+        "import seaborn as sns",
+    ],
+])
+def test_importsparser(code_nb, code_task, expected):
+    ip = static_analysis.ImportsParser(code_nb)
+    assert ip.get_imports_cell_for_task(code_task) == expected

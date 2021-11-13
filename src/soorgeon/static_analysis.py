@@ -3,6 +3,57 @@ from functools import reduce
 import parso
 
 
+class ImportsParser:
+    """Parses import statements to know which ones to inject to any given task
+
+    Parameters
+    ----------
+    code_nb : str
+        Notebook's source code
+    """
+    def __init__(self, code_nb):
+        self._tree = parso.parse(code_nb)
+        # maps defined names (from imports) to the source code
+        self._name2code = find_defined_names_from_imports(self._tree)
+
+    def get_imports_cell_for_task(self, code_task):
+        """
+        Get the source code with the appropriate import statements for a task
+        with the given code to work.
+        """
+        # NOTE: this was taken from jupyblog's source
+        leaf = parso.parse(code_task).get_first_leaf()
+
+        names = []
+
+        while leaf:
+            if leaf.type == 'name':
+                names.append(leaf.value)
+
+            leaf = leaf.get_next_leaf()
+
+        imports = self._name2code
+
+        # iterate over names defined by the imports and get the import statement
+        # if content_subset uses it
+        imports_to_use = []
+
+        for name, import_code in imports.items():
+            if name in names:
+                imports_to_use.append(import_code)
+
+        # remove duplicated elements but keep order, then join
+        if imports:
+            imports_to_use = ('\n'.join(list(dict.fromkeys(imports_to_use))) +
+                              '\n\n\n').strip() or None
+        else:
+            imports_to_use = None
+
+        return imports_to_use
+
+
+# NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
+# move the functionality to a class so we only compute it once
 def find_defined_names_from_imports(tree):
     # build a defined-name -> import-statement-code mapping. Note that
     # the same code may appear more than once if it defines more than one name
@@ -65,6 +116,8 @@ def find_inputs_and_outputs(code_str):
     tree = parso.parse(code_str)
     leaf = tree.get_first_leaf()
 
+    # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
+    # move the functionality to a class so we only compute it once
     defined_names_from_imports = find_defined_names_from_imports(tree)
 
     inputs, outputs = [], set()
