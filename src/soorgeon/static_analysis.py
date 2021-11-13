@@ -113,11 +113,19 @@ def find_upstream(snippets):
     snippets : dict
         {snippet_name: snippet, ...}
     """
+    # NOTE: to fix the load, clean plot test case, we should take into account
+    # the order of snippets, and assume that earlier keys from from earlier nb
+    # sections
+
     io = {
         snippet_name: find_inputs_and_outputs(snippet)
         for snippet_name, snippet in snippets.items()
     }
 
+    # NOTE: I think we need to organize providers by key and order, so if
+    # two tasks define the same variable, they receive a lower order if
+    # the code appears in earlier cells. this way, when looking up providers,
+    # we'll match the closest one (from the previous sections)
     providers = find_providers(io)
 
     upstream = {

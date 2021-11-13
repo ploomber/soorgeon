@@ -79,17 +79,32 @@ z = y + 1
 """
 
 
-@pytest.mark.parametrize('snippets, expected', [
-    [{
-        'first': first,
-        'second': second,
-        'third': third
-    }, {
-        'first': [],
-        'second': ['first'],
-        'third': ['second']
-    }],
-])
+@pytest.mark.parametrize(
+    'snippets, expected',
+    [
+        [{
+            'first': first,
+            'second': second,
+            'third': third
+        }, {
+            'first': [],
+            'second': ['first'],
+            'third': ['second']
+        }],
+        [
+            {
+                'load': "import load_data, plot\ndf = load_data()",
+                # note that we re-define df
+                'clean': "df = df[df.some_columns > 2]",
+                'plot': "plot(df)"
+            },
+            {
+                'load': [],
+                'clean': ['load'],
+                'plot': ['clean']
+            }
+        ],
+    ])
 def test_find_upstream(snippets, expected):
     assert static_analysis.find_upstream(snippets) == expected
 
