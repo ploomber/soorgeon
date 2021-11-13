@@ -78,33 +78,40 @@ third = """
 z = y + 1
 """
 
+# exploratory data analysis example
+eda = {
+    'load': "import load_data, plot\ndf = load_data()",
+    # note that we re-define df
+    'clean': "df = df[df.some_columns > 2]",
+    'plot': "plot(df)"
+}
 
-@pytest.mark.parametrize(
-    'snippets, expected',
-    [
-        [{
-            'first': first,
-            'second': second,
-            'third': third
-        }, {
-            'first': [],
-            'second': ['first'],
-            'third': ['second']
-        }],
-        [
-            {
-                'load': "import load_data, plot\ndf = load_data()",
-                # note that we re-define df
-                'clean': "df = df[df.some_columns > 2]",
-                'plot': "plot(df)"
-            },
-            {
-                'load': [],
-                'clean': ['load'],
-                'plot': ['clean']
-            }
-        ],
-    ])
+
+def test_providermapping():
+    m = static_analysis.ProviderMapping(static_analysis.find_io(eda))
+
+    assert m._providers_for_task('load') == {}
+    assert m._providers_for_task('clean') == {'df': 'load'}
+    assert m._providers_for_task('plot') == {'df': 'clean'}
+    assert m.get('df', 'clean') == 'load'
+
+
+@pytest.mark.parametrize('snippets, expected', [
+    [{
+        'first': first,
+        'second': second,
+        'third': third
+    }, {
+        'first': [],
+        'second': ['first'],
+        'third': ['second']
+    }],
+    [eda, {
+        'load': [],
+        'clean': ['load'],
+        'plot': ['clean']
+    }],
+])
 def test_find_upstream(snippets, expected):
     assert static_analysis.find_upstream(snippets) == expected
 
@@ -126,3 +133,35 @@ import numpy as np
 def test_find_defined_names_from_imports(code, expected):
     assert static_analysis.find_defined_names_from_imports(
         parso.parse(code)) == expected
+
+
+@pytest.mark.parametrize('snippets, expected', [
+    [
+        eda, {
+            'load': (set(), {'df'}),
+            'clean': ({'df'}, {'df'}),
+            'plot': ({'df'}, set())
+        }
+    ],
+])
+def test_find_io(snippets, expected):
+    assert static_analysis.find_io(snippets) == expected
+
+
+@pytest.mark.parametrize('code, expected', [
+    ['sns.histplot(df.some_column)', True],
+    ['histplot(df.some_column)', True],
+    ['sns.histplot(df)', True],
+    ['histplot(df)', True],
+    ['sns.histplot(df["key"])', True],
+])
+def test_inside_function_call(code, expected):
+    leaf = parso.parse(code).get_first_leaf()
+
+    while leaf:
+        if leaf.value == 'df':
+            break
+
+        leaf = leaf.get_next_leaf()
+
+    assert static_analysis.inside_function_call(leaf) is expected

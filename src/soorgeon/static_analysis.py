@@ -34,15 +34,22 @@ def inside_function_call(leaf):
     if next_sibling_value == '=':
         return False
 
-    parent = leaf.parent
+    # first case covers something like: function(df)
+    # second case cases like: function(df.something)
+    # NOTE: do we need more checks to ensure we're in the second case?
+    # maybe check if we have an actual dot, or we're using something like
+    # df[key]?
+    return inside_parenthesis(leaf) or inside_parenthesis(leaf.parent)
 
+
+def inside_parenthesis(node):
     try:
-        left = parent.get_previous_sibling().value == '('
+        left = node.get_previous_sibling().value == '('
     except AttributeError:
         left = False
 
     try:
-        right = parent.get_next_sibling().value == ')'
+        right = node.get_next_sibling().value == ')'
     except AttributeError:
         right = False
 
@@ -102,8 +109,57 @@ def _map_outputs(name, outputs):
     return [(out, name) for out in outputs]
 
 
-def _get_upstream(inputs, providers):
-    return [providers[input_] for input_ in inputs]
+def _get_upstream(name, inputs, providers):
+    return [providers.get(input_, name) for input_ in inputs]
+
+
+class ProviderMapping:
+    """
+    Determines which task produces a given variable to establish the upstream
+    relationship
+
+    Parameters
+    ----------
+    io : dict
+        {task_name: (inputs, outputs), ...} mapping. Note that order is
+        important, and is assumed that the order of the task_name keys matches
+        the order of appearance of their corresponding cells in the notebook.
+    """
+    def __init__(self, io):
+        self._io = io
+
+    def _providers_for_task(self, name):
+        """
+        Returns a subset of io, only considering tasks that appear earlier
+        in the notebook
+        """
+        out = {}
+
+        for key, value in self._io.items():
+            if key == name:
+                break
+
+            out[key] = value
+
+        return _find_providers(out)
+
+    def get(self, variable, task_name):
+        """
+        Return the provider of a certain variable for a task with name
+        task_name. The function depends on task_name because if two tasks
+        expose a variable with the same name, we need to resolve to the
+        one closest to the task_name, by considering all previous sections
+        in the notebook
+        """
+        providers = self._providers_for_task(task_name)
+        return providers[variable]
+
+
+def find_io(snippets):
+    return {
+        snippet_name: find_inputs_and_outputs(snippet)
+        for snippet_name, snippet in snippets.items()
+    }
 
 
 def find_upstream(snippets):
@@ -113,30 +169,19 @@ def find_upstream(snippets):
     snippets : dict
         {snippet_name: snippet, ...}
     """
-    # NOTE: to fix the load, clean plot test case, we should take into account
-    # the order of snippets, and assume that earlier keys from from earlier nb
-    # sections
+    io = find_io(snippets)
 
-    io = {
-        snippet_name: find_inputs_and_outputs(snippet)
-        for snippet_name, snippet in snippets.items()
-    }
-
-    # NOTE: I think we need to organize providers by key and order, so if
-    # two tasks define the same variable, they receive a lower order if
-    # the code appears in earlier cells. this way, when looking up providers,
-    # we'll match the closest one (from the previous sections)
-    providers = find_providers(io)
+    providers = ProviderMapping(io)
 
     upstream = {
-        snippet_name: _get_upstream(v[0], providers)
+        snippet_name: _get_upstream(snippet_name, v[0], providers)
         for snippet_name, v in io.items()
     }
 
     return upstream
 
 
-def find_providers(io):
+def _find_providers(io):
     # variable -> snippet that defines variable mapping
     providers = [
         _map_outputs(snippet_name, v[1]) for snippet_name, v in io.items()

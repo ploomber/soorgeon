@@ -61,7 +61,8 @@ class ProtoTask:
         """
         inputs, _ = io[self.name]
 
-        up_and_in = [(providers[input_], input_) for input_ in inputs]
+        up_and_in = [(providers.get(input_, self.name), input_)
+                     for input_ in inputs]
 
         unpickling = nbformat.v4.new_code_cell(
             source=_UNPICKLING_TEMPLATE.render(up_and_in=up_and_in))

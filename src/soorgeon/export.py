@@ -22,7 +22,7 @@ def from_nb(nb):
     # FIXME: this calls find_providers, we should only call it once
     upstream = static_analysis.find_upstream(snippets)
     io = static_analysis.find_io(snippets)
-    providers = static_analysis.find_providers(io)
+    providers = static_analysis.ProviderMapping(io)
 
     sources = {
         pt.name: pt.export(upstream, io, providers)
