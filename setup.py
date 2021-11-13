@@ -20,6 +20,7 @@ REQUIRES = [
     'nbformat',
     'jinja2',
     'pyyaml',
+    'click',
 ]
 
 DEV = [
@@ -33,20 +34,25 @@ DEV = [
     'ploomber',
 ]
 
-setup(name='soorgeon',
-      version=VERSION,
-      description=None,
-      license=None,
-      author=None,
-      author_email=None,
-      url=None,
-      packages=find_packages('src'),
-      package_dir={'': 'src'},
-      py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
-      package_data={"": []},
-      classifiers=[],
-      keywords=[],
-      install_requires=REQUIRES,
-      extras_require={
-          'dev': DEV,
-      })
+setup(
+    name='soorgeon',
+    version=VERSION,
+    description=None,
+    license=None,
+    author=None,
+    author_email=None,
+    url=None,
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
+    py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
+    package_data={"": []},
+    classifiers=[],
+    keywords=[],
+    install_requires=REQUIRES,
+    extras_require={
+        'dev': DEV,
+    },
+    entry_points={
+        'console_scripts': ['soorgeon=soorgeon.cli:cli'],
+    },
+)
