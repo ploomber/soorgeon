@@ -42,6 +42,35 @@ long_md = """# ## H2
 2 + 2
 """
 
+h1_next_to_h2 = """# # H1
+# ## One
+
+1 + 1
+
+# ## Another
+
+2 + 2
+"""
+
+exploratory = """# # Exploratory data analysis
+#
+# ## Load
+
+import pandas as pd
+import seaborn as sns
+from sklearn.datasets import load_iris
+
+df = load_iris(as_frame=True)['data']
+
+# ## Clean
+
+df = df[df['petal length (cm)'] > 2]
+
+# ## Plot
+
+sns.histplot(df['petal length (cm)'])
+"""
+
 # case with where cell only has H2 and H2 + more stuff
 # edge case: H1, then H2 with no code in between, we should ignore that break
 
@@ -60,16 +89,21 @@ def test_find_breaks_error_if_no_h2_headers(tmp_empty):
 
 
 @pytest.mark.parametrize('md, expected', [
-    ['## Something', 'something'],
+    ['## Header', 'header'],
+    ['# H1\n## H2', 'h2'],
+    ['  ##   H2', 'h2'],
+    ['something', None],
     ['## Something\nignore me', 'something'],
 ])
-def test_name_from_md_cell(md, expected):
-    assert parse.name_from_md_cell(md) == expected
+def test_get_h2_header(md, expected):
+    assert parse._get_h2_header(md) == expected
 
 
 @pytest.mark.parametrize('nb_str, expected', [
     [mixed, [2, 4]],
     [long_md, [0, 2]],
+    [h1_next_to_h2, [0, 2]],
+    [exploratory, [0, 3, 5]],
 ])
 def test_find_breaks(tmp_empty, nb_str, expected):
     assert parse.find_breaks(_read(nb_str)) == expected
@@ -86,6 +120,7 @@ def test_split_with_breaks(cells, breaks, expected):
 @pytest.mark.parametrize('nb_str, expected', [
     [all_h2, ['cell-0', 'cell-2', 'cell-4']],
     [long_md, ['h2', 'another']],
+    [exploratory, ['load', 'clean', 'plot']],
 ])
 def test_names_with_breaks(tmp_empty, nb_str, expected):
     nb = _read(nb_str)

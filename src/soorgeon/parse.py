@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import nbformat
@@ -140,9 +141,10 @@ def find_breaks(nb):
     """
     breaks = []
 
+    # TODO: this should return named tuples with index and extracted names
     for idx, cell in enumerate(nb.cells):
         # TODO: more robust H2 detector
-        if cell.cell_type == 'markdown' and cell.source.startswith('##'):
+        if cell.cell_type == 'markdown' and _get_h2_header(cell.source):
             breaks.append(idx)
 
     if not breaks:
@@ -173,14 +175,24 @@ def split_with_breaks(cells, breaks):
 
 
 def names_with_breaks(cells, breaks):
-    # TODO: more robust H2 header removal
-    return [name_from_md_cell(cells[break_]['source']) for break_ in breaks]
-
-
-def name_from_md_cell(md):
-    first = md.splitlines()[0]
-    return _sanitize_name(first.replace('## ', ''))
+    return [_get_h2_header(cells[break_]['source']) for break_ in breaks]
 
 
 def _sanitize_name(name):
     return name.lower().replace(' ', '-')
+
+
+def _get_h2_header(md):
+    lines = md.splitlines()
+
+    found = None
+
+    for line in lines:
+        match = re.search(r'\s*##\s+(.+)', line)
+
+        if match:
+            found = _sanitize_name(match.group(1))
+
+            break
+
+    return found

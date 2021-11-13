@@ -17,7 +17,13 @@ y = 2
 z = x + y
 """
 
-# ignore classes, functions, and imports
+imports = """
+import pandas as pd
+
+z = 1
+"""
+
+# ignore classes, functions
 # try assigning a tuple
 
 
@@ -25,11 +31,13 @@ z = x + y
     [only_outputs, set(), {'x', 'y'}],
     [simple, {'x', 'y'}, {'z'}],
     [local_inputs, set(), {'x', 'y', 'z'}],
+    [imports, set(), {'z'}],
 ],
                          ids=[
                              'only_outputs',
                              'simple',
                              'local_inputs',
+                             'imports',
                          ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)

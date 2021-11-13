@@ -54,7 +54,6 @@ def find_upstream(snippets):
     snippets : dict
         {snippet_name: snippet, ...}
     """
-
     io = {
         snippet_name: find_inputs_and_outputs(snippet)
         for snippet_name, snippet in snippets.items()
