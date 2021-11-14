@@ -38,6 +38,19 @@ input_in_function_call = """
 sns.histplot(df.some_column)
 """
 
+# TODO: try all combinations of the following examples
+input_key_in_function_call = """
+sns.histplot(x=df)
+"""
+
+input_key_in_function_call_many = """
+sns.histplot(x=df, y=df_another)
+"""
+
+input_key_in_function_call_with_dot_access = """
+sns.histplot(x=df.some_column)
+"""
+
 input_existing_object = """
 X = 1
 sns.histplot(X)
@@ -69,6 +82,16 @@ define_multiple_outputs = """
 a, b, c = 1, 2, 3
 """
 
+# TODO: define inputs inside built-ins
+# e.g.
+# models = [a, b, c]
+# models = {'a': a}
+
+# TODO: we need a general function that finds the names after an =
+# e.g. a = something(x=1, b=something)
+# a = dict(a=1)
+# b = {'a': x}
+
 
 @pytest.mark.parametrize('code_str, inputs, outputs', [
     [only_outputs, set(), {'x', 'y'}],
@@ -77,6 +100,12 @@ a, b, c = 1, 2, 3
     [imports, set(), {'z'}],
     [imported_function, set(), {'df'}],
     [input_in_function_call, {'df'}, set()],
+    [input_key_in_function_call, {'df'},
+     set()],
+    [input_key_in_function_call_many, {'df', 'df_another'},
+     set()],
+    [input_key_in_function_call_with_dot_access, {'df'},
+     set()],
     [modify_existing_obj_getitem,
      set(), {'mapping'}],
     [modify_imported_obj_getitem, set(),
@@ -92,6 +121,9 @@ a, b, c = 1, 2, 3
                              'imports',
                              'imported_function',
                              'input_in_function_call',
+                             'input_key_in_function_call',
+                             'input_key_in_function_call_many',
+                             'input_key_in_function_call_with_dot_access',
                              'modify_existing_getitem',
                              'modify_imported_getitem',
                              'built_in',
@@ -193,9 +225,9 @@ def test_find_defined_names_from_imports(code, expected):
             'train-test-split':
             ({'df'}, {'y', 'X', 'X_train', 'X_test', 'y_train', 'y_test'}),
             'linear-regression':
-            ({'y_test','X_test', 'y_train', 'X_train'}, {'lr', 'y_pred'}),
+            ({'y_test', 'X_test', 'y_train', 'X_train'}, {'lr', 'y_pred'}),
             'random-forest-regressor':
-            ({'y_test','X_test', 'y_train', 'X_train'}, {'rf', 'y_pred'})
+            ({'y_test', 'X_test', 'y_train', 'X_train'}, {'rf', 'y_pred'})
         },
     ],
 ],

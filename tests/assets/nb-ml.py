@@ -41,7 +41,8 @@ df.head()
 sns.histplot(df.HouseAge)
 
 # %%
-# let's say we're only interested in newer homes, so we define this filtering rule
+# let's say we're only interested in newer homes, so we define this filtering
+# rule
 df = df[df.HouseAge <= 30]
 
 # %%
@@ -62,14 +63,17 @@ sns.histplot(df.MedHouseVal)
 # ## Train test split
 
 # %%
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split  # noqa
 
 # %%
 X = df.drop('MedHouseVal', axis='columns')
 y = df.MedHouseVal
 
 # %%
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X,
+                                                    y,
+                                                    test_size=0.33,
+                                                    random_state=42)
 
 # %% [markdown]
 # ## Linear regression
@@ -78,7 +82,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random
 # TODO: define a function here and use it in different sections
 
 # %%
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression  # noqa
 
 # %%
 lr = LinearRegression()
@@ -96,12 +100,10 @@ sns.scatterplot(x=y_test, y=y_pred)
 # ## Random Forest Regressor
 
 # %%
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor  # noqa
 
 # %%
 rf = RandomForestRegressor()
 rf.fit(X_train, y_train)
 y_pred = rf.predict(X_test)
 sns.scatterplot(x=y_test, y=y_pred)
-
-# %%

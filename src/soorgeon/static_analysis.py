@@ -135,7 +135,14 @@ def find_inputs_and_outputs(code_str):
             try:
                 children = next_s.children
             except AttributeError:
-                inputs_current = []
+                # could be keyword arguments inside a function call
+                if leaf.parent.type == 'argument' and leaf.get_next_leaf(
+                ).value not in _BUILTIN and leaf.get_next_leaf(
+                ).type == 'name':
+                    # TODO: there could be more than one
+                    inputs_current = [leaf.get_next_leaf().value]
+                else:
+                    inputs_current = []
             else:
                 if leaf.get_next_leaf().value in _BUILTIN:
                     inputs_current = []
@@ -152,7 +159,7 @@ def find_inputs_and_outputs(code_str):
                     inputs.append(variable)
 
             # ignore keyword arguments, they aren't outputs
-            # e.g. something(key=value)
+            # e.g. 'key' in something(key=value)
             # also ignore previous if modifying an existing object
             # e.g.,
             # a = {}
@@ -252,6 +259,8 @@ def find_upstream(snippets):
 
     providers = ProviderMapping(io)
 
+    # FIXME: this is going to generate duplicates if the task depends on >1
+    # input from a given task, so we must remove duplicates
     upstream = {
         snippet_name: _get_upstream(snippet_name, v[0], providers)
         for snippet_name, v in io.items()
