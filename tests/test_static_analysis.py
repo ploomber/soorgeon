@@ -38,6 +38,11 @@ input_in_function_call = """
 sns.histplot(df.some_column)
 """
 
+input_existing_object = """
+X = 1
+sns.histplot(X)
+"""
+
 # ignore classes, functions
 # try assigning a tuple
 
@@ -60,6 +65,10 @@ from pkg import mapping
 mapping['key'] = 'value'
 """
 
+define_multiple_outputs = """
+a, b, c = 1, 2, 3
+"""
+
 
 @pytest.mark.parametrize('code_str, inputs, outputs', [
     [only_outputs, set(), {'x', 'y'}],
@@ -73,6 +82,8 @@ mapping['key'] = 'value'
     [modify_imported_obj_getitem, set(),
      set()],
     [built_in, set(), {'mapping'}],
+    [input_existing_object, set(), {'X'}],
+    [define_multiple_outputs, set(), {'a', 'b', 'c'}],
 ],
                          ids=[
                              'only_outputs',
@@ -84,6 +95,8 @@ mapping['key'] = 'value'
                              'modify_existing_getitem',
                              'modify_imported_getitem',
                              'built_in',
+                             'input_existing_object',
+                             'define_multiple_outputs',
                          ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
@@ -180,12 +193,16 @@ def test_find_defined_names_from_imports(code, expected):
             'train-test-split':
             ({'df'}, {'y', 'X', 'X_train', 'X_test', 'y_train', 'y_test'}),
             'linear-regression':
-            ({'X_test', 'y_train', 'X_train'}, {'lr', 'y_pred'}),
+            ({'y_test','X_test', 'y_train', 'X_train'}, {'lr', 'y_pred'}),
             'random-forest-regressor':
-            ({'X_test', 'y_train', 'X_train'}, {'rf', 'y_pred'})
+            ({'y_test','X_test', 'y_train', 'X_train'}, {'rf', 'y_pred'})
         },
     ],
-])
+],
+                         ids=[
+                             'eda',
+                             'ml',
+                         ])
 def test_find_io(snippets, expected):
     assert static_analysis.find_io(snippets) == expected
 

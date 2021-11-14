@@ -161,11 +161,24 @@ def find_inputs_and_outputs(code_str):
             if (previous.parent.type != 'argument'
                     and not _modifies_existing_object(
                         leaf, outputs, defined_names_from_imports)):
-                outputs.add(previous.value)
+
+                prev_sibling = leaf.get_previous_sibling()
+
+                # check if assigning multiple values
+                # e.g., a, b = 1, 2
+                if prev_sibling.type == 'testlist_star_expr':
+                    outputs = outputs | set(
+                        name.value
+                        for name in prev_sibling.parent.get_defined_names())
+                # nope, only one value
+                else:
+                    outputs.add(previous.value)
 
         # variables inside function calls are inputs
         # e.g., some_function(df)
-        elif leaf.type == 'name' and inside_function_call(leaf):
+        # but ignore them if they have been locally defined
+        elif (leaf.type == 'name' and inside_function_call(leaf)
+              and leaf.value not in outputs):
             inputs.append(leaf.value)
 
         leaf = leaf.get_next_leaf()
