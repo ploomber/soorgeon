@@ -199,3 +199,13 @@ sns.histplot(df['petal length (cm)'])
 def test_importsparser(code_nb, code_task, expected):
     ip = static_analysis.ImportsParser(code_nb)
     assert ip.get_imports_cell_for_task(code_task) == expected
+
+
+@pytest.mark.parametrize('code, expected', [
+    ['import pandas as pd\nimport numpy as np', '\n'],
+    ['import math', ''],
+    ['import pandas as pd\n1+1', '\n1+1'],
+    ['import math\n1+1', '\n1+1'],
+])
+def test_remove_imports(code, expected):
+    assert static_analysis.remove_imports(code) == expected

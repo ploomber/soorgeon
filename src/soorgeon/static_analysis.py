@@ -247,3 +247,30 @@ def find_io(snippets):
         snippet_name: find_inputs_and_outputs(snippet)
         for snippet_name, snippet in snippets.items()
     }
+
+
+def _leaf_iterator(tree):
+    leaf = tree.get_first_leaf()
+
+    while leaf:
+        yield leaf
+
+        leaf = leaf.get_next_leaf()
+
+
+def remove_imports(code_str):
+    """
+    Remove all import statements from a code string
+    """
+    tree = parso.parse(code_str)
+
+    to_remove = []
+
+    for leaf in _leaf_iterator(tree):
+        if leaf.parent.type in {'import_name', 'import_from'}:
+            to_remove.append(leaf)
+
+    for leaf in to_remove:
+        leaf.parent.children = []
+
+    return tree.get_code()

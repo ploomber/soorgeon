@@ -1,3 +1,4 @@
+from copy import deepcopy
 import re
 from pathlib import Path
 
@@ -8,18 +9,12 @@ from jinja2 import Template
 from soorgeon import exceptions, static_analysis
 
 _PICKLING_TEMPLATE = Template("""
-from pathlib import Path
-import pickle
-
 {% for product in products %}
 Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
 {% endfor %}
 """)
 
 _UNPICKLING_TEMPLATE = Template("""
-from pathlib import Path
-import pickle
-
 {% for up, key in up_and_in %}
 {{key}} = pickle.loads(Path(upstream['{{up}}']['{{key}}']).read_bytes())
 {% endfor %}
@@ -47,30 +42,36 @@ class ProtoTask:
         """
         pass
 
-    def _add_pickling_cell(self, cells, io):
+    def _pickling_cell(self, io):
         """Add cell that pickles the outputs
         """
         _, outputs = io[self.name]
 
-        pickling = nbformat.v4.new_code_cell(source=_PICKLING_TEMPLATE.render(
-            products=outputs))
-        pickling.metadata['tags'] = ['soorgeon-pickle']
+        if outputs:
+            pickling = nbformat.v4.new_code_cell(
+                source=_PICKLING_TEMPLATE.render(products=outputs))
+            pickling.metadata['tags'] = ['soorgeon-pickle']
 
-        return cells + [pickling]
+            return pickling
+        else:
+            return None
 
-    def _add_unpickling_cell(self, cells, io, providers):
+    def _unpickling_cell(self, io, providers):
         """Add cell that unpickles the inputs
         """
         inputs, _ = io[self.name]
 
-        up_and_in = [(providers.get(input_, self.name), input_)
-                     for input_ in inputs]
+        if inputs:
+            up_and_in = [(providers.get(input_, self.name), input_)
+                         for input_ in inputs]
 
-        unpickling = nbformat.v4.new_code_cell(
-            source=_UNPICKLING_TEMPLATE.render(up_and_in=up_and_in))
-        unpickling.metadata['tags'] = ['soorgeon-unpickle']
+            unpickling = nbformat.v4.new_code_cell(
+                source=_UNPICKLING_TEMPLATE.render(up_and_in=up_and_in))
+            unpickling.metadata['tags'] = ['soorgeon-unpickle']
 
-        return [unpickling] + cells
+            return unpickling
+        else:
+            return None
 
     def _add_parameters_cell(self, cells, upstream):
         """Add parameters cell at the top
@@ -91,10 +92,16 @@ class ProtoTask:
 
         return [parameters] + cells
 
-    def _add_imports_cell(self, code_nb):
+    def _add_imports_cell(self, code_nb, add_pathlib_and_pickle):
         # FIXME: instatiate this in the constructor so we only build it once
         ip = static_analysis.ImportsParser(code_nb)
         source = ip.get_imports_cell_for_task(str(self))
+
+        # FIXME: only add them if they're not already there
+        if add_pathlib_and_pickle:
+            source = source or ''
+            source += '\nfrom pathlib import Path'
+            source += '\nimport pickle'
 
         if source:
             cell = nbformat.v4.new_code_cell(source=source)
@@ -109,14 +116,31 @@ class ProtoTask:
         # TODO: simplify, make each function return a single cell and then join
         # here
 
-        # FIXME: should only add if the task has upstream dependencies
-        cells = self._add_unpickling_cell(self._cells, io, providers)
+        cells = deepcopy(self._cells)
+
+        # remove import statements from code cells
+        for cell in cells:
+            if cell.cell_type == 'code':
+                cell['source'] = static_analysis.remove_imports(cell['source'])
+
+        # remove empty cells and whitespace-only cells (we may have some after
+        # removing imports)
+        cells = [cell for cell in cells if cell['source'].strip()]
+
+        cell_unpickling = self._unpickling_cell(io, providers)
+
+        if cell_unpickling:
+            cells = [cell_unpickling] + cells
+
         cells = self._add_parameters_cell(cells, upstream)
 
-        # FIXME: should only add if there are downstream tasks
-        cells = self._add_pickling_cell(cells, io)
+        cell_pickling = self._pickling_cell(io)
 
-        cell_imports = self._add_imports_cell(code_nb)
+        if cell_pickling:
+            cells = cells + [cell_pickling]
+
+        cell_imports = self._add_imports_cell(
+            code_nb, add_pathlib_and_pickle=cell_pickling or cell_unpickling)
         pre = [cell_imports] if cell_imports else []
 
         nb.cells = pre + cells
