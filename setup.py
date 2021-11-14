@@ -32,6 +32,10 @@ DEV = [
     'twine',
     'ipython',
     'ploomber',
+    # to run some of the examples
+    'pandas',
+    'scikit-learn',
+    'seaborn',
 ]
 
 setup(
