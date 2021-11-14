@@ -125,16 +125,10 @@ def find_inputs_and_outputs(code_str):
 
     inputs, outputs = [], set()
 
-    # from ipdb import set_trace
-    # set_trace()
-
     while leaf:
         if leaf.type == 'operator' and leaf.value == '=':
             next_s = leaf.get_next_sibling()
             previous = leaf.get_previous_leaf()
-
-            # TODO: ignore previous if modifying an existing object
-            # e.g., a['x'] = 1, or a.b = 1
 
             try:
                 children = next_s.children
@@ -154,7 +148,14 @@ def find_inputs_and_outputs(code_str):
 
             # ignore keyword arguments, they aren't outputs
             # e.g. something(key=value)
-            if previous.parent.type != 'argument':
+            # also ignore previous if modifying an existing object
+            # e.g.,
+            # a = {}
+            # a['x'] = 1
+            # a.b = 1
+            if (previous.parent.type != 'argument'
+                    and not _modifies_existing_object(
+                        leaf, outputs, defined_names_from_imports)):
                 outputs.add(previous.value)
 
         # variables inside function calls are inputs
@@ -165,6 +166,11 @@ def find_inputs_and_outputs(code_str):
         leaf = leaf.get_next_leaf()
 
     return set(inputs), outputs
+
+
+def _modifies_existing_object(leaf, outputs, names_from_imports):
+    current = leaf.get_previous_sibling().get_first_leaf().value
+    return current in outputs or current in names_from_imports
 
 
 def _map_outputs(name, outputs):

@@ -41,6 +41,25 @@ sns.histplot(df.some_column)
 # ignore classes, functions
 # try assigning a tuple
 
+# FIXME: add to test
+built_in = """
+mapping = dict()
+mapping['key'] = 'value'
+"""
+
+# TODO: same but with dot access
+modify_existing_obj_getitem = """
+mapping = {'a': 1}
+mapping['key'] = 'value'
+"""
+
+# TODO: same but with dot access
+modify_imported_obj_getitem = """
+from pkg import mapping
+
+mapping['key'] = 'value'
+"""
+
 
 @pytest.mark.parametrize('code_str, inputs, outputs', [
     [only_outputs, set(), {'x', 'y'}],
@@ -49,7 +68,9 @@ sns.histplot(df.some_column)
     [imports, set(), {'z'}],
     [imported_function, set(), {'df'}],
     [input_in_function_call, {'df'}, set()],
-    [read_snippets('ml')['load'], set(),
+    [modify_existing_obj_getitem,
+     set(), {'mapping'}],
+    [modify_imported_obj_getitem, set(),
      set()],
 ],
                          ids=[
@@ -59,7 +80,8 @@ sns.histplot(df.some_column)
                              'imports',
                              'imported_function',
                              'input_in_function_call',
-                             'ml-load',
+                             'modify_existing_getitem',
+                             'modify_imported_getitem',
                          ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
