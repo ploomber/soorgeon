@@ -6,32 +6,76 @@ import yaml
 from soorgeon import parse, static_analysis
 
 
+class NotebookExporter:
+    """Converts a notebook into a Ploomber pipeline
+    """
+    def __init__(self, nb):
+        self._nb = nb
+
+        self._proto_tasks = self._init_proto_tasks(nb)
+
+        # snippets map names with the code the task will contain, we use
+        # them to run static analysis
+        self._snippets = {pt.name: str(pt) for pt in self._proto_tasks}
+
+        self._io = None
+
+    def _init_proto_tasks(self, nb):
+        """Breask notebook into smaller sections
+        """
+        # use H2 headers to break notebook
+        breaks = parse.find_breaks(nb)
+
+        # generate groups of cells
+        cells_split = parse.split_with_breaks(nb.cells, breaks)
+
+        # extract names by using the H2 header text
+        names = parse.names_with_breaks(nb.cells, breaks)
+
+        # initialize proto tasks
+        return [
+            parse.ProtoTask(name, cell_group)
+            for name, cell_group in zip(names, cells_split)
+        ]
+
+    def get_task_specs(self):
+        return {pt.name: pt.to_spec(self.io) for pt in self._proto_tasks}
+
+    def get_sources(self):
+        """
+        Generate the .py code strings (precent format) for each proto task
+        """
+        # FIXME: this calls find_providers, we should only call it once
+        upstream = static_analysis.find_upstream(self._snippets)
+
+        providers = static_analysis.ProviderMapping(self.io)
+
+        code_nb = self._get_code()
+
+        return {
+            pt.name: pt.export(upstream, self._io, providers, code_nb)
+            for pt in self._proto_tasks
+        }
+
+    def _get_code(self):
+        return '\n'.join(cell['source'] for cell in self._nb.cells)
+
+    @property
+    def io(self):
+        """
+        {name: (inputs, outputs), ...}
+        """
+        if self._io is None:
+            self._io = static_analysis.find_io(self._snippets)
+
+        return self._io
+
+
 def from_nb(nb):
-    breaks = parse.find_breaks(nb)
-    cells_split = parse.split_with_breaks(nb.cells, breaks)
+    exporter = NotebookExporter(nb)
 
-    names = parse.names_with_breaks(nb.cells, breaks)
-
-    proto_tasks = [
-        parse.ProtoTask(name, cell_group)
-        for name, cell_group in zip(names, cells_split)
-    ]
-
-    snippets = {pt.name: str(pt) for pt in proto_tasks}
-
-    # FIXME: this calls find_providers, we should only call it once
-    upstream = static_analysis.find_upstream(snippets)
-    io = static_analysis.find_io(snippets)
-    providers = static_analysis.ProviderMapping(io)
-
-    code_nb = '\n'.join(cell['source'] for cell in nb.cells)
-
-    sources = {
-        pt.name: pt.export(upstream, io, providers, code_nb)
-        for pt in proto_tasks
-    }
-
-    task_specs = {pt.name: pt.to_spec(io) for pt in proto_tasks}
+    task_specs = exporter.get_task_specs()
+    sources = exporter.get_sources()
 
     dag_spec = {'tasks': list(task_specs.values())}
 
