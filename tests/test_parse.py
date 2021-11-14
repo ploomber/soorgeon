@@ -134,8 +134,11 @@ def test_names_with_breaks(tmp_empty, nb_str, expected):
 
 # TODO: do we need roundtrip conversion? we'l only use this for static analysis
 # so i think we're fine
-expected = '# Cell 0\n1 + 1 # Cell 1\n## Cell 2\n2 + 2 # Cell 3\n## Cell 4'
+mixed_expected = '1 + 1 # Cell 1\n2 + 2 # Cell 3'
 
 
-def test_prototask_str():
-    assert str(parse.ProtoTask('name', _read(mixed).cells)) == expected
+@pytest.mark.parametrize('code, expected', [
+    [mixed, mixed_expected],
+])
+def test_prototask_str(code, expected):
+    assert str(parse.ProtoTask('name', _read(code).cells)) == expected

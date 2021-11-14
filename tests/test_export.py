@@ -40,7 +40,7 @@ z2 = y + 1
 """
 
 eda = """# # Some analysis
-# 
+#
 # ## Load
 
 import pandas as pd
@@ -63,7 +63,12 @@ sns.histplot(df['petal length (cm)'])
     [simple, ['cell-0', 'cell-2', 'cell-4']],
     [simple_branch, ['first', 'second', 'third-a', 'third-b']],
     [eda, ['load', 'clean', 'plot']],
-])
+],
+                         ids=[
+                             'simple',
+                             'simple-branch',
+                             'eda',
+                         ])
 def test_from_nb(tmp_empty, nb_str, tasks):
     export.from_nb(_read(nb_str))
 

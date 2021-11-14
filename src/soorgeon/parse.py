@@ -54,6 +54,8 @@ class ProtoTask:
 
         pickling = nbformat.v4.new_code_cell(source=_PICKLING_TEMPLATE.render(
             products=outputs))
+        pickling.metadata['tags'] = ['soorgeon-pickle']
+
         return cells + [pickling]
 
     def _add_unpickling_cell(self, cells, io, providers):
@@ -66,6 +68,8 @@ class ProtoTask:
 
         unpickling = nbformat.v4.new_code_cell(
             source=_UNPICKLING_TEMPLATE.render(up_and_in=up_and_in))
+        unpickling.metadata['tags'] = ['soorgeon-unpickle']
+
         return [unpickling] + cells
 
     def _add_parameters_cell(self, cells, upstream):
@@ -93,16 +97,23 @@ class ProtoTask:
         source = ip.get_imports_cell_for_task(str(self))
 
         if source:
-            return nbformat.v4.new_code_cell(source=source)
+            cell = nbformat.v4.new_code_cell(source=source)
+            cell.metadata['tags'] = ['soorgeon-imports']
+            return cell
 
     def export(self, upstream, io, providers, code_nb):
         """Export as a Python string
         """
+
         nb = nbformat.v4.new_notebook()
         # TODO: simplify, make each function return a single cell and then join
         # here
+
+        # FIXME: should only add if the task has upstream dependencies
         cells = self._add_unpickling_cell(self._cells, io, providers)
         cells = self._add_parameters_cell(cells, upstream)
+
+        # FIXME: should only add if there are downstream tasks
         cells = self._add_pickling_cell(cells, io)
 
         cell_imports = self._add_imports_cell(code_nb)
@@ -115,9 +126,11 @@ class ProtoTask:
     def to_spec(self, io):
         _, outputs = io[self.name]
 
-        # FIXME: maybe prefix by taskname? what if two tasks produce a product
-        # with the same name
-        products = {out: str(Path('output', f'{out}.pkl')) for out in outputs}
+        # prefix products by name to guarantee they're unique
+        products = {
+            out: str(Path('output', f'{self.name}-{out}.pkl'))
+            for out in outputs
+        }
 
         # FIXME: check that there isn't an nb key already
         products['nb'] = str(Path('output', f'{self.name}.ipynb'))
@@ -128,7 +141,10 @@ class ProtoTask:
         }
 
     def __str__(self):
-        return '\n'.join(cell['source'] for cell in self._cells)
+        """Retun the task as string (only code cells)
+        """
+        return '\n'.join(cell['source'] for cell in self._cells
+                         if cell.cell_type == 'code')
 
 
 class ProtoDAGSpec:

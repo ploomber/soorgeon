@@ -30,6 +30,7 @@ def from_nb(nb):
         pt.name: pt.export(upstream, io, providers, code_nb)
         for pt in proto_tasks
     }
+
     task_specs = {pt.name: pt.to_spec(io) for pt in proto_tasks}
 
     dag_spec = {'tasks': list(task_specs.values())}

@@ -34,8 +34,8 @@ class ImportsParser:
 
         imports = self._name2code
 
-        # iterate over names defined by the imports and get the import statement
-        # if content_subset uses it
+        # iterate over names defined by the imports and get the import
+        # statement if content_subset uses it
         imports_to_use = []
 
         for name, import_code in imports.items():
@@ -48,6 +48,9 @@ class ImportsParser:
                               '\n\n\n').strip() or None
         else:
             imports_to_use = None
+
+        # FIXME: once we parse the imports, we should remove them from the code
+        # otherwise there are going to be duplicates
 
         return imports_to_use
 
@@ -206,13 +209,6 @@ class ProviderMapping:
         """
         providers = self._providers_for_task(task_name)
         return providers[variable]
-
-
-def find_io(snippets):
-    return {
-        snippet_name: find_inputs_and_outputs(snippet)
-        for snippet_name, snippet in snippets.items()
-    }
 
 
 def find_upstream(snippets):
