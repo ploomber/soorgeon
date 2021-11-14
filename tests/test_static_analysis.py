@@ -1,3 +1,5 @@
+from conftest import read_snippets
+
 import parso
 import pytest
 
@@ -47,6 +49,8 @@ sns.histplot(df.some_column)
     [imports, set(), {'z'}],
     [imported_function, set(), {'df'}],
     [input_in_function_call, {'df'}, set()],
+    [read_snippets('ml')['load'], set(),
+     set()],
 ],
                          ids=[
                              'only_outputs',
@@ -55,6 +59,7 @@ sns.histplot(df.some_column)
                              'imports',
                              'imported_function',
                              'input_in_function_call',
+                             'ml-load',
                          ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
@@ -142,6 +147,19 @@ def test_find_defined_names_from_imports(code, expected):
             'clean': ({'df'}, {'df'}),
             'plot': ({'df'}, set())
         }
+    ],
+    [
+        read_snippets('ml'),
+        {
+            'load': (set(), {'df', 'ca_housing'}),
+            'clean': ({'df'}, {'df'}),
+            'train-test-split':
+            ({'df'}, {'y', 'X', 'X_train', 'X_test', 'y_train', 'y_test'}),
+            'linear-regression':
+            ({'X_test', 'y_train', 'X_train'}, {'lr', 'y_pred'}),
+            'random-forest-regressor':
+            ({'X_test', 'y_train', 'X_train'}, {'rf', 'y_pred'})
+        },
     ],
 ])
 def test_find_io(snippets, expected):

@@ -125,10 +125,16 @@ def find_inputs_and_outputs(code_str):
 
     inputs, outputs = [], set()
 
+    # from ipdb import set_trace
+    # set_trace()
+
     while leaf:
         if leaf.type == 'operator' and leaf.value == '=':
             next_s = leaf.get_next_sibling()
             previous = leaf.get_previous_leaf()
+
+            # TODO: ignore previous if modifying an existing object
+            # e.g., a['x'] = 1, or a.b = 1
 
             try:
                 children = next_s.children

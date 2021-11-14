@@ -145,6 +145,8 @@ class ProtoTask:
 
         nb.cells = pre + cells
 
+        # TODO: H2 header should be the top cell
+
         return jupytext.writes(nb, fmt='py:percent')
 
     def to_spec(self, io):
