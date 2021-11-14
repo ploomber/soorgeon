@@ -2,6 +2,8 @@ from functools import reduce
 
 import parso
 
+_BUILTIN = set(__builtins__)
+
 
 class ImportsParser:
     """Parses import statements to know which ones to inject to any given task
@@ -135,10 +137,13 @@ def find_inputs_and_outputs(code_str):
             except AttributeError:
                 inputs_current = []
             else:
-                inputs_current = [
-                    e.value for e in children if e.type == 'name'
-                    and e.value not in defined_names_from_imports
-                ]
+                if leaf.get_next_leaf().value in _BUILTIN:
+                    inputs_current = []
+                else:
+                    inputs_current = [
+                        e.value for e in children if e.type == 'name'
+                        and e.value not in defined_names_from_imports
+                    ]
 
             for variable in inputs_current:
                 # only mark a variable as input if it hasn't been defined

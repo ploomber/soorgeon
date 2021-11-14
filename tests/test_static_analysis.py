@@ -41,7 +41,7 @@ sns.histplot(df.some_column)
 # ignore classes, functions
 # try assigning a tuple
 
-# FIXME: add to test
+# TODO: same but assigning multiple e.g., a, b = dict(), dict()
 built_in = """
 mapping = dict()
 mapping['key'] = 'value'
@@ -72,6 +72,7 @@ mapping['key'] = 'value'
      set(), {'mapping'}],
     [modify_imported_obj_getitem, set(),
      set()],
+    [built_in, set(), {'mapping'}],
 ],
                          ids=[
                              'only_outputs',
@@ -82,6 +83,7 @@ mapping['key'] = 'value'
                              'input_in_function_call',
                              'modify_existing_getitem',
                              'modify_imported_getitem',
+                             'built_in',
                          ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
