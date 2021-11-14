@@ -24,8 +24,10 @@ def from_nb(nb):
     io = static_analysis.find_io(snippets)
     providers = static_analysis.ProviderMapping(io)
 
+    code_nb = '\n'.join(cell['source'] for cell in nb.cells)
+
     sources = {
-        pt.name: pt.export(upstream, io, providers)
+        pt.name: pt.export(upstream, io, providers, code_nb)
         for pt in proto_tasks
     }
     task_specs = {pt.name: pt.to_spec(io) for pt in proto_tasks}
@@ -38,6 +40,10 @@ def from_nb(nb):
         path.write_text(sources[name])
 
     Path('pipeline.yaml').write_text(yaml.dump(dag_spec))
+
+    # TODO: instantiate dag since this may raise issues and we want to capture
+    # them to let the user know how to fix them (e.g., more >1 H2 headers with
+    # the same text)
 
 
 def from_path(path):

@@ -5,7 +5,7 @@ import nbformat
 import jupytext
 from jinja2 import Template
 
-from soorgeon import exceptions
+from soorgeon import exceptions, static_analysis
 
 _PICKLING_TEMPLATE = Template("""
 from pathlib import Path
@@ -87,7 +87,15 @@ class ProtoTask:
 
         return [parameters] + cells
 
-    def export(self, upstream, io, providers):
+    def _add_imports_cell(self, code_nb):
+        # FIXME: instatiate this in the constructor so we only build it once
+        ip = static_analysis.ImportsParser(code_nb)
+        source = ip.get_imports_cell_for_task(str(self))
+
+        if source:
+            return nbformat.v4.new_code_cell(source=source)
+
+    def export(self, upstream, io, providers, code_nb):
         """Export as a Python string
         """
         nb = nbformat.v4.new_notebook()
@@ -97,7 +105,10 @@ class ProtoTask:
         cells = self._add_parameters_cell(cells, upstream)
         cells = self._add_pickling_cell(cells, io)
 
-        nb.cells = cells
+        cell_imports = self._add_imports_cell(code_nb)
+        pre = [cell_imports] if cell_imports else []
+
+        nb.cells = pre + cells
 
         return jupytext.writes(nb, fmt='py:percent')
 
