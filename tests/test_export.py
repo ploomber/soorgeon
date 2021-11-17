@@ -79,6 +79,20 @@ df = df[df['petal length (cm)'] > 2]
 sns.histplot(df['petal length (cm)'])
 """
 
+unused_products = """# ## Cell 0
+
+x = 1
+x2 = 2
+
+# ## Cell 2
+
+y = x + 1
+
+# ## Cell 4
+
+z = y + 1
+"""
+
 
 @pytest.mark.parametrize('nb_str, tasks', [
     [simple, ['cell-0', 'cell-2', 'cell-4']],
@@ -99,8 +113,16 @@ def test_from_nb(tmp_empty, nb_str, tasks):
     assert list(dag) == tasks
 
 
-# FIXME: test does not serialize objects that arent used by downstream
-# tasks
+def test_from_nb_does_not_serialize_unused_products(tmp_empty):
+    export.from_nb(_read(unused_products))
+
+    dag = DAGSpec('pipeline.yaml').to_dag()
+
+    assert set(k for k in dag['cell-0'].product.to_json_serializable()) == {
+        'nb',
+        'x',
+    }
+
 
 # TODO: test all expected tags appear
 

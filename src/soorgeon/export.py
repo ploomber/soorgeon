@@ -66,7 +66,8 @@ class NotebookExporter:
         {name: (inputs, outputs), ...}
         """
         if self._io is None:
-            self._io = static_analysis.find_io(self._snippets)
+            io = static_analysis.find_io(self._snippets)
+            self._io = static_analysis.prune_io(io)
 
         return self._io
 

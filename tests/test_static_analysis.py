@@ -239,6 +239,19 @@ def test_find_io(snippets, expected):
     assert static_analysis.find_io(snippets) == expected
 
 
+@pytest.mark.parametrize('io, expected', [
+    [{
+        'one': ({'a'}, {'b', 'c'}),
+        'two': ({'b'}, set()),
+    }, {
+        'one': ({'a'}, {'b'}),
+        'two': ({'b'}, set()),
+    }],
+])
+def test_prune_io(io, expected):
+    assert static_analysis.prune_io(io) == expected
+
+
 @pytest.mark.parametrize('code, expected', [
     ['sns.histplot(df.some_column)', True],
     ['histplot(df.some_column)', True],
