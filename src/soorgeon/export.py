@@ -85,7 +85,7 @@ def from_nb(nb):
         path.parent.mkdir(exist_ok=True, parents=True)
         path.write_text(sources[name])
 
-    Path('pipeline.yaml').write_text(yaml.dump(dag_spec))
+    Path('pipeline.yaml').write_text(yaml.dump(dag_spec, sort_keys=False))
 
     # TODO: instantiate dag since this may raise issues and we want to capture
     # them to let the user know how to fix them (e.g., more >1 H2 headers with

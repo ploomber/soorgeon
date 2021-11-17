@@ -1,3 +1,5 @@
+from pathlib import Path
+import yaml
 import parso
 import pytest
 import jupytext
@@ -111,6 +113,13 @@ def test_from_nb(tmp_empty, nb_str, tasks):
 
     dag.build()
     assert list(dag) == tasks
+
+
+def test_spec_contains_source_first(tmp_empty):
+    export.from_nb(_read(simple))
+    out = yaml.safe_load(Path('pipeline.yaml').read_text())
+
+    assert all([list(spec)[0] == 'source' for spec in out['tasks']])
 
 
 def test_from_nb_does_not_serialize_unused_products(tmp_empty):
