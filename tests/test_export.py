@@ -115,11 +115,15 @@ def test_from_nb(tmp_empty, nb_str, tasks):
     assert list(dag) == tasks
 
 
-def test_spec_contains_source_first(tmp_empty):
+def test_spec_style(tmp_empty):
     export.from_nb(_read(simple))
-    out = yaml.safe_load(Path('pipeline.yaml').read_text())
+    spec = Path('pipeline.yaml').read_text()
+    d = yaml.safe_load(spec)
 
-    assert all([list(spec)[0] == 'source' for spec in out['tasks']])
+    # check empty space between tasks
+    assert '\n\n-' in spec
+    # check source is the first key on every task
+    assert all([list(spec)[0] == 'source' for spec in d['tasks']])
 
 
 def test_from_nb_does_not_serialize_unused_products(tmp_empty):

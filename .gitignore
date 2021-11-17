@@ -1,4 +1,6 @@
+examples/**/*.ipynb
 examples/**/tasks
+examples/**/output
 examples/**/outputs
 examples/**/pipeline.yaml
 examples/**/pipeline.png

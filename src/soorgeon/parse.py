@@ -95,7 +95,8 @@ class ProtoTask:
     def _add_imports_cell(self, code_nb, add_pathlib_and_pickle):
         # FIXME: instatiate this in the constructor so we only build it once
         ip = static_analysis.ImportsParser(code_nb)
-        source = ip.get_imports_cell_for_task(str(self))
+        source = ip.get_imports_cell_for_task(
+            static_analysis.remove_imports(str(self)))
 
         # FIXME: only add them if they're not already there
         if add_pathlib_and_pickle:
@@ -141,6 +142,7 @@ class ProtoTask:
 
         cell_imports = self._add_imports_cell(
             code_nb, add_pathlib_and_pickle=cell_pickling or cell_unpickling)
+
         pre = [cell_imports] if cell_imports else []
 
         nb.cells = pre + cells

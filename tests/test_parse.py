@@ -142,3 +142,17 @@ mixed_expected = '1 + 1 # Cell 1\n2 + 2 # Cell 3'
 ])
 def test_prototask_str(code, expected):
     assert str(parse.ProtoTask('name', _read(code).cells)) == expected
+
+
+@pytest.mark.parametrize('cells_idx, expected', [
+    [(0, 3), 'from sklearn.datasets import load_iris'],
+])
+def test_prototask_add_imports_cell(cells_idx, expected):
+    cells = jupytext.reads(exploratory,
+                           fmt='py:light').cells[cells_idx[0]:cells_idx[1]]
+    pt = parse.ProtoTask('task', cells)
+    cell = pt._add_imports_cell(exploratory, add_pathlib_and_pickle=False)
+    assert cell['source'] == expected
+
+
+# FIXME: ensure _add_imports_cell removes comments
