@@ -160,11 +160,13 @@ class NotebookExporter:
         ]
 
     def get_task_specs(self):
+        """Return task specs (dictionary) for each proto task
+        """
         return {pt.name: pt.to_spec(self.io) for pt in self._proto_tasks}
 
     def get_sources(self):
         """
-        Generate the .py code strings (precent format) for each proto task
+        Generate the .py code strings (percent format) for each proto task
         """
         # FIXME: this calls find_providers, we should only call it once
         upstream = static_analysis.find_upstream(self._snippets)
@@ -197,6 +199,7 @@ def from_nb(nb):
     exporter = NotebookExporter(nb)
 
     task_specs = exporter.get_task_specs()
+
     sources = exporter.get_sources()
 
     dag_spec = {'tasks': list(task_specs.values())}

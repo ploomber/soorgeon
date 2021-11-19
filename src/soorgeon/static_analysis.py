@@ -76,7 +76,32 @@ def find_defined_names_from_imports(tree):
     return imports
 
 
+def find_defined_names_from_def_and_class(tree):
+    fns = {
+        fn.name.value: fn.get_code().rstrip()
+        for fn in tree.iter_funcdefs()
+    }
+
+    classes = {
+        class_.name.value: class_.get_code().rstrip()
+        for class_ in tree.iter_classdefs()
+    }
+
+    return {**fns, **classes}
+
+
+def find_defined_names(tree):
+    return {
+        **find_defined_names_from_imports(tree),
+        **find_defined_names_from_def_and_class(tree)
+    }
+
+
 def inside_function_call(leaf):
+    # ignore it if this is a function definition
+    if leaf.parent.type == 'param':
+        return False
+
     next_sibling = leaf.get_next_sibling()
 
     try:
@@ -112,51 +137,222 @@ def inside_parenthesis(node):
     return left and right
 
 
-def find_inputs_and_outputs(code_str):
+def inside_funcdef(leaf):
+    parent = leaf.parent
+
+    while parent:
+        if parent.type == 'funcdef':
+            return True
+
+        parent = parent.parent
+
+    return False
+
+
+def get_local_scope(leaf):
+    """
+    Returns a set of variables that are defined locally and thus should
+    not be considered inputs (e.g., variables defined in a for loop)
+    """
+    # FIXME: this wont work with nested for loops
+    parent = leaf.parent
+
+    while parent:
+        if parent.type == 'for_stmt':
+            return find_for_loop_defined_names(parent)
+
+        parent = parent.parent
+
+    return set()
+
+
+def find_for_loop_defined_names(for_stmt):
+    """
+    Return a set with the variables defined in a for loop. e.g.,
+    for x, (y, z) in .... returns {'x', 'y', 'z'}
+    """
+    if for_stmt.type != 'for_stmt':
+        raise ValueError(f'Expected a node with type "for_stmt", '
+                         f'got: {for_stmt} with type {for_stmt.type}')
+
+    variables = for_stmt.children[1]
+
+    names = []
+
+    leaf = variables.get_first_leaf()
+
+    while leaf:
+        if leaf.type == 'keyword' and leaf.value == 'in':
+            break
+
+        if leaf.type == 'name':
+            names.append(leaf.value)
+
+        leaf = leaf.get_next_leaf()
+
+    return set(names)
+
+
+def for_loop_definition(leaf):
+    has_suite_parent = False
+    parent = leaf.parent
+
+    while parent:
+        if parent.type == 'suite':
+            has_suite_parent = True
+
+        if parent.type == 'for_stmt':
+            return not has_suite_parent
+
+        parent = parent.parent
+
+    return False
+
+
+def accessing_variable(leaf):
+    """
+    For a given node of type name, determine if it's used
+    """
+    # NOTE: what if we only have the name and we are not doing anything?
+    # like:
+    # df
+    # that still counts as dependency
+    try:
+        children = leaf.get_next_sibling().children
+    except Exception:
+        return False
+
+    getitem = children[0].value == '[' and children[-1].value == ']'
+    dotaccess = children[0].value == '.'
+    # FIXME: adding dotacess breaks other tests
+    return getitem or dotaccess
+
+
+def is_inside_list_comprehension(node):
+    return (node.parent.type == 'testlist_comp'
+            and node.parent.children[1].type == 'sync_comp_for')
+
+
+def get_inputs_in_list_comprehension(node):
+    if node.type != 'testlist_comp':
+        raise ValueError('Expected node to have type '
+                         f'"testlist_comp", got: {node.type}')
+
+    compfor, synccompfor = node.children
+
+    # parse the variables in the left expression
+    # e.g., [expression(x) for x in range(10)]
+    try:
+        expression_left = extract_inputs(compfor.children[0])
+    except AttributeError:
+        # if there isn't an expression but a single variable, we just
+        # get the name e.g., [x for x in range(10)]
+        expression_left = {compfor.value}
+
+    # this are the variables that the list comprehension declares
+    declared = extract_inputs(synccompfor.children[1])
+
+    # parse the variables in the right expression
+    # e,g, [x for x in expression(10)]
+    expression_right = extract_inputs(synccompfor.children[-1])
+
+    return (expression_left | expression_right) - declared
+
+
+def extract_inputs(node):
+    """
+    Extract inputs from an atomic expression
+    e.g. function(x, y) returns {'function', 'x', 'y'}
+    """
+    names = []
+
+    leaf = node.get_first_leaf()
+    # stop when you reach the end of the expression
+    last = node.get_last_leaf()
+
+    while leaf:
+        if is_inside_list_comprehension(leaf):
+            names.extend(list(get_inputs_in_list_comprehension(leaf.parent)))
+
+            # skip to the end of the list comprehension
+            leaf = leaf.parent.get_last_leaf()
+        else:
+            # is this a kwarg?
+            try:
+                key_arg = leaf.get_next_leaf().value == '='
+            except Exception:
+                key_arg = False
+
+            # attribute access?
+            try:
+                attr_access = leaf.get_previous_leaf().value == '.'
+            except Exception:
+                attr_access = False
+
+            if leaf.type == 'name' and not key_arg and not attr_access:
+                names.append(leaf.value)
+
+            if leaf is last:
+                break
+
+            leaf = leaf.get_next_leaf()
+
+    return set(names)
+
+
+def find_inputs_and_outputs(code_str, ignore_input_names=None):
     """
     Given a Python code string, find which variables the code consumes (not
     declared in the snipped) and which ones it exposes (declared in the
     snippet)
+
+    Parameters
+    ----------
+    ignore_input_names : set
+        Names that should not be considered inputs
     """
+
+    ignore_input_names = ignore_input_names or set()
     tree = parso.parse(code_str)
     leaf = tree.get_first_leaf()
 
     # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
     # move the functionality to a class so we only compute it once
-    defined_names_from_imports = find_defined_names_from_imports(tree)
+    defined_names = set(find_defined_names_from_imports(tree)) | set(
+        find_defined_names_from_def_and_class(tree))
 
     inputs, outputs = [], set()
 
     while leaf:
-        if leaf.type == 'operator' and leaf.value == '=':
+        # FIXME: is there a more efficient way to do this? if you find a
+        # funcspec, jump to the end of it
+        if inside_funcdef(leaf) or for_loop_definition(leaf):
+            pass
+
+        # the = operator is an indicator of [outputs] = [inputs]
+        elif leaf.type == 'operator' and leaf.value == '=':
             next_s = leaf.get_next_sibling()
             previous = leaf.get_previous_leaf()
 
-            try:
-                children = next_s.children
-            except AttributeError:
-                # could be keyword arguments inside a function call
-                if leaf.parent.type == 'argument' and leaf.get_next_leaf(
-                ).value not in _BUILTIN and leaf.get_next_leaf(
-                ).type == 'name':
-                    # TODO: there could be more than one
-                    inputs_current = [leaf.get_next_leaf().value]
-                else:
-                    inputs_current = []
-            else:
-                if leaf.get_next_leaf().value in _BUILTIN:
-                    inputs_current = []
-                else:
-                    inputs_current = [
-                        e.value for e in children if e.type == 'name'
-                        and e.value not in defined_names_from_imports
-                    ]
+            # Process inputs
+            inputs_current = extract_inputs(next_s)
+            inputs_current = inputs_current - set(_BUILTIN)
+            inputs_current = inputs_current - set(defined_names)
+
+            local = get_local_scope(leaf)
 
             for variable in inputs_current:
+                # check if we're inside a for loop and ignore variables
+                # defined there
+
                 # only mark a variable as input if it hasn't been defined
                 # locally
-                if variable not in outputs:
+                if (variable not in outputs
+                        and variable not in ignore_input_names
+                        and variable not in local):
                     inputs.append(variable)
+
+            # Process outputs
 
             # ignore keyword arguments, they aren't outputs
             # e.g. 'key' in something(key=value)
@@ -166,8 +362,8 @@ def find_inputs_and_outputs(code_str):
             # a['x'] = 1
             # a.b = 1
             if (previous.parent.type != 'argument'
-                    and not _modifies_existing_object(
-                        leaf, outputs, defined_names_from_imports)):
+                    and not _modifies_existing_object(leaf, outputs,
+                                                      defined_names)):
 
                 prev_sibling = leaf.get_previous_sibling()
 
@@ -181,11 +377,24 @@ def find_inputs_and_outputs(code_str):
                 else:
                     outputs.add(previous.value)
 
-        # variables inside function calls are inputs
+        # Process inputs scenario #2 - there is not '=' token but a function
+        # call. variables inside function calls are inputs
         # e.g., some_function(df)
-        # but ignore them if they have been locally defined
-        elif (leaf.type == 'name' and inside_function_call(leaf)
-              and leaf.value not in outputs):
+        # in this case, df is considered an input, except if it has been
+        # locally defined.
+        # e.g.,
+        # df = something()
+        # some_function(df)
+        # FIXME: this is redundant because when we identify the '=' token, we
+        # go to the first conditional, and the next leaf is the function call
+        # so then we go into this conditional
+        elif (leaf.type == 'name'
+              and (inside_function_call(leaf) or accessing_variable(leaf))
+              and leaf.value not in outputs
+              and leaf.value not in ignore_input_names
+              and leaf.value not in _BUILTIN
+              and leaf.value not in get_local_scope(leaf)
+              and leaf.value not in defined_names):
             inputs.append(leaf.value)
 
         leaf = leaf.get_next_leaf()
@@ -248,6 +457,31 @@ class ProviderMapping:
         return providers[variable]
 
 
+class DefinitionsMapping:
+    """
+    Returns the available names (from import statements, function and class
+    definitions) available for a given
+    snippet. We use this to determine which names should not be considered
+    inputs in tasks, since they are module names
+    """
+    def __init__(self, snippets):
+        self._names = {
+            name: set(find_defined_names(parso.parse(code)))
+            for name, code in snippets.items()
+        }
+
+    def get(self, name):
+        out = set()
+
+        for key, value in self._names.items():
+            if key == name:
+                break
+
+            out = out | value
+
+        return out
+
+
 def find_upstream(snippets):
     """
     Parameters
@@ -286,11 +520,18 @@ def find_io(snippets):
     are the variables that snippet_name requires to work and outputs the ones
     that it creates
     """
+    # FIXME: this should also include defined classes and functions
+    im = DefinitionsMapping(snippets)
+
     # FIXME: find_upstream already calls this, we should only compute it once
-    return {
-        snippet_name: find_inputs_and_outputs(snippet)
+    io = {
+        snippet_name:
+        find_inputs_and_outputs(snippet,
+                                ignore_input_names=im.get(snippet_name))
         for snippet_name, snippet in snippets.items()
     }
+
+    return io
 
 
 def prune_io(io):
