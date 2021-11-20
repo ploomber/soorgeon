@@ -92,7 +92,7 @@ class ProtoTask:
 
         return [parameters] + cells
 
-    def _add_imports_cell(self, code_nb, add_pathlib_and_pickle):
+    def _add_imports_cell(self, code_nb, add_pathlib_and_pickle, definitions):
         # FIXME: instatiate this in the constructor so we only build it once
         ip = static_analysis.ImportsParser(code_nb)
         source = ip.get_imports_cell_for_task(
@@ -104,13 +104,25 @@ class ProtoTask:
             source += '\nfrom pathlib import Path'
             source += '\nimport pickle'
 
+        if definitions:
+            names = ', '.join(definitions)
+            source = source or ''
+            source += f'\nfrom exported import {names}'
+
         if source:
             cell = nbformat.v4.new_code_cell(source=source)
             cell.metadata['tags'] = ['soorgeon-imports']
             return cell
 
-    def export(self, upstream, io, providers, code_nb):
+    def export(self, upstream, io, providers, code_nb, definitions):
         """Export as a Python string
+
+        Parameters
+        ----------
+        definitions : dict
+            {name: code, ...} mapping with all the function and class
+            definitions in the notebook. Used to add an import statement
+            to the task
         """
 
         nb = nbformat.v4.new_notebook()
@@ -120,6 +132,7 @@ class ProtoTask:
         cells = deepcopy(self._cells)
 
         # remove import statements from code cells
+        # FIXME: remove function definitions and class definitions
         for cell in cells:
             if cell.cell_type == 'code':
                 cell['source'] = static_analysis.remove_imports(cell['source'])
@@ -141,7 +154,9 @@ class ProtoTask:
             cells = cells + [cell_pickling]
 
         cell_imports = self._add_imports_cell(
-            code_nb, add_pathlib_and_pickle=cell_pickling or cell_unpickling)
+            code_nb,
+            add_pathlib_and_pickle=cell_pickling or cell_unpickling,
+            definitions=definitions)
 
         pre = [cell_imports] if cell_imports else []
 

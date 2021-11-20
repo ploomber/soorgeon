@@ -151,7 +151,9 @@ def test_prototask_add_imports_cell(cells_idx, expected):
     cells = jupytext.reads(exploratory,
                            fmt='py:light').cells[cells_idx[0]:cells_idx[1]]
     pt = parse.ProtoTask('task', cells)
-    cell = pt._add_imports_cell(exploratory, add_pathlib_and_pickle=False)
+    cell = pt._add_imports_cell(exploratory,
+                                add_pathlib_and_pickle=False,
+                                definitions=None)
     assert cell['source'] == expected
 
 

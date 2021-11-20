@@ -121,6 +121,7 @@ Finally, we generate the pipeline.yaml file.
 
 from pathlib import Path
 
+import parso
 import jupytext
 import yaml
 
@@ -140,6 +141,7 @@ class NotebookExporter:
         self._snippets = {pt.name: str(pt) for pt in self._proto_tasks}
 
         self._io = None
+        self._definitions = None
 
     def _init_proto_tasks(self, nb):
         """Breask notebook into smaller sections
@@ -176,12 +178,29 @@ class NotebookExporter:
         code_nb = self._get_code()
 
         return {
-            pt.name: pt.export(upstream, self._io, providers, code_nb)
+            pt.name: pt.export(upstream, self._io, providers, code_nb,
+                               self.definitions)
             for pt in self._proto_tasks
         }
 
+    def export_definitions(self):
+        """Create an exported.py file with function and class definitions
+        """
+        out = '\n\n'.join(self.definitions.values())
+        Path('exported.py').write_text(out)
+
     def _get_code(self):
         return '\n'.join(cell['source'] for cell in self._nb.cells)
+
+    @property
+    def definitions(self):
+        if self._definitions is None:
+            code = self._get_code()
+            tree = parso.parse(code)
+            self._definitions = (
+                static_analysis.find_defined_names_from_def_and_class(tree))
+
+        return self._definitions
 
     @property
     def io(self):
@@ -197,6 +216,9 @@ class NotebookExporter:
 
 def from_nb(nb):
     exporter = NotebookExporter(nb)
+
+    # export functions and classes to a separate file
+    exporter.export_definitions()
 
     task_specs = exporter.get_task_specs()
 

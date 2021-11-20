@@ -1,3 +1,4 @@
+_kaggle/
 examples/**/*.ipynb
 examples/**/tasks
 examples/**/output

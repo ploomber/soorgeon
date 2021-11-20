@@ -167,3 +167,49 @@ def test_exporter_does_not_add_unpickling_if_no_upstream(eda_sources):
 def test_exporter_does_not_add_pickling_if_no_outputs(eda_sources):
     nb = jupytext.reads(eda_sources['plot'], fmt='py:percent')
     assert not _find_cells_with_tags(nb, ['soorgeon-pickle'])
+
+
+with_definitions = """# ## load
+
+def load(x):
+    return x
+
+1 + 1
+
+# ## clean
+
+class Cleaner:
+    pass
+
+
+2 + 2
+
+# ## plot
+
+def plot(x):
+    return x
+
+df = load(1)
+"""
+
+
+def test_export_definitions(tmp_empty):
+    exporter = export.NotebookExporter(_read(with_definitions))
+    exporter.export_definitions()
+
+    expected = ('## load\ndef load(x):\n    return x'
+                '\n\n## plot\ndef plot(x):\n    return x'
+                '\n\n## clean\nclass Cleaner:\n    pass')
+
+    assert Path('exported.py').read_text() == expected
+
+
+def test_get_sources_includes_import_from_exported_definitions(tmp_empty):
+    exporter = export.NotebookExporter(_read(with_definitions))
+
+    sources = exporter.get_sources()
+
+    import_ = 'from exported import load, plot, Cleaner'
+    assert import_ in sources['load']
+    assert import_ in sources['clean']
+    assert import_ in sources['plot']
