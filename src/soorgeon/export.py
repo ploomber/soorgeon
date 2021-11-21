@@ -187,7 +187,16 @@ class NotebookExporter:
         """Create an exported.py file with function and class definitions
         """
         out = '\n\n'.join(self.definitions.values())
-        Path('exported.py').write_text(out)
+
+        ip = static_analysis.ImportsParser(self._get_code())
+        imports = ip.get_imports_cell_for_task(out)
+
+        if imports:
+            exported = f'{imports}\n\n\n{out}'
+        else:
+            exported = out
+
+        Path('exported.py').write_text(exported)
 
     def _get_code(self):
         return '\n'.join(cell['source'] for cell in self._nb.cells)

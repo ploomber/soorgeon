@@ -192,14 +192,32 @@ def plot(x):
 df = load(1)
 """
 
+with_definitions_expected = ('## load\ndef load(x):\n    return x'
+                             '\n\n## plot\ndef plot(x):\n    return x\n\n'
+                             '## clean\nclass Cleaner:\n    pass')
 
-def test_export_definitions(tmp_empty):
-    exporter = export.NotebookExporter(_read(with_definitions))
+definition_with_import = """# ## load
+
+import matplotlib.pyplot as plt
+
+def plot(x):
+    plt.plot()
+
+
+df = load()
+"""
+
+definition_with_import_expected = ('## load\nimport matplotlib.pyplot as plt'
+                                   '\n\n\ndef plot(x):\n    plt.plot()')
+
+
+@pytest.mark.parametrize('code, expected', [
+    [with_definitions, with_definitions_expected],
+    [definition_with_import, definition_with_import_expected],
+])
+def test_export_definitions(tmp_empty, code, expected):
+    exporter = export.NotebookExporter(_read(code))
     exporter.export_definitions()
-
-    expected = ('## load\ndef load(x):\n    return x'
-                '\n\n## plot\ndef plot(x):\n    return x'
-                '\n\n## clean\nclass Cleaner:\n    pass')
 
     assert Path('exported.py').read_text() == expected
 
