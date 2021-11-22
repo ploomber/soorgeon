@@ -294,6 +294,8 @@ def get_inputs_in_list_comprehension(node):
     return (inputs_left | inputs_right) - declared
 
 
+# TODO: this needs renaming, we are now using it to parse outputs as well
+# see line 442
 def extract_inputs(node,
                    parse_list_comprehension=True,
                    stop_at_end_of_list_comprehension=False):
@@ -436,6 +438,9 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
                         name.value
                         for name in prev_sibling.parent.get_defined_names())
                 # nope, only one value
+                elif prev_sibling.type == 'atom_expr':
+                    target = target | extract_inputs(
+                        prev_sibling, parse_list_comprehension=False)
                 else:
                     target.add(previous.value)
 

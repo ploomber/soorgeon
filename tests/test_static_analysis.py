@@ -230,6 +230,12 @@ def some_function(a):
     return a + b
 """
 
+# TODO: try with nested brackets like df[['something']]
+# TODO: assign more than one at the same time df['a'], df['b'] = ...
+mutating_input = """
+df['new_column'] = df['some_column'] + 1
+"""
+
 # TODO: define inputs inside built-ins
 # e.g.
 # models = [a, b, c]
@@ -285,6 +291,7 @@ def some_function(a):
      set()],
     [function_with_global_variable, {'b'},
      set()],
+    [mutating_input, {'df'}, {'df'}],
 ],
                          ids=[
                              'only_outputs',
@@ -319,6 +326,7 @@ def some_function(a):
                              'list_comprehension',
                              'list_comprehension_attributes',
                              'function_with_global_variable',
+                             'mutating_input',
                          ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
