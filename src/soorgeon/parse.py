@@ -250,7 +250,7 @@ def names_with_breaks(cells, breaks):
 
 
 def _sanitize_name(name):
-    return name.lower().replace(' ', '-')
+    return name.lower().replace(' ', '-').replace('/', '-')
 
 
 def _get_h2_header(md):

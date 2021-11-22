@@ -158,3 +158,12 @@ def test_prototask_add_imports_cell(cells_idx, expected):
 
 
 # FIXME: ensure _add_imports_cell removes comments
+
+
+@pytest.mark.parametrize('name, expected', [
+    ['task', 'task'],
+    ['a task', 'a-task'],
+    ['a ta/sk', 'a-ta-sk'],
+])
+def test_sanitize_name(name, expected):
+    assert parse._sanitize_name(name) == expected
