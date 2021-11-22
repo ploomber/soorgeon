@@ -120,7 +120,7 @@ def inside_function_call(leaf):
     # NOTE: do we need more checks to ensure we're in the second case?
     # maybe check if we have an actual dot, or we're using something like
     # df[key]?
-    return inside_parenthesis(leaf) or inside_parenthesis(leaf.parent)
+    return inside_parenthesis(leaf.parent) or inside_parenthesis(leaf)
 
 
 def inside_parenthesis(node):
@@ -134,7 +134,14 @@ def inside_parenthesis(node):
     except AttributeError:
         right = False
 
-    return left and right
+    try:
+        # to prevent (1, 2, 3) being detected as a function call
+        has_name = node.get_previous_sibling().get_previous_leaf(
+        ).type == 'name'
+    except AttributeError:
+        has_name = False
+
+    return left and right and has_name
 
 
 def inside_funcdef(leaf):
@@ -154,12 +161,15 @@ def get_local_scope(leaf):
     Returns a set of variables that are defined locally and thus should
     not be considered inputs (e.g., variables defined in a for loop)
     """
-    # FIXME: this wont work with nested for loops/functions
     parent = leaf.parent
 
     while parent:
         if parent.type == 'for_stmt':
-            return find_for_loop_defined_names(parent)
+            # call recursively for nested for loops to work
+            return (find_for_loop_defined_names(parent)
+                    | get_local_scope(parent.parent))
+
+        # FIXME: this wont work with nested functions
         elif parent.type == 'funcdef':
             def_names = [
                 c.get_defined_names() for c in parent.children[2].children
@@ -377,7 +387,6 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
 
         # the = operator is an indicator of [outputs] = [inputs]
         elif leaf.type == 'operator' and leaf.value == '=':
-
             next_s = leaf.get_next_sibling()
             previous = leaf.get_previous_leaf()
 
@@ -409,6 +418,7 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
             # a = {}
             # a['x'] = 1
             # a.b = 1
+
             if (previous.parent.type != 'argument'
                     and not _modifies_existing_object(leaf, outputs,
                                                       defined_names)):
@@ -418,8 +428,10 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
                 target = local_variables if _inside_funcdef else outputs
 
                 # check if assigning multiple values
-                # e.g., a, b = 1, 2
-                if prev_sibling.type == 'testlist_star_expr':
+                # e.g., a, b = 1, 2 (testlist_star_expr)
+                # [a, b] = 1, 2 (atom)
+                # (a, b) = 1, 2 (atom)
+                if prev_sibling.type in {'testlist_star_expr', 'atom'}:
                     target = target | set(
                         name.value
                         for name in prev_sibling.parent.get_defined_names())

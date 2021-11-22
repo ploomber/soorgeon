@@ -128,6 +128,14 @@ define_multiple_outputs = """
 a, b, c = 1, 2, 3
 """
 
+define_multiple_outputs_square_brackets = """
+[a, b, c] = 1, 2, 3
+"""
+
+define_multiple_outputs_parenthesis = """
+(a, b, c) = 1, 2, 3
+"""
+
 local_function = """
 def x():
     pass
@@ -168,9 +176,15 @@ for x, z in range(10):
     y = x + z
 """
 
-for_loop_nested = """
+for_loop_names_with_parenthesis = """
 for a, (b, (c, d)) in range(10):
     x = a + b + c + d
+"""
+
+for_loop_nested = """
+for i in range(10):
+    for j in range(10):
+        print(i + j)
 """
 
 for_loop_name_reference = """
@@ -248,6 +262,10 @@ def some_function(a):
     [built_in_as_arg, set(), {'something'}],
     [input_existing_object, set(), {'X'}],
     [define_multiple_outputs, set(), {'a', 'b', 'c'}],
+    [define_multiple_outputs_square_brackets,
+     set(), {'a', 'b', 'c'}],
+    [define_multiple_outputs_parenthesis,
+     set(), {'a', 'b', 'c'}],
     [local_function, set(), {'y'}],
     [local_function_with_args, set(), {'y'}],
     [local_function_with_args_and_body,
@@ -255,7 +273,9 @@ def some_function(a):
     [local_class, set(), {'y'}],
     [for_loop, {'z'}, {'y'}],
     [for_loop_many, set(), {'y'}],
-    [for_loop_nested, set(), {'x'}],
+    [for_loop_names_with_parenthesis,
+     set(), {'x'}],
+    [for_loop_nested, set(), set()],
     [for_loop_name_reference, set(), set()],
     [getitem_input, {'df'}, set()],
     [method_access_input, {'df'}, set()],
@@ -282,12 +302,15 @@ def some_function(a):
                              'built_in_as_arg',
                              'input_existing_object',
                              'define_multiple_outputs',
+                             'define_multiple_outputs_square_brackets',
+                             'define_multiple_outputs_parenthesis',
                              'local_function',
                              'local_function_with_args',
                              'local_function_with_args_and_body',
                              'local_class',
                              'for_loop',
                              'for_loop_many',
+                             'for_loop_names_with_parenthesis',
                              'for_loop_nested',
                              'for_loop_name_reference',
                              'getitem_input',
@@ -456,6 +479,7 @@ def test_prune_io(io, expected):
     ['sns.histplot(df["key"])', True],
     ['def x(df):\n  pass', False],
     ['def x(df=1):\n  pass', False],
+    ['(df, df2) = 1, 2', False],
 ])
 def test_inside_function_call(code, expected):
     leaf = get_first_leaf_with_value(code, 'df')
