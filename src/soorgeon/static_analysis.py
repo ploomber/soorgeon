@@ -154,12 +154,21 @@ def get_local_scope(leaf):
     Returns a set of variables that are defined locally and thus should
     not be considered inputs (e.g., variables defined in a for loop)
     """
-    # FIXME: this wont work with nested for loops
+    # FIXME: this wont work with nested for loops/functions
     parent = leaf.parent
 
     while parent:
         if parent.type == 'for_stmt':
             return find_for_loop_defined_names(parent)
+        elif parent.type == 'funcdef':
+            def_names = [
+                c.get_defined_names() for c in parent.children[2].children
+                if c.type == 'param'
+            ]
+
+            flatten = [name.value for sub in def_names for name in sub]
+
+            return set(flatten)
 
         parent = parent.parent
 
@@ -229,8 +238,21 @@ def accessing_variable(leaf):
 
 
 def is_inside_list_comprehension(node):
-    return (node.parent.type == 'testlist_comp'
-            and node.parent.children[1].type == 'sync_comp_for')
+    parent = get_first_non_atom_expr_parent(node)
+
+    return (parent.type == 'testlist_comp'
+            and parent.children[1].type == 'sync_comp_for')
+
+
+def get_first_non_atom_expr_parent(node):
+    parent = node.parent
+
+    # e.g., [x.attribute for x in range(10)]
+    # x.attribute is an atom_expr
+    while parent.type == 'atom_expr':
+        parent = parent.parent
+
+    return parent
 
 
 def get_inputs_in_list_comprehension(node):
@@ -243,27 +265,38 @@ def get_inputs_in_list_comprehension(node):
     # parse the variables in the left expression
     # e.g., [expression(x) for x in range(10)]
     try:
-        expression_left = extract_inputs(compfor.children[0])
+        inputs_left = extract_inputs(compfor.children[0],
+                                     parse_list_comprehension=False)
     except AttributeError:
         # if there isn't an expression but a single variable, we just
         # get the name e.g., [x for x in range(10)]
-        expression_left = {compfor.value}
+        inputs_left = {compfor.value}
 
-    # this are the variables that the list comprehension declares
-    declared = extract_inputs(synccompfor.children[1])
+    # these are the variables that the list comprehension declares
+    declared = extract_inputs(synccompfor.children[1],
+                              parse_list_comprehension=False)
 
     # parse the variables in the right expression
     # e,g, [x for x in expression(10)]
-    expression_right = extract_inputs(synccompfor.children[-1])
+    inputs_right = extract_inputs(synccompfor.children[-1],
+                                  parse_list_comprehension=False)
 
-    return (expression_left | expression_right) - declared
+    return (inputs_left | inputs_right) - declared
 
 
-def extract_inputs(node):
+def extract_inputs(node,
+                   parse_list_comprehension=True,
+                   stop_at_end_of_list_comprehension=False):
     """
     Extract inputs from an atomic expression
     e.g. function(x, y) returns {'function', 'x', 'y'}
+
+    Parameters
+    ----------
+    parse_list_comprehension : bool, default=True
+        Whether to parse any list comprehension that if node is inside one
     """
+
     names = []
 
     leaf = node.get_first_leaf()
@@ -271,11 +304,16 @@ def extract_inputs(node):
     last = node.get_last_leaf()
 
     while leaf:
-        if is_inside_list_comprehension(leaf):
-            names.extend(list(get_inputs_in_list_comprehension(leaf.parent)))
+        if parse_list_comprehension and is_inside_list_comprehension(leaf):
+            list_comp = get_first_non_atom_expr_parent(leaf)
+            inputs = get_inputs_in_list_comprehension(list_comp)
+            names.extend(list(inputs))
 
             # skip to the end of the list comprehension
-            leaf = leaf.parent.get_last_leaf()
+            leaf = list_comp.get_last_leaf()
+
+            if stop_at_end_of_list_comprehension:
+                break
         else:
             # is this a kwarg?
             try:
@@ -289,7 +327,8 @@ def extract_inputs(node):
             except Exception:
                 attr_access = False
 
-            if leaf.type == 'name' and not key_arg and not attr_access:
+            if (leaf.type == 'name' and not key_arg and not attr_access
+                    and leaf.value not in _BUILTIN):
                 names.append(leaf.value)
 
             if leaf is last:
@@ -323,14 +362,22 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
 
     inputs, outputs = [], set()
 
+    local_variables = set()
+
     while leaf:
+        _inside_funcdef = inside_funcdef(leaf)
+
+        if not _inside_funcdef:
+            local_variables = set()
+
         # FIXME: is there a more efficient way to do this? if you find a
         # funcspec, jump to the end of it
-        if inside_funcdef(leaf) or for_loop_definition(leaf):
+        if for_loop_definition(leaf):
             pass
 
         # the = operator is an indicator of [outputs] = [inputs]
         elif leaf.type == 'operator' and leaf.value == '=':
+
             next_s = leaf.get_next_sibling()
             previous = leaf.get_previous_leaf()
 
@@ -349,7 +396,8 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
                 # locally
                 if (variable not in outputs
                         and variable not in ignore_input_names
-                        and variable not in local):
+                        and variable not in local
+                        and variable not in local_variables):
                     inputs.append(variable)
 
             # Process outputs
@@ -367,15 +415,22 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
 
                 prev_sibling = leaf.get_previous_sibling()
 
+                target = local_variables if _inside_funcdef else outputs
+
                 # check if assigning multiple values
                 # e.g., a, b = 1, 2
                 if prev_sibling.type == 'testlist_star_expr':
-                    outputs = outputs | set(
+                    target = target | set(
                         name.value
                         for name in prev_sibling.parent.get_defined_names())
                 # nope, only one value
                 else:
-                    outputs.add(previous.value)
+                    target.add(previous.value)
+
+                if _inside_funcdef:
+                    local_variables = target
+                else:
+                    outputs = target
 
         # Process inputs scenario #2 - there is not '=' token but a function
         # call. variables inside function calls are inputs
@@ -389,13 +444,20 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
         # go to the first conditional, and the next leaf is the function call
         # so then we go into this conditional
         elif (leaf.type == 'name'
-              and (inside_function_call(leaf) or accessing_variable(leaf))
+              and (inside_function_call(leaf) or accessing_variable(leaf)
+                   or inside_funcdef(leaf))
+              and not is_inside_list_comprehension(leaf)
               and leaf.value not in outputs
               and leaf.value not in ignore_input_names
               and leaf.value not in _BUILTIN
               and leaf.value not in get_local_scope(leaf)
-              and leaf.value not in defined_names):
-            inputs.append(leaf.value)
+              and leaf.value not in defined_names
+              and leaf.value not in local_variables):
+            inputs.extend(extract_inputs(leaf))
+        elif leaf.type == 'name' and is_inside_list_comprehension(leaf):
+            inputs_new = extract_inputs(leaf,
+                                        stop_at_end_of_list_comprehension=True)
+            inputs.extend(inputs_new)
 
         leaf = leaf.get_next_leaf()
 
@@ -520,7 +582,6 @@ def find_io(snippets):
     are the variables that snippet_name requires to work and outputs the ones
     that it creates
     """
-    # FIXME: this should also include defined classes and functions
     im = DefinitionsMapping(snippets)
 
     # FIXME: find_upstream already calls this, we should only compute it once

@@ -145,6 +145,7 @@ y = x(10)
 local_function_with_args_and_body = """
 def x(z):
     another = z + 1
+    something = another + 1
     return another
 
 y = x(10)
@@ -202,6 +203,19 @@ def function(x):
 
 """
 
+list_comprehension = """
+[y for y in x]
+"""
+
+list_comprehension_attributes = """
+[y.attribute for y in x.attribute]
+"""
+
+function_with_global_variable = """
+def some_function(a):
+    return a + b
+"""
+
 # TODO: define inputs inside built-ins
 # e.g.
 # models = [a, b, c]
@@ -246,6 +260,11 @@ def function(x):
     [getitem_input, {'df'}, set()],
     [method_access_input, {'df'}, set()],
     [overriding_name, {'x', 'y'}, {'x', 'y'}],
+    [list_comprehension, {'x'}, set()],
+    [list_comprehension_attributes, {'x'},
+     set()],
+    [function_with_global_variable, {'b'},
+     set()],
 ],
                          ids=[
                              'only_outputs',
@@ -274,6 +293,9 @@ def function(x):
                              'getitem_input',
                              'method_access_input',
                              'overriding_name',
+                             'list_comprehension',
+                             'list_comprehension_attributes',
+                             'function_with_global_variable',
                          ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
@@ -607,7 +629,8 @@ def test_extract_inputs(code, expected):
     ['df = load()\nx = df + another', {'load'}, 0],
     ['x = y + z', {'y', 'z'}, 0],
     ['x = a + b + c + d', {'a', 'b', 'c', 'd'}, 0],
-    ['x = [y for y in range(10)]', {'range'}, 0],
+    ['x = [y for y in range(10)]', set(), 0],
+    ['x = np.std([y for y in range(10)])', {'np'}, 0],
 ],
                          ids=[
                              'attribute',
@@ -620,6 +643,7 @@ def test_extract_inputs(code, expected):
                              'expression',
                              'expression-long',
                              'list-comprehension',
+                             'list-comprehension-as-arg',
                          ])
 def test_extract_inputs_with_atom_expr(code, expected, index):
     atom_exp = get_first_sibling_after_assignment(code, index=index)
@@ -628,16 +652,19 @@ def test_extract_inputs_with_atom_expr(code, expected, index):
 
 # TODO: add nested list comprehension
 @pytest.mark.parametrize('code, expected', [
-    ['[x for x in range(10)]', {'range'}],
-    ['(x for x in range(10))', {'range'}],
-    ['[function(x) for x in range(10)]', {'range', 'function'}],
+    ['[x for x in range(10)]', set()],
+    ['(x for x in range(10))', set()],
+    ['[function(x) for x in range(10)]', {'function'}],
     ['[(x, y) for x, y in something(10)]', {'something'}],
+    ['[x.attribute for x in range(10)]',
+     set()],
 ],
                          ids=[
                              'left-expression',
                              'generator',
                              'both-expressions',
                              'many-variables',
+                             'attributes',
                          ])
 def test_get_inputs_in_list_comprehension(code, expected):
     tree = parso.parse(code)
@@ -649,11 +676,30 @@ def test_get_inputs_in_list_comprehension(code, expected):
 @pytest.mark.parametrize('code, expected', [
     ['[x for x in range(10)]', True],
     ['[x, y]', False],
+    ['[x.attribute for x in range(10)', True],
 ],
                          ids=[
                              'for',
                              'list',
+                             'attribute',
                          ])
 def test_is_inside_list_comprehension(code, expected):
     node = get_first_leaf_with_value(code, 'x')
     assert static_analysis.is_inside_list_comprehension(node) is expected
+
+
+@pytest.mark.parametrize('code, expected', [
+    ['for i in range(10):\n    y = x + i', {'i'}],
+    ['for i, j in something():\n    y = x + i', {'i', 'j'}],
+    ['def function(i):\n    y = x + i', {'i'}],
+    ['def function(i, j):\n    y = x + i + j', {'i', 'j'}],
+],
+                         ids=[
+                             'for',
+                             'for-many',
+                             'def',
+                             'def-many',
+                         ])
+def test_get_local_scope(code, expected):
+    node = get_first_leaf_with_value(code, 'x')
+    assert static_analysis.get_local_scope(node) == expected
