@@ -136,6 +136,13 @@ define_multiple_outputs_parenthesis = """
 (a, b, c) = 1, 2, 3
 """
 
+define_multiple_outputs_inside_function = """
+import do_stuff
+
+def fn():
+    f, ax = do_stuff()
+"""
+
 local_function = """
 def x():
     pass
@@ -190,6 +197,49 @@ for i in range(10):
 for_loop_name_reference = """
 for _, source in enumerate(10):
     some_function('%s' % source)
+"""
+
+for_loop_with_input = """
+for range_ in range(some_input):
+    pass
+"""
+
+for_loop_with_local_input = """
+some_variable = 10
+
+for range_ in range(some_variable):
+    pass
+"""
+
+for_loop_with_input_attribute = """
+for range_ in range(some_input.some_attribute):
+    pass
+"""
+
+for_loop_with_input_nested_attribute = """
+for range_ in range(some_input.some_attribute.another_attribute):
+    pass
+"""
+
+for_loop_with_input_and_getitem = """
+for range_ in range(some_input['some_key']):
+    pass
+"""
+
+for_loop_with_input_and_getitem_input = """
+for range_ in range(some_input[some_key]):
+    pass
+"""
+
+
+for_loop_with_input_and_nested_getitem = """
+for range_ in range(some_input[['some_key']]):
+    pass
+"""
+
+for_loop_with_nested_input = """
+for idx, range_ in enumerate(range(some_input)):
+    pass
 """
 
 # TODO: try with other variables such as accessing an attribute,
@@ -286,6 +336,8 @@ df['new_column'] = df['some_column'] + 1
          set(), {'a', 'b', 'c'}],
         [define_multiple_outputs_parenthesis,
          set(), {'a', 'b', 'c'}],
+        [define_multiple_outputs_inside_function,
+         set(), set()],
         [local_function, set(), {'y'}],
         [local_function_with_args, set(), {'y'}],
         [local_function_with_args_and_body,
@@ -297,6 +349,23 @@ df['new_column'] = df['some_column'] + 1
          set(), {'x'}],
         [for_loop_nested, set(), set()],
         [for_loop_name_reference, set(), set()],
+        [for_loop_with_input, {'some_input'
+                               }, set()],
+        [for_loop_with_local_input,
+         set(), {'some_variable'}],
+        [for_loop_with_input_attribute,
+         {'some_input'}, set()],
+        [for_loop_with_input_nested_attribute,
+         {'some_input'
+          }, set()],
+          [for_loop_with_input_and_getitem,  {'some_input'
+          }, set()],
+          [for_loop_with_input_and_getitem_input, {'some_input', 'some_key'
+          }, set()],
+          [for_loop_with_input_and_nested_getitem, {'some_input'
+          }, set()],
+        [for_loop_with_nested_input,
+         {'some_input'}, set()],
         [getitem_input, {'df'}, set()],
         [method_access_input, {'df'}, set()],
         [overriding_name, {'x', 'y'}, {'x', 'y'}],
@@ -330,6 +399,7 @@ df['new_column'] = df['some_column'] + 1
         'define_multiple_outputs',
         'define_multiple_outputs_square_brackets',
         'define_multiple_outputs_parenthesis',
+        'define_multiple_outputs_inside_function',
         'local_function',
         'local_function_with_args',
         'local_function_with_args_and_body',
@@ -339,6 +409,14 @@ df['new_column'] = df['some_column'] + 1
         'for_loop_names_with_parenthesis',
         'for_loop_nested',
         'for_loop_name_reference',
+        'for_loop_with_input',
+        'for_loop_with_local_input',
+        'for_loop_with_input_attribute',
+        'for_loop_with_input_nested_attribute',
+        'for_loop_with_input_and_getitem',
+        'for_loop_with_input_and_getitem_input',
+        'for_loop_with_input_and_nested_getitem',
+        'for_loop_with_nested_input',
         'getitem_input',
         'method_access_input',
         'overriding_name',
@@ -628,20 +706,29 @@ def test_find_defined_names_from_def_and_class(code, expected):
     assert out == expected
 
 
-@pytest.mark.parametrize('code, expected', [
-    ['for x in range(10):\n    pass', {'x'}],
-    ['for x, y in range(10):\n    pass', {'x', 'y'}],
-    ['for x, (y, z) in range(10):\n    pass', {'x', 'y', 'z'}],
+@pytest.mark.parametrize('code, inputs, outputs', [
+    ['for x in range(10):\n    pass', {'x'}, {'range'}],
+    ['for x, y in range(10):\n    pass', {'x', 'y'}, {'range'}],
+    ['for x, (y, z) in range(10):\n    pass', {'x', 'y', 'z'}, {'range'}],
+    ['for x in range(10):\n    pass\n\nj = i', {'x'}, {'range'}],
+    [
+        'for i, a_range in enumerate(range(x)):\n    pass', {'i', 'a_range'},
+        {'enumerate', 'range', 'x'}
+    ],
 ],
                          ids=[
                              'one',
                              'two',
                              'nested',
+                             'code-outside-for-loop',
+                             'nested-calls',
                          ])
-def test_get_for_loop_defined_names(code, expected):
+def test_find_for_loop_definitions_and_inputs(code, inputs, outputs):
     tree = parso.parse(code)
-    assert (static_analysis.find_for_loop_defined_names(
-        tree.children[0]) == expected)
+    in_, out = (static_analysis.find_for_loop_definitions_and_inputs(
+        tree.children[0]))
+    assert in_ == inputs
+    assert out == outputs
 
 
 @pytest.mark.parametrize('code, expected', [
@@ -770,3 +857,21 @@ def test_is_inside_list_comprehension(code, expected):
 def test_get_local_scope(code, expected):
     node = get_first_leaf_with_value(code, 'x')
     assert static_analysis.get_local_scope(node) == expected
+
+
+@pytest.mark.parametrize('code, expected', [
+    ['x = 1', True],
+    ['x, y = 1, 2', True],
+    ['y, x = 1, 2', True],
+    ['(x, y) = 1, 2', True],
+    ['(y, x) = 1, 2', True],
+    ['[x, y] = 1, 2', True],
+    ['[y, x] = 1, 2', True],
+    ['(z, (y, x)) = 1, (2, 3)', True],
+    ['x(1)', False],
+    ['something(x)', False],
+    ['x == 1', False],
+])
+def test_is_left_side_of_assignment(code, expected):
+    node = get_first_leaf_with_value(code, 'x')
+    assert static_analysis.is_left_side_of_assignment(node) is expected

@@ -166,7 +166,7 @@ def get_local_scope(leaf):
     while parent:
         if parent.type == 'for_stmt':
             # call recursively for nested for loops to work
-            return (find_for_loop_defined_names(parent)
+            return (find_for_loop_definitions_and_inputs(parent)[0]
                     | get_local_scope(parent.parent))
 
         # FIXME: this wont work with nested functions
@@ -185,11 +185,14 @@ def get_local_scope(leaf):
     return set()
 
 
-def find_for_loop_defined_names(for_stmt):
+def find_for_loop_definitions_and_inputs(for_stmt):
     """
-    Return a set with the variables defined in a for loop. e.g.,
-    for x, (y, z) in .... returns {'x', 'y', 'z'}
+    Return a set with the definitions and inputs a for loop. e.g.,
+    for x, (y, z) in something() returns {'x', 'y', 'z'}, set()
+    for i in range(input_) returns {'i'}, {'input_'}
     """
+    # TODO: add a only_input flag for cases where we dont care about
+    # parsin outputs
     if for_stmt.type != 'for_stmt':
         raise ValueError(f'Expected a node with type "for_stmt", '
                          f'got: {for_stmt} with type {for_stmt.type}')
@@ -197,19 +200,38 @@ def find_for_loop_defined_names(for_stmt):
     variables = for_stmt.children[1]
 
     names = []
+    outputs = []
 
     leaf = variables.get_first_leaf()
+    # last = for_stmt.get_last_leaf()
+    # FIXME: this tmp fix jumps to the ':' token of the for statement
+    # which means that the inputs/outputs in the loop's body are
+    # parsed in next iterations, it'll be better to parse the whole
+    # statement and then skip to the end
+    last = [
+        node for node in for_stmt.children
+        if getattr(node, 'value', None) == ':'
+    ][0]
+
+    passed_in_keyword = False
 
     while leaf:
         if leaf.type == 'keyword' and leaf.value == 'in':
-            break
+            passed_in_keyword = True
 
-        if leaf.type == 'name':
-            names.append(leaf.value)
+        # must be a name (but not an attribute) to be considered
+        if leaf.type == 'name' and leaf.get_previous_leaf().value != '.':
+            if passed_in_keyword:
+                outputs.append(leaf.value)
+            else:
+                names.append(leaf.value)
 
         leaf = leaf.get_next_leaf()
 
-    return set(names)
+        if leaf == last:
+            break
+
+    return set(names), set(outputs)
 
 
 def for_loop_definition(leaf):
@@ -297,6 +319,30 @@ def get_inputs_in_list_comprehension(node):
     return (inputs_left | inputs_right) - declared
 
 
+def get_first_expr_stmt_parent(node):
+    parent = node.parent
+
+    if not parent:
+        return None
+
+    while parent.type != 'expr_stmt':
+        parent = parent.parent
+
+        if not parent:
+            break
+
+    return parent
+
+
+def is_left_side_of_assignment(node):
+    to_check = get_first_expr_stmt_parent(node)
+
+    if not to_check:
+        return False
+
+    return to_check.children[1].value == '='
+
+
 # TODO: this needs renaming, we are now using it to parse outputs as well
 # see line 442
 def extract_inputs(node,
@@ -365,9 +411,13 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
     ignore_input_names : set
         Names that should not be considered inputs
     """
-
-    ignore_input_names = ignore_input_names or set()
     tree = parso.parse(code_str)
+    return find_inputs_and_outputs_from_tree(
+        tree, ignore_input_names=ignore_input_names)
+
+
+def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
+    ignore_input_names = ignore_input_names or set()
     leaf = tree.get_first_leaf()
 
     # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
@@ -379,16 +429,37 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
 
     local_variables = set()
 
+    def clean_up_candidates(candidates, *others):
+        # FIXME: this is not taking into account ignore_input_names
+        # add a test to make it fail, then fix it
+        candidates = candidates - set(_BUILTIN)
+        candidates = candidates - set(defined_names)
+        candidates = candidates - outputs
+
+        for another in others:
+            candidates = candidates - another
+
+        return candidates
+
     while leaf:
         _inside_funcdef = inside_funcdef(leaf)
 
         if not _inside_funcdef:
             local_variables = set()
 
-        # FIXME: is there a more efficient way to do this? if you find a
-        # funcspec, jump to the end of it
         if for_loop_definition(leaf):
-            pass
+            _, candidates = find_for_loop_definitions_and_inputs(leaf.parent)
+            inputs.extend(clean_up_candidates(candidates, local_variables))
+            # jump to the end of the foor loop
+            # leaf = leaf.parent.get_last_leaf()
+            # FIXME: this tmp fix jumps to the ':' token of the for statement
+            # which means that the inputs/outputs in the loop's body are
+            # parsed in next iterations, it'll be better to parse the whole
+            # statement and then skip to the end
+            leaf = [
+                node for node in leaf.parent.children
+                if getattr(node, 'value', None) == ':'
+            ][0]
 
         # the = operator is an indicator of [outputs] = [inputs]
         elif leaf.type == 'operator' and leaf.value == '=':
@@ -462,17 +533,20 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
         # some_function(df)
         # FIXME: this is redundant because when we identify the '=' token, we
         # go to the first conditional, and the next leaf is the function call
-        # so then we go into this conditional
+        # so then we go into this conditional - we're skipping the left part
+        # but not the right part of = yet
         elif (leaf.type == 'name'
               and (inside_function_call(leaf) or accessing_variable(leaf)
                    or inside_funcdef(leaf))
-              and not is_inside_list_comprehension(leaf)
-              and leaf.value not in outputs
-              and leaf.value not in ignore_input_names
-              and leaf.value not in _BUILTIN
-              and leaf.value not in get_local_scope(leaf)
-              and leaf.value not in defined_names
-              and leaf.value not in local_variables):
+              # skip if this is to the left of an '=', because we'll check it
+              # when we get to that token since it'll go to the first conditional
+              and not is_left_side_of_assignment(leaf) and
+              not is_inside_list_comprehension(leaf) and
+              leaf.value not in outputs and
+              leaf.value not in ignore_input_names and
+              leaf.value not in _BUILTIN and
+              leaf.value not in get_local_scope(leaf) and leaf.value
+              not in defined_names and leaf.value not in local_variables):
             inputs.extend(extract_inputs(leaf))
         elif leaf.type == 'name' and is_inside_list_comprehension(leaf):
             inputs_new = extract_inputs(leaf,
