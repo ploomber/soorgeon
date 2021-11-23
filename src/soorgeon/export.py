@@ -121,6 +121,7 @@ Finally, we generate the pipeline.yaml file.
 
 from pathlib import Path
 
+import logging
 import parso
 import jupytext
 import yaml
@@ -132,6 +133,8 @@ class NotebookExporter:
     """Converts a notebook into a Ploomber pipeline
     """
     def __init__(self, nb):
+        self._check(nb)
+
         self._nb = nb
 
         self._proto_tasks = self._init_proto_tasks(nb)
@@ -142,6 +145,13 @@ class NotebookExporter:
 
         self._io = None
         self._definitions = None
+
+    def _check(self, nb):
+        """
+        Run a few checks before continuing the refactoring. If this fails,
+        we'll require the user to do some small changes to their code.
+        """
+        pass
 
     def _init_proto_tasks(self, nb):
         """Breask notebook into smaller sections
@@ -223,11 +233,16 @@ class NotebookExporter:
         return self._io
 
 
-def from_nb(nb):
+def from_nb(nb, log=None):
+    if log:
+        logging.basicConfig(level=log.upper())
+
     exporter = NotebookExporter(nb)
 
     # export functions and classes to a separate file
     exporter.export_definitions()
+
+    logging.info(f'io: {exporter.io}')
 
     task_specs = exporter.get_task_specs()
 
@@ -252,5 +267,5 @@ def from_nb(nb):
     # the same text)
 
 
-def from_path(path):
-    from_nb(jupytext.read(path))
+def from_path(path, log=None):
+    from_nb(jupytext.read(path), log=log)

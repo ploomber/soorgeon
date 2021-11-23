@@ -231,3 +231,22 @@ def test_get_sources_includes_import_from_exported_definitions(tmp_empty):
     assert import_ in sources['load']
     assert import_ in sources['clean']
     assert import_ in sources['plot']
+
+
+for_loop_with_output_in_body = """
+def fn():
+    print(x)
+
+
+x = 1
+
+fn()
+"""
+
+
+def test_raise_an_error_if_function_uses_global_variables():
+    # see issue 12 on github
+    raise NotImplementedError
+
+
+# FIXME: test logging option

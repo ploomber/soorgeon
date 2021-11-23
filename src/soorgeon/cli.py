@@ -10,7 +10,8 @@ def cli():
 
 @cli.command()
 @click.argument('path', type=click.Path(exists=True))
-def refactor(path):
+@click.option('--log', '-l', default=None)
+def refactor(path, log):
     """Refactor a monolithic notebook
     """
-    export.from_path(path)
+    export.from_path(path, log)
