@@ -288,7 +288,10 @@ def get_inputs_in_list_comprehension(node):
 
     # parse the variables in the right expression
     # e,g, [x for x in expression(10)]
-    inputs_right = extract_inputs(synccompfor.children[-1],
+    # the expression part should be the element at index 3, note that this
+    # is not the same as getting the last one because if the list comprehension
+    # has an 'if' statement, that will be the last element
+    inputs_right = extract_inputs(synccompfor.children[3],
                                   parse_list_comprehension=False)
 
     return (inputs_left | inputs_right) - declared
@@ -476,7 +479,18 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
                                         stop_at_end_of_list_comprehension=True)
             inputs.extend(inputs_new)
 
-        leaf = leaf.get_next_leaf()
+        next_s = leaf.get_next_sibling()
+
+        # if we just parsed a list comprehension, skip until the end of it
+        try:
+            list_comp = next_s.children[1].type == 'testlist_comp'
+        except (AttributeError, IndexError):
+            list_comp = False
+
+        if list_comp:
+            leaf = next_s.get_last_leaf()
+        else:
+            leaf = leaf.get_next_leaf()
 
     return set(inputs), outputs
 
@@ -533,7 +547,14 @@ class ProviderMapping:
         in the notebook
         """
         providers = self._providers_for_task(task_name)
-        return providers[variable]
+
+        provider = providers.get(variable)
+
+        if not provider:
+            raise KeyError('Could not find a task to '
+                           f'obtain the {variable!r} that {task_name!r} uses')
+
+        return provider
 
 
 class DefinitionsMapping:

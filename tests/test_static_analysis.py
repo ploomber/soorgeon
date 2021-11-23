@@ -225,6 +225,18 @@ list_comprehension_attributes = """
 [y.attribute for y in x.attribute]
 """
 
+list_comprehension_with_conditional = """
+targets = [1, 2, 3]
+selected = [x for x in df.columns if x not in targets]
+"""
+
+list_comprehension_with_conditional_and_local_variable = """
+import pandas as pd
+
+df = pd.read_csv("data.csv")
+features = [feature for feature in df.columns]
+"""
+
 function_with_global_variable = """
 def some_function(a):
     return a + b
@@ -247,87 +259,96 @@ df['new_column'] = df['some_column'] + 1
 # b = {'a': x}
 
 
-@pytest.mark.parametrize('code_str, inputs, outputs', [
-    [only_outputs, set(), {'x', 'y'}],
-    [simple, {'x', 'y'}, {'z'}],
-    [local_inputs, set(), {'x', 'y', 'z'}],
-    [imports, set(), {'z'}],
-    [imported_function, set(), {'df'}],
-    [input_in_function_call, {'df'}, set()],
-    [input_key_in_function_call, {'df'},
-     set()],
-    [input_key_in_function_call_many, {'df', 'df_another'},
-     set()],
-    [input_key_in_function_call_with_dot_access, {'df'},
-     set()],
-    [modify_existing_obj_getitem,
-     set(), {'mapping'}],
-    [modify_imported_obj_getitem, set(),
-     set()],
-    [built_in, set(), {'mapping'}],
-    [built_in_as_arg, set(), {'something'}],
-    [input_existing_object, set(), {'X'}],
-    [define_multiple_outputs, set(), {'a', 'b', 'c'}],
-    [define_multiple_outputs_square_brackets,
-     set(), {'a', 'b', 'c'}],
-    [define_multiple_outputs_parenthesis,
-     set(), {'a', 'b', 'c'}],
-    [local_function, set(), {'y'}],
-    [local_function_with_args, set(), {'y'}],
-    [local_function_with_args_and_body,
-     set(), {'y'}],
-    [local_class, set(), {'y'}],
-    [for_loop, {'z'}, {'y'}],
-    [for_loop_many, set(), {'y'}],
-    [for_loop_names_with_parenthesis,
-     set(), {'x'}],
-    [for_loop_nested, set(), set()],
-    [for_loop_name_reference, set(), set()],
-    [getitem_input, {'df'}, set()],
-    [method_access_input, {'df'}, set()],
-    [overriding_name, {'x', 'y'}, {'x', 'y'}],
-    [list_comprehension, {'x'}, set()],
-    [list_comprehension_attributes, {'x'},
-     set()],
-    [function_with_global_variable, {'b'},
-     set()],
-    [mutating_input, {'df'}, {'df'}],
-],
-                         ids=[
-                             'only_outputs',
-                             'simple',
-                             'local_inputs',
-                             'imports',
-                             'imported_function',
-                             'input_in_function_call',
-                             'input_key_in_function_call',
-                             'input_key_in_function_call_many',
-                             'input_key_in_function_call_with_dot_access',
-                             'modify_existing_getitem',
-                             'modify_imported_getitem',
-                             'built_in',
-                             'built_in_as_arg',
-                             'input_existing_object',
-                             'define_multiple_outputs',
-                             'define_multiple_outputs_square_brackets',
-                             'define_multiple_outputs_parenthesis',
-                             'local_function',
-                             'local_function_with_args',
-                             'local_function_with_args_and_body',
-                             'local_class',
-                             'for_loop',
-                             'for_loop_many',
-                             'for_loop_names_with_parenthesis',
-                             'for_loop_nested',
-                             'for_loop_name_reference',
-                             'getitem_input',
-                             'method_access_input',
-                             'overriding_name',
-                             'list_comprehension',
-                             'list_comprehension_attributes',
-                             'function_with_global_variable',
-                             'mutating_input',
-                         ])
+@pytest.mark.parametrize(
+    'code_str, inputs, outputs', [
+        [only_outputs, set(), {'x', 'y'}],
+        [simple, {'x', 'y'}, {'z'}],
+        [local_inputs, set(), {'x', 'y', 'z'}],
+        [imports, set(), {'z'}],
+        [imported_function, set(), {'df'}],
+        [input_in_function_call, {'df'}, set()],
+        [input_key_in_function_call, {'df'},
+         set()],
+        [input_key_in_function_call_many, {'df', 'df_another'},
+         set()],
+        [input_key_in_function_call_with_dot_access, {'df'},
+         set()],
+        [modify_existing_obj_getitem,
+         set(), {'mapping'}],
+        [modify_imported_obj_getitem,
+         set(), set()],
+        [built_in, set(), {'mapping'}],
+        [built_in_as_arg, set(), {'something'}],
+        [input_existing_object, set(), {'X'}],
+        [define_multiple_outputs,
+         set(), {'a', 'b', 'c'}],
+        [define_multiple_outputs_square_brackets,
+         set(), {'a', 'b', 'c'}],
+        [define_multiple_outputs_parenthesis,
+         set(), {'a', 'b', 'c'}],
+        [local_function, set(), {'y'}],
+        [local_function_with_args, set(), {'y'}],
+        [local_function_with_args_and_body,
+         set(), {'y'}],
+        [local_class, set(), {'y'}],
+        [for_loop, {'z'}, {'y'}],
+        [for_loop_many, set(), {'y'}],
+        [for_loop_names_with_parenthesis,
+         set(), {'x'}],
+        [for_loop_nested, set(), set()],
+        [for_loop_name_reference, set(), set()],
+        [getitem_input, {'df'}, set()],
+        [method_access_input, {'df'}, set()],
+        [overriding_name, {'x', 'y'}, {'x', 'y'}],
+        [list_comprehension, {'x'}, set()],
+        [list_comprehension_attributes,
+         {'x'}, set()],
+        [list_comprehension_with_conditional, {'df'}, {'selected', 'targets'}],
+        [
+            list_comprehension_with_conditional_and_local_variable,
+            set(), {'df', 'features'}
+        ],
+        [function_with_global_variable,
+         {'b'}, set()],
+        [mutating_input, {'df'}, {'df'}],
+    ],
+    ids=[
+        'only_outputs',
+        'simple',
+        'local_inputs',
+        'imports',
+        'imported_function',
+        'input_in_function_call',
+        'input_key_in_function_call',
+        'input_key_in_function_call_many',
+        'input_key_in_function_call_with_dot_access',
+        'modify_existing_getitem',
+        'modify_imported_getitem',
+        'built_in',
+        'built_in_as_arg',
+        'input_existing_object',
+        'define_multiple_outputs',
+        'define_multiple_outputs_square_brackets',
+        'define_multiple_outputs_parenthesis',
+        'local_function',
+        'local_function_with_args',
+        'local_function_with_args_and_body',
+        'local_class',
+        'for_loop',
+        'for_loop_many',
+        'for_loop_names_with_parenthesis',
+        'for_loop_nested',
+        'for_loop_name_reference',
+        'getitem_input',
+        'method_access_input',
+        'overriding_name',
+        'list_comprehension',
+        'list_comprehension_attributes',
+        'list_comprehension_with_conditional',
+        'list_comprehension_with_conditional_and_local_variable',
+        'function_with_global_variable',
+        'mutating_input',
+    ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
 
@@ -390,6 +411,18 @@ def test_providermapping():
     assert m._providers_for_task('clean') == {'df': 'load'}
     assert m._providers_for_task('plot') == {'df': 'clean'}
     assert m.get('df', 'clean') == 'load'
+
+
+def test_providermapping_error():
+    m = static_analysis.ProviderMapping(static_analysis.find_io(eda))
+
+    with pytest.raises(KeyError) as excinfo:
+        m.get('unknown_variable', 'clean')
+
+    expected = ("Could not find a task to obtain the "
+                "'unknown_variable' that 'clean' uses")
+
+    assert expected in str(excinfo.value)
 
 
 @pytest.mark.parametrize('snippets, expected', [
@@ -690,6 +723,7 @@ def test_extract_inputs_with_atom_expr(code, expected, index):
     ['[(x, y) for x, y in something(10)]', {'something'}],
     ['[x.attribute for x in range(10)]',
      set()],
+    ['[x for x in obj if x > 0]', {'obj'}],
 ],
                          ids=[
                              'left-expression',
@@ -697,6 +731,7 @@ def test_extract_inputs_with_atom_expr(code, expected, index):
                              'both-expressions',
                              'many-variables',
                              'attributes',
+                             'conditional',
                          ])
 def test_get_inputs_in_list_comprehension(code, expected):
     tree = parso.parse(code)
@@ -705,15 +740,15 @@ def test_get_inputs_in_list_comprehension(code, expected):
         list_comp) == expected
 
 
-@pytest.mark.parametrize('code, expected', [
-    ['[x for x in range(10)]', True],
-    ['[x, y]', False],
-    ['[x.attribute for x in range(10)', True],
-],
+@pytest.mark.parametrize('code, expected',
+                         [['[x for x in range(10)]', True], ['[x, y]', False],
+                          ['[x.attribute for x in range(10)', True],
+                          ['[x for x in range(10) if x > 0', True]],
                          ids=[
                              'for',
                              'list',
                              'attribute',
+                             'conditional',
                          ])
 def test_is_inside_list_comprehension(code, expected):
     node = get_first_leaf_with_value(code, 'x')
