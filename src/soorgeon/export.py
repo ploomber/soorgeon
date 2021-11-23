@@ -118,6 +118,7 @@ Step 8. Generate step.
 
 Finally, we generate the pipeline.yaml file.
 """
+import pprint
 from collections import namedtuple
 from pathlib import Path
 
@@ -129,6 +130,7 @@ import yaml
 from soorgeon import parse, static_analysis
 
 logger = logging.getLogger(__name__)
+pp = pprint.PrettyPrinter(indent=4)
 
 
 class NotebookExporter:
@@ -231,11 +233,11 @@ class NotebookExporter:
         if self._io is None:
             io = static_analysis.find_io(self._snippets)
 
-            logging.info(f'io: {io}')
+            logging.info(f'io: {pp.pformat(io)}\n')
 
             self._io = static_analysis.prune_io(io)
 
-            logging.info(f'pruned io: {self._io}')
+            logging.info(f'pruned io: {pp.pformat(self._io)}\n')
 
         return self._io
 
