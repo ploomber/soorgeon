@@ -231,7 +231,6 @@ for range_ in range(some_input[some_key]):
     pass
 """
 
-
 for_loop_with_input_and_nested_getitem = """
 for range_ in range(some_input[['some_key']]):
     pass
@@ -358,11 +357,15 @@ df['new_column'] = df['some_column'] + 1
         [for_loop_with_input_nested_attribute,
          {'some_input'
           }, set()],
-          [for_loop_with_input_and_getitem,  {'some_input'
+        [for_loop_with_input_and_getitem,
+         {'some_input'
           }, set()],
-          [for_loop_with_input_and_getitem_input, {'some_input', 'some_key'
-          }, set()],
-          [for_loop_with_input_and_nested_getitem, {'some_input'
+        [
+            for_loop_with_input_and_getitem_input, {'some_input', 'some_key'},
+            set()
+        ],
+        [for_loop_with_input_and_nested_getitem,
+         {'some_input'
           }, set()],
         [for_loop_with_nested_input,
          {'some_input'}, set()],

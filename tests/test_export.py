@@ -233,7 +233,8 @@ def test_get_sources_includes_import_from_exported_definitions(tmp_empty):
     assert import_ in sources['plot']
 
 
-for_loop_with_output_in_body = """
+for_loop_with_output_in_body = """# ## section
+
 def fn():
     print(x)
 
@@ -245,8 +246,12 @@ fn()
 
 
 def test_raise_an_error_if_function_uses_global_variables():
-    # see issue 12 on github
-    raise NotImplementedError
+    nb = _read(for_loop_with_output_in_body)
+
+    with pytest.raises(ValueError) as excinfo:
+        export.NotebookExporter(nb)
+
+    assert "Function 'fn' uses variables 'x'" in str(excinfo.value)
 
 
 # FIXME: test logging option

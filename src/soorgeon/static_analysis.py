@@ -539,7 +539,8 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
               and (inside_function_call(leaf) or accessing_variable(leaf)
                    or inside_funcdef(leaf))
               # skip if this is to the left of an '=', because we'll check it
-              # when we get to that token since it'll go to the first conditional
+              # when we get to that token since it'll go to the first
+              # conditional
               and not is_left_side_of_assignment(leaf) and
               not is_inside_list_comprehension(leaf) and
               leaf.value not in outputs and

@@ -118,7 +118,7 @@ Step 8. Generate step.
 
 Finally, we generate the pipeline.yaml file.
 """
-
+from collections import namedtuple
 from pathlib import Path
 
 import logging
@@ -128,14 +128,16 @@ import yaml
 
 from soorgeon import parse, static_analysis
 
+logger = logging.getLogger(__name__)
+
 
 class NotebookExporter:
     """Converts a notebook into a Ploomber pipeline
     """
     def __init__(self, nb):
-        self._check(nb)
-
         self._nb = nb
+
+        self._check()
 
         self._proto_tasks = self._init_proto_tasks(nb)
 
@@ -146,12 +148,12 @@ class NotebookExporter:
         self._io = None
         self._definitions = None
 
-    def _check(self, nb):
+    def _check(self):
         """
         Run a few checks before continuing the refactoring. If this fails,
         we'll require the user to do some small changes to their code.
         """
-        pass
+        _check_functions_do_not_use_global_variables(self._get_code())
 
     def _init_proto_tasks(self, nb):
         """Breask notebook into smaller sections
@@ -228,9 +230,57 @@ class NotebookExporter:
         """
         if self._io is None:
             io = static_analysis.find_io(self._snippets)
+
+            logging.info(f'io: {io}')
+
             self._io = static_analysis.prune_io(io)
 
+            logging.info(f'pruned io: {self._io}')
+
         return self._io
+
+
+FunctionNeedsFix = namedtuple('FunctionNeedsFix', ['name', 'pos', 'args'])
+
+
+# see issue #12 on github
+def _check_functions_do_not_use_global_variables(code):
+    tree = parso.parse(code)
+
+    needs_fix = []
+
+    ignore = set(static_analysis.find_defined_names(tree))
+
+    for funcdef in tree.iter_funcdefs():
+        # FIXME: this should be passing the tree directly, no need to reparse
+        # again, but for some reason,
+        # using find_inputs_and_outputs_from_tree(funcdef) returns the name
+        # of the function as an input
+        in_, _ = static_analysis.find_inputs_and_outputs(
+            funcdef.get_code(), ignore_input_names=ignore)
+
+        if in_:
+            needs_fix.append(
+                FunctionNeedsFix(
+                    funcdef.name.value,
+                    funcdef.start_pos,
+                    in_,
+                ))
+
+    if needs_fix:
+        # FIXME: add a short guide and print url as part of the error message
+        message = ('Looks like the following functions are using global '
+                   'variables, this is unsupported. Please add all missing '
+                   'arguments.\n\n')
+
+        def comma_separated(args):
+            return ','.join(f"'{arg}'" for arg in args)
+
+        message += '\n'.join(
+            f'* Function {f.name!r} uses variables {comma_separated(f.args)}'
+            for f in needs_fix)
+
+        raise ValueError(message)
 
 
 def from_nb(nb, log=None):
@@ -241,8 +291,6 @@ def from_nb(nb, log=None):
 
     # export functions and classes to a separate file
     exporter.export_definitions()
-
-    logging.info(f'io: {exporter.io}')
 
     task_specs = exporter.get_task_specs()
 
