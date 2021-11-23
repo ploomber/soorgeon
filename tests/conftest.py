@@ -6,9 +6,11 @@ import pytest
 
 from soorgeon.export import NotebookExporter
 
+PATH_TO_TESTS = Path(__file__).absolute().parent
+
 
 def path_to_tests():
-    return Path(__file__).absolute().parent
+    return PATH_TO_TESTS
 
 
 def path_to_assets():
