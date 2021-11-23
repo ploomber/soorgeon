@@ -1,3 +1,49 @@
+"""
+We want to parse a series of Python snippets (one per notebook section -
+splitted by H2 headers). For each snippet, we need to know which variables
+they need (from previous sections) and which ones they expose (available for
+upcoming sections). There are a few prime cases we want to cover.
+
+1. Assignment: a = 1
+2. Function calling: function(1, b=2)
+3. If/While statements
+4. List comprehensions
+5. For loops
+6. Function definitions
+
+The first three are simple, however list comprehensions, for loops and
+functions introduce a new complexity: they can be nested. Example:
+
+for i in range(10):
+    for j in range(10):
+        print(i, j)
+
+Hence, we need to keep into account that they define a local scope, hence
+some of the variables should not be considered exposed to upcoming tasks.
+For example, in our nested loop i and j are not considered exposed.
+if/while statements can also be arbitrarily nested but they do not define a
+local scope, so we don't have that complication.
+
+To deal with this possibly nested logic, we have a function
+(find_inputs_and_outputs_from_tree) that goes through every leaf in the ast,
+and determines which sub function to execute. For example, if it finds a 'for'
+keyword, it calls find_for_loop_definitions_and_inputs, which parses a for
+structure.
+
+Note that find_inputs_and_outputs_from_tree and
+find_for_loop_definitions_and_inputs may call find_inputs_and_outputs_from_tree
+again, because such a function deals with arbitrary structures. However,
+when doing nested calls to find_inputs_and_outputs_from_tree, one should
+set the until_leaf parameter to tell the function when to stop and return.
+
+The second type of functions are identifiers, which determine which
+sub-function to call (e.g., for_loop_definition identifies if we're about to
+enter a for loop). These identifiers should return False if we're not inside
+the structure they identify, if we're in a given structure, they should return
+the last leaf, so we can pass this to the parsing function in the until leaf
+argument.
+"""
+
 from functools import reduce
 
 import parso
@@ -185,12 +231,19 @@ def get_local_scope(leaf):
     return set()
 
 
+# FIXME: this needs a refactoring
+# the current implementation stops when if finds the ':' token, however, we
+# need this to call find_inputs_and_outputs so it processes correctly any
+# nested structures, like another for
 def find_for_loop_definitions_and_inputs(for_stmt):
     """
     Return a set with the definitions and inputs a for loop. e.g.,
     for x, (y, z) in something() returns {'x', 'y', 'z'}, set()
     for i in range(input_) returns {'i'}, {'input_'}
     """
+    # from ipdb import set_trace
+    # set_trace()
+
     # TODO: add a only_input flag for cases where we dont care about
     # parsin outputs
     if for_stmt.type != 'for_stmt':
@@ -199,8 +252,7 @@ def find_for_loop_definitions_and_inputs(for_stmt):
 
     variables = for_stmt.children[1]
 
-    names = []
-    outputs = []
+    defined, outputs = [], []
 
     leaf = variables.get_first_leaf()
     # last = for_stmt.get_last_leaf()
@@ -224,14 +276,14 @@ def find_for_loop_definitions_and_inputs(for_stmt):
             if passed_in_keyword:
                 outputs.append(leaf.value)
             else:
-                names.append(leaf.value)
+                defined.append(leaf.value)
 
         leaf = leaf.get_next_leaf()
 
         if leaf == last:
             break
 
-    return set(names), set(outputs)
+    return set(defined), set(outputs)
 
 
 def for_loop_definition(leaf):
@@ -433,6 +485,7 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
         tree, ignore_input_names=ignore_input_names)
 
 
+# FIXME: add a until_leaf parameter
 def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
     ignore_input_names = ignore_input_names or set()
     leaf = tree.get_first_leaf()
@@ -539,14 +592,14 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
                     local_variables = target
                 else:
                     # before modifying the current outputs, check if there's
-                    # anything on the left side of the = token that it's mutating
-                    # a variable e.g.,:
+                    # anything on the left side of the = token that it's
+                    # mutating a variable e.g.,:
                     # object.attribute = value
                     # or
                     # object['key'] = value
-                    # this is the only case where something on the left side can
-                    # be considered an input but only if the object hasn't been
-                    # declared so far
+                    # this is the only case where something on the left side
+                    # can be considered an input but only if the object hasn't
+                    # been declared so far
                     inputs_candidates = extract_inputs(
                         prev_sibling,
                         parse_list_comprehension=False,

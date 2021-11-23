@@ -763,28 +763,30 @@ def test_find_defined_names_from_def_and_class(code, expected):
     assert out == expected
 
 
-@pytest.mark.parametrize('code, inputs, outputs', [
-    ['for x in range(10):\n    pass', {'x'}, {'range'}],
-    ['for x, y in range(10):\n    pass', {'x', 'y'}, {'range'}],
-    ['for x, (y, z) in range(10):\n    pass', {'x', 'y', 'z'}, {'range'}],
-    ['for x in range(10):\n    pass\n\nj = i', {'x'}, {'range'}],
-    [
-        'for i, a_range in enumerate(range(x)):\n    pass', {'i', 'a_range'},
-        {'enumerate', 'range', 'x'}
-    ],
-],
-                         ids=[
-                             'one',
-                             'two',
-                             'nested',
-                             'code-outside-for-loop',
-                             'nested-calls',
-                         ])
+@pytest.mark.parametrize(
+    'code, inputs, outputs',
+    [['for x in range(10):\n    pass', {'x'}, {'range'}],
+     ['for x, y in range(10):\n    pass', {'x', 'y'}, {'range'}],
+     ['for x, (y, z) in range(10):\n    pass', {'x', 'y', 'z'}, {'range'}],
+     ['for x in range(10):\n    pass\n\nj = i', {'x'}, {'range'}],
+     [
+         'for i, a_range in enumerate(range(x)):\n    pass', {'i', 'a_range'},
+         {'enumerate', 'range', 'x'}
+     ], ['for i in ["word"]:\n  for c in i:\n    print(c)', {'i', 'c'},
+         set()]],
+    ids=[
+        'one',
+        'two',
+        'nested',
+        'code-outside-for-loop',
+        'nested-calls',
+        'nested-for',
+    ])
 def test_find_for_loop_definitions_and_inputs(code, inputs, outputs):
     tree = parso.parse(code)
-    in_, out = (static_analysis.find_for_loop_definitions_and_inputs(
+    defined, out = (static_analysis.find_for_loop_definitions_and_inputs(
         tree.children[0]))
-    assert in_ == inputs
+    assert defined == inputs
     assert out == outputs
 
 
