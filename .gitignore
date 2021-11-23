@@ -1,4 +1,11 @@
-_kaggle/
+_kaggle/*/output
+_kaggle/*/tasks
+_kaggle/*/input
+_kaggle/*/exported.py
+_kaggle/*/pipeline.yaml
+_kaggle/*/pipeline.png
+_kaggle/*/nb.ipynb
+
 examples/**/*.ipynb
 examples/**/tasks
 examples/**/output

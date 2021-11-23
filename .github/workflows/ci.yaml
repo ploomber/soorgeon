@@ -25,4 +25,4 @@ jobs:
           flake8
       - name: Test with pytest
         run: |
-          pytest
+          pytest --ignore=tests/test_sample_notebooks.py
