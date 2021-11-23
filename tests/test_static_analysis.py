@@ -194,6 +194,12 @@ for i in range(10):
         print(i + j)
 """
 
+for_loop_nested_dependent = """
+for filenames in ['file', 'name']:
+    for char in filenames:
+        print(char)
+"""
+
 for_loop_name_reference = """
 for _, source in enumerate(10):
     some_function('%s' % source)
@@ -307,6 +313,46 @@ df['new_column'] = df['some_column'] + 1
 # a = dict(a=1)
 # b = {'a': x}
 
+# this is an special case: since df hasn't been declared locally, it's
+# considered an input even though it's on the left side of the = token,
+# and it's also an output because it's modifying df
+mutating_input_implicit = """
+df['column'] = 1
+"""
+
+# counter example, local modification inside a function - that's ok
+function_mutating_local_object = """
+def fn():
+    x = object()
+    x['key'] = 1
+    return x
+"""
+
+# add a case like failure but within a function
+"""
+def do(df):
+    df['a'] = 1
+"""
+
+# there's also this problem if we mutatein a for loop
+"""
+# df becomes an output!
+for col in df:
+    col['x'] = col['x'] + 1
+"""
+
+# non-pure functions are problematic, too
+"""
+def do(df):
+    df['a'] = 1
+
+
+# here, df is an input that we should we from another task, but it should
+# also be considered an output since we're mutating it, and, if the next
+# task needs it, it'll need this version
+do(df)
+"""
+
 
 @pytest.mark.parametrize(
     'code_str, inputs, outputs', [
@@ -347,6 +393,8 @@ df['new_column'] = df['some_column'] + 1
         [for_loop_names_with_parenthesis,
          set(), {'x'}],
         [for_loop_nested, set(), set()],
+        [for_loop_nested_dependent, set(),
+         set()],
         [for_loop_name_reference, set(), set()],
         [for_loop_with_input, {'some_input'
                                }, set()],
@@ -383,6 +431,9 @@ df['new_column'] = df['some_column'] + 1
         [function_with_global_variable,
          {'b'}, set()],
         [mutating_input, {'df'}, {'df'}],
+        [mutating_input_implicit, {'df'}, {'df'}],
+        [function_mutating_local_object,
+         set(), set()],
     ],
     ids=[
         'only_outputs',
@@ -411,6 +462,7 @@ df['new_column'] = df['some_column'] + 1
         'for_loop_many',
         'for_loop_names_with_parenthesis',
         'for_loop_nested',
+        'for_loop_nested_dependent',
         'for_loop_name_reference',
         'for_loop_with_input',
         'for_loop_with_local_input',
@@ -429,6 +481,8 @@ df['new_column'] = df['some_column'] + 1
         'list_comprehension_with_conditional_and_local_variable',
         'function_with_global_variable',
         'mutating_input',
+        'mutating_input_implicit',
+        'function_mutating_local_object',
     ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
@@ -753,25 +807,59 @@ def test_for_loop_definition(code, expected):
     assert static_analysis.for_loop_definition(leaf) is expected
 
 
-@pytest.mark.parametrize('code, expected', [
-    ['name(x, y)', {'name', 'x', 'y'}],
-    ['name(a=x, b=y)', {'name', 'x', 'y'}],
-    ['name(x, b=y)', {'name', 'x', 'y'}],
-    ['name({"x": x}, b=y)', {'name', 'x', 'y'}],
-    ['name(x, b={"y": y})', {'name', 'x', 'y'}],
-    ['name([x, y])', {'name', 'x', 'y'}],
-],
-                         ids=[
-                             'simple',
-                             'keywords',
-                             'mixed',
-                             'arg-dict',
-                             'keyarg-dict',
-                             'arg-list',
-                         ])
+@pytest.mark.parametrize(
+    'code, expected', [['name(x, y)', {'name', 'x', 'y'}],
+                       ['name(a=x, b=y)', {'name', 'x', 'y'}],
+                       ['name(x, b=y)', {'name', 'x', 'y'}],
+                       ['name({"x": x}, b=y)', {'name', 'x', 'y'}],
+                       ['name(x, b={"y": y})', {'name', 'x', 'y'}],
+                       ['name([x, y])', {'name', 'x', 'y'}],
+                       ['name["a"]', {'name'}], ['name.atribute', {'name'}]],
+    ids=[
+        'simple',
+        'keywords',
+        'mixed',
+        'arg-dict',
+        'keyarg-dict',
+        'arg-list',
+        'getitem',
+        'attribute',
+    ])
 def test_extract_inputs(code, expected):
     atom_exp = get_first_leaf_with_value(code, 'name').parent
     assert static_analysis.extract_inputs(atom_exp) == expected
+
+
+@pytest.mark.parametrize('code, expected', [
+    ['name["a"]', {'name'}],
+    ['name.atribute', {'name'}],
+    ['name', set()],
+],
+                         ids=[
+                             'getitem',
+                             'attribute',
+                             'name',
+                         ])
+def test_extract_inputs_only_getitem_and_attribute_access(code, expected):
+    atom_exp = get_first_leaf_with_value(code, 'name').parent
+    out = static_analysis.extract_inputs(
+        atom_exp, only_getitem_and_attribute_access=True)
+    assert out == expected
+
+
+@pytest.mark.parametrize('code, expected', [
+    ['[x for x in df["some_key"]]', {'df'}],
+    ['[x for x in df["some_key"]["another_key"]]', {'df'}],
+],
+                         ids=[
+                             'getitem',
+                             'getitem-nested',
+                         ])
+def test_extract_inputs_only_getitem_and_attribute_access_list_comprehension(
+        code, expected):
+    out = static_analysis.extract_inputs(
+        parso.parse(code), only_getitem_and_attribute_access=True)
+    assert out == expected
 
 
 @pytest.mark.parametrize('code, expected, index', [

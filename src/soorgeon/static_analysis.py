@@ -347,7 +347,8 @@ def is_left_side_of_assignment(node):
 # see line 442
 def extract_inputs(node,
                    parse_list_comprehension=True,
-                   stop_at_end_of_list_comprehension=False):
+                   stop_at_end_of_list_comprehension=False,
+                   only_getitem_and_attribute_access=False):
     """
     Extract inputs from an atomic expression
     e.g. function(x, y) returns {'function', 'x', 'y'}
@@ -382,15 +383,31 @@ def extract_inputs(node,
             except Exception:
                 key_arg = False
 
-            # attribute access?
+            # is this an attribute?
             try:
-                attr_access = leaf.get_previous_leaf().value == '.'
+                is_attr = leaf.get_previous_leaf().value == '.'
             except Exception:
-                attr_access = False
+                is_attr = False
 
-            if (leaf.type == 'name' and not key_arg and not attr_access
+            if (leaf.type == 'name' and not key_arg and not is_attr
                     and leaf.value not in _BUILTIN):
-                names.append(leaf.value)
+                # not allowing reads, check that this is not geitem
+                # or that is accessing an attribute in the next leaf
+                try:
+                    is_getitem = leaf.get_next_leaf().value == '['
+                except Exception:
+                    is_getitem = False
+
+                try:
+                    is_accessing_attr = leaf.get_next_leaf().value == '.'
+                except Exception:
+                    is_accessing_attr = False
+
+                if (only_getitem_and_attribute_access
+                        and (is_getitem or is_accessing_attr)):
+                    names.append(leaf.value)
+                elif not only_getitem_and_attribute_access:
+                    names.append(leaf.value)
 
             if leaf is last:
                 break
@@ -521,6 +538,24 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
                 if _inside_funcdef:
                     local_variables = target
                 else:
+                    # before modifying the current outputs, check if there's
+                    # anything on the left side of the = token that it's mutating
+                    # a variable e.g.,:
+                    # object.attribute = value
+                    # or
+                    # object['key'] = value
+                    # this is the only case where something on the left side can
+                    # be considered an input but only if the object hasn't been
+                    # declared so far
+                    inputs_candidates = extract_inputs(
+                        prev_sibling,
+                        parse_list_comprehension=False,
+                        only_getitem_and_attribute_access=True)
+
+                    # add to inputs if they haven't been locally defined
+                    inputs_new = inputs_candidates - outputs
+                    inputs.extend(inputs_new)
+
                     outputs = target
 
         # Process inputs scenario #2 - there is not '=' token but a function
