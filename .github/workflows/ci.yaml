@@ -24,5 +24,8 @@ jobs:
         run: |
           flake8
       - name: Test with pytest
+        env:
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
         run: |
           pytest --ignore=tests/test_sample_notebooks.py

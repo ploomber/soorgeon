@@ -32,6 +32,8 @@ DEV = [
     'twine',
     'ipython',
     'ploomber',
+    # to download data for running _kaggle notebooks
+    'kaggle',
     # to run some of the examples
     'pandas',
     'scikit-learn',
