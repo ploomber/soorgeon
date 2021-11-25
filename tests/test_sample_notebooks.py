@@ -12,7 +12,10 @@ from conftest import PATH_TO_TESTS
 from soorgeon import export
 
 path_to_nbs_root = str(Path(PATH_TO_TESTS, '..', '_kaggle', '*'))
-path_to_nbs = [path for path in glob(path_to_nbs_root) if Path(path).is_dir()]
+path_to_nbs = [
+    path for path in glob(path_to_nbs_root)
+    if Path(path).is_dir() and not Path(path).name.startswith('_')
+]
 ids = [Path(path).name for path in path_to_nbs]
 
 

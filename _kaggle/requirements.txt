@@ -1,0 +1,4 @@
+yellowbrick
+statsmodels==0.12
+hvplot
+tensorflow

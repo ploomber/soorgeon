@@ -8,7 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        # python 3.6 throws an error:
+        # https://stackoverflow.com/q/69174965/709975
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
       - uses: actions/checkout@v2
@@ -16,16 +18,23 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ".[dev]"
       - name: Lint with flake8
         run: |
+          python -m pip install --upgrade pip
+          pip install flake8
           flake8
-      - name: Test with pytest
+      - name: Install dependencies
+        run: |
+          pip install ".[dev]"
+      - name: Unit tests
+        run: |
+          pytest --ignore=tests/test_sample_notebooks.py
+      - name: Install integration tests dependencies
+        run: |
+          pip install -r _kaggle/requirements.txt
+      - name: Integration tests
         env:
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
         run: |
-          pytest --ignore=tests/test_sample_notebooks.py
+          pytest tests/test_sample_notebooks.py
