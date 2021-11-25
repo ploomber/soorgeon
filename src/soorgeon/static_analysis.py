@@ -27,11 +27,11 @@ local scope, so we don't have that complication.
 To deal with this possibly nested logic, we have a function
 (find_inputs_and_outputs_from_tree) that goes through every leaf in the ast,
 and determines which sub function to execute. For example, if it finds a 'for'
-keyword, it calls find_for_loop_definitions_and_inputs, which parses a for
+keyword, it calls find_for_loop_def_and_io, which parses a for
 structure.
 
 Note that find_inputs_and_outputs_from_tree and
-find_for_loop_definitions_and_inputs may call find_inputs_and_outputs_from_tree
+find_for_loop_def_and_io may call find_inputs_and_outputs_from_tree
 again, because such a function deals with arbitrary structures. However,
 when doing nested calls to find_inputs_and_outputs_from_tree, one should
 set the until_leaf parameter to tell the function when to stop and return.
@@ -161,12 +161,23 @@ def inside_function_call(leaf):
     if next_sibling_value == '=':
         return False
 
-    # first case covers something like: function(df)
-    # second case cases like: function(df.something)
+    # check if the node is inside parenhesis: function(df)
+    # or a parent of the node: function(df.something)
     # NOTE: do we need more checks to ensure we're in the second case?
     # maybe check if we have an actual dot, or we're using something like
     # df[key]?
-    return inside_parenthesis(leaf.parent) or inside_parenthesis(leaf)
+
+    node = leaf
+
+    while node:
+        inside = inside_parenthesis(node)
+
+        if inside:
+            return True
+        else:
+            node = node.parent
+
+    return False
 
 
 def inside_parenthesis(node):
@@ -212,7 +223,7 @@ def get_local_scope(leaf):
     while parent:
         if parent.type == 'for_stmt':
             # call recursively for nested for loops to work
-            return (find_for_loop_definitions_and_inputs(parent)[0]
+            return (find_for_loop_def_and_io(parent)[0]
                     | get_local_scope(parent.parent))
 
         # FIXME: this wont work with nested functions
@@ -231,59 +242,56 @@ def get_local_scope(leaf):
     return set()
 
 
-# FIXME: this needs a refactoring
-# the current implementation stops when if finds the ':' token, however, we
-# need this to call find_inputs_and_outputs so it processes correctly any
-# nested structures, like another for
-def find_for_loop_definitions_and_inputs(for_stmt):
+def find_for_loop_def_and_io(for_stmt, local_scope=None):
     """
     Return a set with the definitions and inputs a for loop. e.g.,
     for x, (y, z) in something() returns {'x', 'y', 'z'}, set()
     for i in range(input_) returns {'i'}, {'input_'}
     """
-    # from ipdb import set_trace
-    # set_trace()
-
     # TODO: add a only_input flag for cases where we dont care about
     # parsin outputs
     if for_stmt.type != 'for_stmt':
         raise ValueError(f'Expected a node with type "for_stmt", '
                          f'got: {for_stmt} with type {for_stmt.type}')
 
-    variables = for_stmt.children[1]
+    local_scope = local_scope or set()
 
-    defined, outputs = [], []
+    # get the parts that we need
+    _, node_definition, _, node_iterator, _, body_node = for_stmt.children
 
-    leaf = variables.get_first_leaf()
-    # last = for_stmt.get_last_leaf()
-    # FIXME: this tmp fix jumps to the ':' token of the for statement
-    # which means that the inputs/outputs in the loop's body are
-    # parsed in next iterations, it'll be better to parse the whole
-    # statement and then skip to the end
-    last = [
-        node for node in for_stmt.children
-        if getattr(node, 'value', None) == ':'
-    ][0]
+    defined = extract_inputs(node_definition, parse_list_comprehension=False)
+    iterator_in = extract_inputs(node_iterator, parse_list_comprehension=False)
 
-    passed_in_keyword = False
+    body_in, body_out = find_inputs_and_outputs_from_leaf(
+        body_node.get_first_leaf(),
+        ignore_input_names=defined,
+        leaf_end=body_node.get_last_leaf())
 
-    while leaf:
-        if leaf.type == 'keyword' and leaf.value == 'in':
-            passed_in_keyword = True
+    # Strictly speaking variables defined after the for keyword are also
+    # outputs, since they're available after the loop ends (with the loop's
+    # last value, however, we don't consider them here)
+    return defined, (iterator_in | body_in) - local_scope, body_out
 
-        # must be a name (but not an attribute) to be considered
-        if leaf.type == 'name' and leaf.get_previous_leaf().value != '.':
-            if passed_in_keyword:
-                outputs.append(leaf.value)
-            else:
-                defined.append(leaf.value)
 
-        leaf = leaf.get_next_leaf()
+def find_function_scope_and_io(funcdef, local_scope=None):
+    if funcdef.type != 'funcdef':
+        raise ValueError(f'Expected a node with type "funcdef", '
+                         f'got: {funcdef} with type {funcdef.type}')
 
-        if leaf == last:
-            break
+    local_scope = local_scope or set()
 
-    return set(defined), set(outputs)
+    # get the parts that we need
+    _, _, node_parameters, _, body_node = funcdef.children
+
+    parameters = extract_inputs(node_parameters,
+                                parse_list_comprehension=False)
+
+    body_in, body_out = find_inputs_and_outputs_from_leaf(
+        body_node.get_first_leaf(),
+        ignore_input_names=parameters,
+        leaf_end=body_node.get_last_leaf())
+
+    return parameters, body_in - local_scope, body_out
 
 
 def for_loop_definition(leaf):
@@ -300,6 +308,10 @@ def for_loop_definition(leaf):
         parent = parent.parent
 
     return False
+
+
+def is_funcdef(leaf):
+    return leaf.type == 'keyword' and leaf.value == 'def'
 
 
 def accessing_variable(leaf):
@@ -408,7 +420,7 @@ def extract_inputs(node,
     Parameters
     ----------
     parse_list_comprehension : bool, default=True
-        Whether to parse any list comprehension that if node is inside one
+        Whether to parse any list comprehension if node is inside one
     """
 
     names = []
@@ -487,13 +499,28 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
 
 # FIXME: add a until_leaf parameter
 def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
-    ignore_input_names = ignore_input_names or set()
     leaf = tree.get_first_leaf()
-
     # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
     # move the functionality to a class so we only compute it once
     defined_names = set(find_defined_names_from_imports(tree)) | set(
         find_defined_names_from_def_and_class(tree))
+
+    return find_inputs_and_outputs_from_leaf(
+        leaf,
+        ignore_input_names=ignore_input_names,
+        defined_names=defined_names)
+
+
+# FIXME: defined_names and ignore_inputs names should be only one arg
+# maybe local_scope?
+# FIXME: try nested functions, and also functions inside for loops and loops
+# inside functions
+def find_inputs_and_outputs_from_leaf(leaf,
+                                      ignore_input_names=None,
+                                      defined_names=None,
+                                      leaf_end=None):
+    ignore_input_names = ignore_input_names or set()
+    defined_names = defined_names or set()
 
     inputs, outputs = [], set()
 
@@ -518,18 +545,23 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
             local_variables = set()
 
         if for_loop_definition(leaf):
-            _, candidates = find_for_loop_definitions_and_inputs(leaf.parent)
-            inputs.extend(clean_up_candidates(candidates, local_variables))
+            # FIXME: i think is hould also pass the current foudn inputs
+            # to local scope - write a test to break this
+            (_, candidates_in, candidates_out) = find_for_loop_def_and_io(
+                leaf.parent, local_scope=ignore_input_names)
+            inputs.extend(clean_up_candidates(candidates_in, local_variables))
+            outputs = outputs | candidates_out
             # jump to the end of the foor loop
-            # leaf = leaf.parent.get_last_leaf()
-            # FIXME: this tmp fix jumps to the ':' token of the for statement
-            # which means that the inputs/outputs in the loop's body are
-            # parsed in next iterations, it'll be better to parse the whole
-            # statement and then skip to the end
-            leaf = [
-                node for node in leaf.parent.children
-                if getattr(node, 'value', None) == ':'
-            ][0]
+            leaf = leaf.parent.get_last_leaf()
+        elif is_funcdef(leaf):
+            # FIXME: i think is hould also pass the current foudn inputs
+            # to local scope - write a test to break this
+            (_, candidates_in, candidates_out) = find_function_scope_and_io(
+                leaf.parent, local_scope=ignore_input_names)
+            inputs.extend(clean_up_candidates(candidates_in, local_variables))
+            outputs = outputs | candidates_out
+            # jump to the end of the function definition loop
+            leaf = leaf.parent.get_last_leaf()
 
         # the = operator is an indicator of [outputs] = [inputs]
         elif leaf.type == 'operator' and leaf.value == '=':
@@ -541,7 +573,10 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
             inputs_current = inputs_current - set(_BUILTIN)
             inputs_current = inputs_current - set(defined_names)
 
-            local = get_local_scope(leaf)
+            # we dont call this anymore, we pass the local scope
+            # as an arg
+            # local = get_local_scope(leaf)
+            local = set()
 
             for variable in inputs_current:
                 # check if we're inside a for loop and ignore variables
@@ -634,8 +669,10 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
               leaf.value not in outputs and
               leaf.value not in ignore_input_names and
               leaf.value not in _BUILTIN and
-              leaf.value not in get_local_scope(leaf) and leaf.value
-              not in defined_names and leaf.value not in local_variables):
+              #   NO LONGER NEED TO CALL GET LOCAL SCOPE
+              #   leaf.value not in get_local_scope(leaf) and
+              leaf.value not in defined_names and leaf.value
+              not in local_variables):
             inputs.extend(extract_inputs(leaf))
         elif leaf.type == 'name' and is_inside_list_comprehension(leaf):
             inputs_new = extract_inputs(leaf,
@@ -649,6 +686,9 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
             list_comp = next_s.children[1].type == 'testlist_comp'
         except (AttributeError, IndexError):
             list_comp = False
+
+        if leaf_end and leaf == leaf_end:
+            break
 
         if list_comp:
             leaf = next_s.get_last_leaf()

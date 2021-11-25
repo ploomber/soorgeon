@@ -353,6 +353,18 @@ def do(df):
 do(df)
 """
 
+nested_function_arg = """
+import pd
+
+pd.DataFrame({'key': y})
+"""
+
+nested_function_kwarg = """
+import pd
+
+pd.DataFrame(data={'key': y})
+"""
+
 
 @pytest.mark.parametrize(
     'code_str, inputs, outputs', [
@@ -434,6 +446,8 @@ do(df)
         [mutating_input_implicit, {'df'}, {'df'}],
         [function_mutating_local_object,
          set(), set()],
+        [nested_function_arg, {'y'}, set()],
+        [nested_function_kwarg, {'y'}, set()],
     ],
     ids=[
         'only_outputs',
@@ -483,6 +497,8 @@ do(df)
         'mutating_input',
         'mutating_input_implicit',
         'function_mutating_local_object',
+        'nested_function_arg',
+        'nested_function_kwarg',
     ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = static_analysis.find_inputs_and_outputs(code_str)
@@ -647,6 +663,18 @@ def test_prune_io(io, expected):
     assert static_analysis.prune_io(io) == expected
 
 
+"""
+pd.DataFrame({
+    'True Values': y_test,
+    'Predicted Values': pred
+}).hvplot.scatter(x='True Values', y='Predicted Values')
+
+"""
+"""
+pd.DataFrame({'Error Values': (y_test - pred)}).hvplot.kde()
+"""
+
+
 @pytest.mark.parametrize('code, expected', [
     ['sns.histplot(df.some_column)', True],
     ['histplot(df.some_column)', True],
@@ -656,7 +684,27 @@ def test_prune_io(io, expected):
     ['def x(df):\n  pass', False],
     ['def x(df=1):\n  pass', False],
     ['(df, df2) = 1, 2', False],
-])
+    ['function({"data": df})', True],
+    ['function(dict(data=df))', True],
+    ['function({"data": (df - 1)})', True],
+    ['Constructor({"data": df}).do_stuff()', True],
+    ['Constructor({"data": (df - 1)}).do_stuff()', True],
+],
+                         ids=[
+                             'arg-attribute',
+                             'arg-attribute-2',
+                             'arg',
+                             'arg-2',
+                             'arg-getitem',
+                             'fn-signature',
+                             'fn-signature-default-value',
+                             'assignment',
+                             'arg-nested-dict',
+                             'arg-nested-dict-constructor',
+                             'arg-nested-dict-operation',
+                             'constructor-dict',
+                             'constructor-dict-operation',
+                         ])
 def test_inside_function_call(code, expected):
     leaf = get_first_leaf_with_value(code, 'df')
     assert static_analysis.inside_function_call(leaf) is expected
@@ -763,31 +811,80 @@ def test_find_defined_names_from_def_and_class(code, expected):
     assert out == expected
 
 
-@pytest.mark.parametrize(
-    'code, inputs, outputs',
-    [['for x in range(10):\n    pass', {'x'}, {'range'}],
-     ['for x, y in range(10):\n    pass', {'x', 'y'}, {'range'}],
-     ['for x, (y, z) in range(10):\n    pass', {'x', 'y', 'z'}, {'range'}],
-     ['for x in range(10):\n    pass\n\nj = i', {'x'}, {'range'}],
-     [
-         'for i, a_range in enumerate(range(x)):\n    pass', {'i', 'a_range'},
-         {'enumerate', 'range', 'x'}
-     ], ['for i in ["word"]:\n  for c in i:\n    print(c)', {'i', 'c'},
-         set()]],
-    ids=[
-        'one',
-        'two',
-        'nested',
-        'code-outside-for-loop',
-        'nested-calls',
-        'nested-for',
-    ])
-def test_find_for_loop_definitions_and_inputs(code, inputs, outputs):
+@pytest.mark.parametrize('code, def_expected, in_expected, out_expected', [
+    ['for x in range(10):\n    pass', {'x'},
+     set(), set()],
+    ['for x, y in range(10):\n    pass', {'x', 'y'},
+     set(), set()],
+    ['for x, (y, z) in range(10):\n    pass', {'x', 'y', 'z'},
+     set(),
+     set()],
+    ['for x in range(10):\n    pass\n\nj = i', {'x'},
+     set(), set()],
+    [
+        'for i, a_range in enumerate(range(x)):\n    pass', {'i', 'a_range'},
+        {'x'},
+        set()
+    ],
+    ['for i in range(10):\n    print(i + 10)', {'i'},
+     set(), set()],
+],
+                         ids=[
+                             'one',
+                             'two',
+                             'nested',
+                             'code-outside-for-loop',
+                             'nested-calls',
+                             'uses-local-sope-in-body',
+                         ])
+def test_find_for_loop_def_and_io(code, def_expected, in_expected,
+                                  out_expected):
     tree = parso.parse(code)
-    defined, out = (static_analysis.find_for_loop_definitions_and_inputs(
+    # TODO: test with non-empty local_scope parameter
+    def_, in_, out = (static_analysis.find_for_loop_def_and_io(
         tree.children[0]))
-    assert defined == inputs
-    assert out == outputs
+    assert def_ == def_expected
+    assert in_ == in_expected
+    assert out == out_expected
+
+
+@pytest.mark.parametrize('code, def_expected, in_expected, out_expected', [
+    ['def fn(x):\n    pass', {'x'},
+     set(), set()],
+    ['def fn(x, y):\n    pass', {'x', 'y'},
+     set(), set()],
+    ['def fn(x, y):\n    something = z + x + y', {'x', 'y'}, {'z'},
+     set()],
+    ['def fn(x, y):\n    z(x, y)', {'x', 'y'}, {'z'},
+     set()],
+    ['def fn(x, y):\n    z.do(x, y)', {'x', 'y'}, {'z'},
+     set()],
+    ['def fn(x, y):\n    z[x]', {'x', 'y'}, {'z'},
+     set()],
+    ['def fn(x, y):\n    z + x + y', {'x', 'y'}, {'z'},
+     set()],
+    ['def fn(x, y):\n    z', {'x', 'y'}, {'z'},
+     set()],
+],
+                         ids=[
+                             'arg-one',
+                             'arg-two',
+                             'uses-outer-scope',
+                             'uses-outer-scope-callable',
+                             'uses-outer-scope-attribute',
+                             'uses-outer-scope-getitem',
+                             'uses-outer-scope-no-assignment',
+                             'uses-outer-scope-reference',
+                         ])
+def test_find_function_scope_and_io(code, def_expected, in_expected,
+                                    out_expected):
+    tree = parso.parse(code)
+    # TODO: test with non-empty local_scope parameter
+    def_, in_, out = (static_analysis.find_function_scope_and_io(
+        tree.children[0]))
+    assert def_ == def_expected
+    assert in_ == in_expected
+    assert out == out_expected
 
 
 @pytest.mark.parametrize('code, expected', [

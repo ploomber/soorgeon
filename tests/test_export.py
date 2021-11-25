@@ -214,7 +214,8 @@ definition_with_import_expected = ('## load\nimport matplotlib.pyplot as plt'
 @pytest.mark.parametrize('code, expected', [
     [with_definitions, with_definitions_expected],
     [definition_with_import, definition_with_import_expected],
-])
+],
+                         ids=['with_definitions', 'definition_with_import'])
 def test_export_definitions(tmp_empty, code, expected):
     exporter = export.NotebookExporter(_read(code))
     exporter.export_definitions()

@@ -251,7 +251,7 @@ def _check_functions_do_not_use_global_variables(code):
 
     needs_fix = []
 
-    ignore = set(static_analysis.find_defined_names(tree))
+    local_scope = set(static_analysis.find_defined_names(tree))
 
     for funcdef in tree.iter_funcdefs():
         # FIXME: this should be passing the tree directly, no need to reparse
@@ -259,7 +259,7 @@ def _check_functions_do_not_use_global_variables(code):
         # using find_inputs_and_outputs_from_tree(funcdef) returns the name
         # of the function as an input
         in_, _ = static_analysis.find_inputs_and_outputs(
-            funcdef.get_code(), ignore_input_names=ignore)
+            funcdef.get_code(), ignore_input_names=local_scope)
 
         if in_:
             needs_fix.append(
