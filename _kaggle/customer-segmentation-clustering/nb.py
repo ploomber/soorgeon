@@ -99,7 +99,7 @@ np.random.seed(42)
 
 # %% papermill={"duration": 0.087752, "end_time": "2021-10-08T04:14:40.933340", "exception": false, "start_time": "2021-10-08T04:14:40.845588", "status": "completed"} tags=[]
 #Loading the dataset
-data = pd.read_csv("marketing_campaign.csv", sep="\t")
+data = pd.read_csv("input/marketing_campaign.csv", sep="\t")
 print("Number of datapoints:", len(data))
 data.head()
 
