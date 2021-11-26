@@ -470,9 +470,9 @@ def find_inputs_and_outputs_from_leaf(leaf,
         # go to the first conditional, and the next leaf is the function call
         # so then we go into this conditional - we're skipping the left part
         # but not the right part of = yet
-        elif (leaf.type == 'name' and
-              (detect.is_inside_function_call(leaf) or detect.is_accessing_variable(leaf)
-               or detect.is_inside_funcdef(leaf))
+        elif (leaf.type == 'name' and (detect.is_inside_function_call(leaf)
+                                       or detect.is_accessing_variable(leaf)
+                                       or detect.is_inside_funcdef(leaf))
               # skip if this is to the left of an '=', because we'll check it
               # when we get to that token since it'll go to the first
               # conditional

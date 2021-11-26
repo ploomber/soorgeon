@@ -127,7 +127,7 @@ import parso
 import jupytext
 import yaml
 
-from soorgeon import parse, static_analysis, definitions
+from soorgeon import split, static_analysis, definitions, proto
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
@@ -161,17 +161,17 @@ class NotebookExporter:
         """Breask notebook into smaller sections
         """
         # use H2 headers to break notebook
-        breaks = parse.find_breaks(nb)
+        breaks = split.find_breaks(nb)
 
         # generate groups of cells
-        cells_split = parse.split_with_breaks(nb.cells, breaks)
+        cells_split = split.split_with_breaks(nb.cells, breaks)
 
         # extract names by using the H2 header text
-        names = parse.names_with_breaks(nb.cells, breaks)
+        names = split.names_with_breaks(nb.cells, breaks)
 
         # initialize proto tasks
         return [
-            parse.ProtoTask(name, cell_group)
+            proto.ProtoTask(name, cell_group)
             for name, cell_group in zip(names, cells_split)
         ]
 
