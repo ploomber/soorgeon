@@ -1,3 +1,4 @@
+_kaggle/**/*.zip
 _kaggle/*/output
 _kaggle/*/tasks
 _kaggle/*/input
