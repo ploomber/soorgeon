@@ -127,7 +127,7 @@ import parso
 import jupytext
 import yaml
 
-from soorgeon import parse, static_analysis
+from soorgeon import parse, static_analysis, definitions
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
@@ -221,7 +221,7 @@ class NotebookExporter:
             code = self._get_code()
             tree = parso.parse(code)
             self._definitions = (
-                static_analysis.find_defined_names_from_def_and_class(tree))
+                definitions.find_defined_names_from_def_and_class(tree))
 
         return self._definitions
 
@@ -251,7 +251,7 @@ def _check_functions_do_not_use_global_variables(code):
 
     needs_fix = []
 
-    local_scope = set(static_analysis.find_defined_names(tree))
+    local_scope = set(definitions.find_defined_names(tree))
 
     for funcdef in tree.iter_funcdefs():
         # FIXME: this should be passing the tree directly, no need to reparse

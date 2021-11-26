@@ -48,7 +48,7 @@ from functools import reduce
 
 import parso
 
-from soorgeon import detect, get
+from soorgeon import detect, get, definitions
 
 _BUILTIN = set(__builtins__)
 
@@ -64,7 +64,8 @@ class ImportsParser:
     def __init__(self, code_nb):
         self._tree = parso.parse(code_nb)
         # maps defined names (from imports) to the source code
-        self._name2code = find_defined_names_from_imports(self._tree)
+        self._name2code = definitions.find_defined_names_from_imports(
+            self._tree)
 
     def get_imports_cell_for_task(self, code_task):
         """
@@ -103,46 +104,6 @@ class ImportsParser:
         # otherwise there are going to be duplicates
 
         return imports_to_use
-
-
-# NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
-# move the functionality to a class so we only compute it once
-def find_defined_names_from_imports(tree):
-    # build a defined-name -> import-statement-code mapping. Note that
-    # the same code may appear more than once if it defines more than one name
-    # e.g. from package import a, b, c
-    imports = [{
-        name.value: import_.get_code().rstrip()
-        for name in import_.get_defined_names()
-    } for import_ in tree.iter_imports()]
-
-    if imports:
-        imports = reduce(lambda x, y: {**x, **y}, imports)
-    else:
-        imports = {}
-
-    return imports
-
-
-def find_defined_names_from_def_and_class(tree):
-    fns = {
-        fn.name.value: fn.get_code().rstrip()
-        for fn in tree.iter_funcdefs()
-    }
-
-    classes = {
-        class_.name.value: class_.get_code().rstrip()
-        for class_ in tree.iter_classdefs()
-    }
-
-    return {**fns, **classes}
-
-
-def find_defined_names(tree):
-    return {
-        **find_defined_names_from_imports(tree),
-        **find_defined_names_from_def_and_class(tree)
-    }
 
 
 def get_local_scope(leaf):
@@ -373,8 +334,9 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
     leaf = tree.get_first_leaf()
     # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
     # move the functionality to a class so we only compute it once
-    defined_names = set(find_defined_names_from_imports(tree)) | set(
-        find_defined_names_from_def_and_class(tree))
+    defined_names = set(
+        definitions.find_defined_names_from_imports(tree)) | set(
+            definitions.find_defined_names_from_def_and_class(tree))
 
     return find_inputs_and_outputs_from_leaf(
         leaf,
@@ -640,7 +602,7 @@ class DefinitionsMapping:
     """
     def __init__(self, snippets):
         self._names = {
-            name: set(find_defined_names(parso.parse(code)))
+            name: set(definitions.find_defined_names(parso.parse(code)))
             for name, code in snippets.items()
         }
 
