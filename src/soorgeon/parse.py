@@ -190,18 +190,6 @@ class ProtoTask:
                          if cell.cell_type == 'code')
 
 
-class ProtoDAGSpec:
-    """A group of prototasks that will be converted into a Ploomber Spec
-    """
-    def __init__(self, proto_tasks):
-        pass
-
-    def clean_imports(self):
-        """Clean import statements
-        """
-        pass
-
-
 def find_breaks(nb):
     """Find index breaks based on H2 markdown indexes
 

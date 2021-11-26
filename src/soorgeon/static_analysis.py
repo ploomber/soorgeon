@@ -64,8 +64,7 @@ class ImportsParser:
     def __init__(self, code_nb):
         self._tree = parso.parse(code_nb)
         # maps defined names (from imports) to the source code
-        self._name2code = definitions.from_imports(
-            self._tree)
+        self._name2code = definitions.from_imports(self._tree)
 
     def get_imports_cell_for_task(self, code_task):
         """
@@ -185,25 +184,6 @@ def find_function_scope_and_io(funcdef, local_scope=None):
         leaf_end=body_node.get_last_leaf())
 
     return parameters, body_in - local_scope, body_out
-
-
-def accessing_variable(leaf):
-    """
-    For a given node of type name, determine if it's used
-    """
-    # NOTE: what if we only have the name and we are not doing anything?
-    # like:
-    # df
-    # that still counts as dependency
-    try:
-        children = leaf.get_next_sibling().children
-    except Exception:
-        return False
-
-    getitem = children[0].value == '[' and children[-1].value == ']'
-    dotaccess = children[0].value == '.'
-    # FIXME: adding dotacess breaks other tests
-    return getitem or dotaccess
 
 
 def get_inputs_in_list_comprehension(node):
@@ -334,9 +314,8 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
     leaf = tree.get_first_leaf()
     # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
     # move the functionality to a class so we only compute it once
-    defined_names = set(
-        definitions.from_imports(tree)) | set(
-            definitions.from_def_and_class(tree))
+    defined_names = set(definitions.from_imports(tree)) | set(
+        definitions.from_def_and_class(tree))
 
     return find_inputs_and_outputs_from_leaf(
         leaf,
@@ -492,7 +471,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
         # so then we go into this conditional - we're skipping the left part
         # but not the right part of = yet
         elif (leaf.type == 'name' and
-              (detect.is_inside_function_call(leaf) or accessing_variable(leaf)
+              (detect.is_inside_function_call(leaf) or detect.is_accessing_variable(leaf)
                or detect.is_inside_funcdef(leaf))
               # skip if this is to the left of an '=', because we'll check it
               # when we get to that token since it'll go to the first

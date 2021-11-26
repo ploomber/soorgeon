@@ -115,3 +115,22 @@ def is_inside_parenthesis(node):
         has_name = False
 
     return left and right and has_name
+
+
+def is_accessing_variable(leaf):
+    """
+    For a given node of type name, determine if it's used
+    """
+    # NOTE: what if we only have the name and we are not doing anything?
+    # like:
+    # df
+    # that still counts as dependency
+    try:
+        children = leaf.get_next_sibling().children
+    except Exception:
+        return False
+
+    getitem = children[0].value == '[' and children[-1].value == ']'
+    dotaccess = children[0].value == '.'
+    # FIXME: adding dotacess breaks other tests
+    return getitem or dotaccess
