@@ -60,7 +60,7 @@ def cli():
 def notebook(kernel_path):
     click.echo('Downloading notebook...')
     name = PurePosixPath(kernel_path).name
-    api.kernel_paths_pull_cli(kernel=kernel_path, path=name)
+    api.kernels_pull_cli(kernel=kernel_path, path=name)
 
     click.echo('Converting to .py...')
     ipynb = Path(name, f'{name}.ipynb')
