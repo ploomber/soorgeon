@@ -273,11 +273,12 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
     # move the functionality to a class so we only compute it once
     defined_names = set(definitions.from_imports(tree)) | set(
         definitions.from_def_and_class(tree))
+    
+
+    ignore_input_names = ignore_input_names or set()
 
     return find_inputs_and_outputs_from_leaf(
-        leaf,
-        ignore_input_names=ignore_input_names,
-        defined_names=defined_names)
+        leaf, ignore_input_names=ignore_input_names | defined_names)
 
 
 # FIXME: defined_names and ignore_inputs names should be only one arg
@@ -286,10 +287,9 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
 # inside functions
 def find_inputs_and_outputs_from_leaf(leaf,
                                       ignore_input_names=None,
-                                      defined_names=None,
                                       leaf_end=None):
     ignore_input_names = ignore_input_names or set()
-    defined_names = defined_names or set()
+    defined_names = ignore_input_names
 
     inputs, outputs = [], set()
 
