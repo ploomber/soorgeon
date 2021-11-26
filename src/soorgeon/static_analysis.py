@@ -64,7 +64,7 @@ class ImportsParser:
     def __init__(self, code_nb):
         self._tree = parso.parse(code_nb)
         # maps defined names (from imports) to the source code
-        self._name2code = definitions.find_defined_names_from_imports(
+        self._name2code = definitions.from_imports(
             self._tree)
 
     def get_imports_cell_for_task(self, code_task):
@@ -335,8 +335,8 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
     # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
     # move the functionality to a class so we only compute it once
     defined_names = set(
-        definitions.find_defined_names_from_imports(tree)) | set(
-            definitions.find_defined_names_from_def_and_class(tree))
+        definitions.from_imports(tree)) | set(
+            definitions.from_def_and_class(tree))
 
     return find_inputs_and_outputs_from_leaf(
         leaf,

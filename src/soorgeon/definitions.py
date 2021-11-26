@@ -3,7 +3,7 @@ from functools import reduce
 
 # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
 # move the functionality to a class so we only compute it once
-def find_defined_names_from_imports(tree):
+def from_imports(tree):
     # build a defined-name -> import-statement-code mapping. Note that
     # the same code may appear more than once if it defines more than one name
     # e.g. from package import a, b, c
@@ -20,7 +20,7 @@ def find_defined_names_from_imports(tree):
     return imports
 
 
-def find_defined_names_from_def_and_class(tree):
+def from_def_and_class(tree):
     fns = {
         fn.name.value: fn.get_code().rstrip()
         for fn in tree.iter_funcdefs()
@@ -35,7 +35,4 @@ def find_defined_names_from_def_and_class(tree):
 
 
 def find_defined_names(tree):
-    return {
-        **find_defined_names_from_imports(tree),
-        **find_defined_names_from_def_and_class(tree)
-    }
+    return {**from_imports(tree), **from_def_and_class(tree)}

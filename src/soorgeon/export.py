@@ -220,8 +220,7 @@ class NotebookExporter:
         if self._definitions is None:
             code = self._get_code()
             tree = parso.parse(code)
-            self._definitions = (
-                definitions.find_defined_names_from_def_and_class(tree))
+            self._definitions = (definitions.from_def_and_class(tree))
 
         return self._definitions
 

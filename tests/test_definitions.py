@@ -18,8 +18,7 @@ import numpy as np
     ],
 ])
 def test_find_defined_names_from_imports(code, expected):
-    assert definitions.find_defined_names_from_imports(
-        parso.parse(code)) == expected
+    assert definitions.from_imports(parso.parse(code)) == expected
 
 
 @pytest.mark.parametrize(
@@ -48,6 +47,5 @@ class X:
          }
      ]])
 def test_find_defined_names_from_def_and_class(code, expected):
-    out = (definitions.find_defined_names_from_def_and_class(
-        parso.parse(code)))
+    out = (definitions.from_def_and_class(parso.parse(code)))
     assert out == expected
