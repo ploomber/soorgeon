@@ -34,11 +34,11 @@ Note that find_inputs_and_outputs_from_tree and
 find_for_loop_def_and_io may call find_inputs_and_outputs_from_tree
 again, because such a function deals with arbitrary structures. However,
 when doing nested calls to find_inputs_and_outputs_from_tree, one should
-set the until_leaf parameter to tell the function when to stop and return.
+set the leaf parameter to tell the function when to stop and return.
 
-The second type of functions are identifiers, which determine which
-sub-function to call (e.g., for_loop_definition identifies if we're about to
-enter a for loop). These identifiers should return False if we're not inside
+The second type of functions are detectors, which determine which
+sub-function to call (e.g., is_for_loop identifies if we're about to
+enter a for loop). These detectors should return False if we're not inside
 the structure they identify, if we're in a given structure, they should return
 the last leaf, so we can pass this to the parsing function in the until leaf
 argument.
@@ -47,6 +47,8 @@ argument.
 from functools import reduce
 
 import parso
+
+from soorgeon import detect, get
 
 _BUILTIN = set(__builtins__)
 
@@ -143,76 +145,6 @@ def find_defined_names(tree):
     }
 
 
-def inside_function_call(leaf):
-    # ignore it if this is a function definition
-    if leaf.parent.type == 'param':
-        return False
-
-    next_sibling = leaf.get_next_sibling()
-
-    try:
-        next_sibling_value = next_sibling.value
-    except AttributeError:
-        next_sibling_value = None
-
-    # ignore names in keyword arguments
-    # e.g., some_function(x=1)
-    # (x does not count since it's)
-    if next_sibling_value == '=':
-        return False
-
-    # check if the node is inside parenhesis: function(df)
-    # or a parent of the node: function(df.something)
-    # NOTE: do we need more checks to ensure we're in the second case?
-    # maybe check if we have an actual dot, or we're using something like
-    # df[key]?
-
-    node = leaf
-
-    while node:
-        inside = inside_parenthesis(node)
-
-        if inside:
-            return True
-        else:
-            node = node.parent
-
-    return False
-
-
-def inside_parenthesis(node):
-    try:
-        left = node.get_previous_sibling().value == '('
-    except AttributeError:
-        left = False
-
-    try:
-        right = node.get_next_sibling().value == ')'
-    except AttributeError:
-        right = False
-
-    try:
-        # to prevent (1, 2, 3) being detected as a function call
-        has_name = node.get_previous_sibling().get_previous_leaf(
-        ).type == 'name'
-    except AttributeError:
-        has_name = False
-
-    return left and right and has_name
-
-
-def inside_funcdef(leaf):
-    parent = leaf.parent
-
-    while parent:
-        if parent.type == 'funcdef':
-            return True
-
-        parent = parent.parent
-
-    return False
-
-
 def get_local_scope(leaf):
     """
     Returns a set of variables that are defined locally and thus should
@@ -294,26 +226,6 @@ def find_function_scope_and_io(funcdef, local_scope=None):
     return parameters, body_in - local_scope, body_out
 
 
-def for_loop_definition(leaf):
-    has_suite_parent = False
-    parent = leaf.parent
-
-    while parent:
-        if parent.type == 'suite':
-            has_suite_parent = True
-
-        if parent.type == 'for_stmt':
-            return not has_suite_parent
-
-        parent = parent.parent
-
-    return False
-
-
-def is_funcdef(leaf):
-    return leaf.type == 'keyword' and leaf.value == 'def'
-
-
 def accessing_variable(leaf):
     """
     For a given node of type name, determine if it's used
@@ -331,24 +243,6 @@ def accessing_variable(leaf):
     dotaccess = children[0].value == '.'
     # FIXME: adding dotacess breaks other tests
     return getitem or dotaccess
-
-
-def is_inside_list_comprehension(node):
-    parent = get_first_non_atom_expr_parent(node)
-
-    return (parent.type == 'testlist_comp'
-            and parent.children[1].type == 'sync_comp_for')
-
-
-def get_first_non_atom_expr_parent(node):
-    parent = node.parent
-
-    # e.g., [x.attribute for x in range(10)]
-    # x.attribute is an atom_expr
-    while parent.type == 'atom_expr':
-        parent = parent.parent
-
-    return parent
 
 
 def get_inputs_in_list_comprehension(node):
@@ -383,30 +277,6 @@ def get_inputs_in_list_comprehension(node):
     return (inputs_left | inputs_right) - declared
 
 
-def get_first_expr_stmt_parent(node):
-    parent = node.parent
-
-    if not parent:
-        return None
-
-    while parent.type != 'expr_stmt':
-        parent = parent.parent
-
-        if not parent:
-            break
-
-    return parent
-
-
-def is_left_side_of_assignment(node):
-    to_check = get_first_expr_stmt_parent(node)
-
-    if not to_check:
-        return False
-
-    return to_check.children[1].value == '='
-
-
 # TODO: this needs renaming, we are now using it to parse outputs as well
 # see line 442
 def extract_inputs(node,
@@ -430,8 +300,9 @@ def extract_inputs(node,
     last = node.get_last_leaf()
 
     while leaf:
-        if parse_list_comprehension and is_inside_list_comprehension(leaf):
-            list_comp = get_first_non_atom_expr_parent(leaf)
+        if (parse_list_comprehension
+                and detect.is_inside_list_comprehension(leaf)):
+            list_comp = get.first_non_atom_expr_parent(leaf)
             inputs = get_inputs_in_list_comprehension(list_comp)
             names.extend(list(inputs))
 
@@ -539,12 +410,12 @@ def find_inputs_and_outputs_from_leaf(leaf,
         return candidates
 
     while leaf:
-        _inside_funcdef = inside_funcdef(leaf)
+        _inside_funcdef = detect.is_inside_funcdef(leaf)
 
         if not _inside_funcdef:
             local_variables = set()
 
-        if for_loop_definition(leaf):
+        if detect.is_for_loop(leaf):
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_for_loop_def_and_io(
@@ -553,7 +424,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
             outputs = outputs | candidates_out
             # jump to the end of the foor loop
             leaf = leaf.parent.get_last_leaf()
-        elif is_funcdef(leaf):
+        elif detect.is_funcdef(leaf):
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_function_scope_and_io(
@@ -658,14 +529,14 @@ def find_inputs_and_outputs_from_leaf(leaf,
         # go to the first conditional, and the next leaf is the function call
         # so then we go into this conditional - we're skipping the left part
         # but not the right part of = yet
-        elif (leaf.type == 'name'
-              and (inside_function_call(leaf) or accessing_variable(leaf)
-                   or inside_funcdef(leaf))
+        elif (leaf.type == 'name' and
+              (detect.is_inside_function_call(leaf) or accessing_variable(leaf)
+               or detect.is_inside_funcdef(leaf))
               # skip if this is to the left of an '=', because we'll check it
               # when we get to that token since it'll go to the first
               # conditional
-              and not is_left_side_of_assignment(leaf) and
-              not is_inside_list_comprehension(leaf) and
+              and not detect.is_left_side_of_assignment(leaf) and
+              not detect.is_inside_list_comprehension(leaf) and
               leaf.value not in outputs and
               leaf.value not in ignore_input_names and
               leaf.value not in _BUILTIN and
@@ -674,7 +545,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
               leaf.value not in defined_names and leaf.value
               not in local_variables):
             inputs.extend(extract_inputs(leaf))
-        elif leaf.type == 'name' and is_inside_list_comprehension(leaf):
+        elif leaf.type == 'name' and detect.is_inside_list_comprehension(leaf):
             inputs_new = extract_inputs(leaf,
                                         stop_at_end_of_list_comprehension=True)
             inputs.extend(inputs_new)

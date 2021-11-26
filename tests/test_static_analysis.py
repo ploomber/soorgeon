@@ -1,21 +1,10 @@
+import testutils
 from conftest import read_snippets
 
 import parso
 import pytest
 
 from soorgeon import static_analysis
-
-
-def get_first_leaf_with_value(code, value):
-    leaf = parso.parse(code).get_first_leaf()
-
-    while leaf:
-        if leaf.value == value:
-            return leaf
-
-        leaf = leaf.get_next_leaf()
-
-    raise ValueError(f'could not find leaf with value {value}')
 
 
 def get_first_sibling_after_assignment(code, index):
@@ -663,53 +652,6 @@ def test_prune_io(io, expected):
     assert static_analysis.prune_io(io) == expected
 
 
-"""
-pd.DataFrame({
-    'True Values': y_test,
-    'Predicted Values': pred
-}).hvplot.scatter(x='True Values', y='Predicted Values')
-
-"""
-"""
-pd.DataFrame({'Error Values': (y_test - pred)}).hvplot.kde()
-"""
-
-
-@pytest.mark.parametrize('code, expected', [
-    ['sns.histplot(df.some_column)', True],
-    ['histplot(df.some_column)', True],
-    ['sns.histplot(df)', True],
-    ['histplot(df)', True],
-    ['sns.histplot(df["key"])', True],
-    ['def x(df):\n  pass', False],
-    ['def x(df=1):\n  pass', False],
-    ['(df, df2) = 1, 2', False],
-    ['function({"data": df})', True],
-    ['function(dict(data=df))', True],
-    ['function({"data": (df - 1)})', True],
-    ['Constructor({"data": df}).do_stuff()', True],
-    ['Constructor({"data": (df - 1)}).do_stuff()', True],
-],
-                         ids=[
-                             'arg-attribute',
-                             'arg-attribute-2',
-                             'arg',
-                             'arg-2',
-                             'arg-getitem',
-                             'fn-signature',
-                             'fn-signature-default-value',
-                             'assignment',
-                             'arg-nested-dict',
-                             'arg-nested-dict-constructor',
-                             'arg-nested-dict-operation',
-                             'constructor-dict',
-                             'constructor-dict-operation',
-                         ])
-def test_inside_function_call(code, expected):
-    leaf = get_first_leaf_with_value(code, 'df')
-    assert static_analysis.inside_function_call(leaf) is expected
-
-
 exploratory = """
 import seaborn as sns
 from sklearn.datasets import load_iris
@@ -887,25 +829,6 @@ def test_find_function_scope_and_io(code, def_expected, in_expected,
     assert out == out_expected
 
 
-@pytest.mark.parametrize('code, expected', [
-    ['for x in range(10):\n    pass', True],
-    ['for x, y in range(10):\n    pass', True],
-    ['for y, (z, x) in range(10):\n    pass', True],
-    ['for y in range(10):\n    x = y + 1', False],
-    ['for y in range(10):\n    z = y + 1\nfunction(x)', False],
-],
-                         ids=[
-                             'single',
-                             'tuple',
-                             'nested',
-                             'variable-in-loop-body',
-                             'variable-in-loop-body-2',
-                         ])
-def test_for_loop_definition(code, expected):
-    leaf = get_first_leaf_with_value(code, 'x')
-    assert static_analysis.for_loop_definition(leaf) is expected
-
-
 @pytest.mark.parametrize(
     'code, expected', [['name(x, y)', {'name', 'x', 'y'}],
                        ['name(a=x, b=y)', {'name', 'x', 'y'}],
@@ -925,7 +848,7 @@ def test_for_loop_definition(code, expected):
         'attribute',
     ])
 def test_extract_inputs(code, expected):
-    atom_exp = get_first_leaf_with_value(code, 'name').parent
+    atom_exp = testutils.get_first_leaf_with_value(code, 'name').parent
     assert static_analysis.extract_inputs(atom_exp) == expected
 
 
@@ -940,7 +863,7 @@ def test_extract_inputs(code, expected):
                              'name',
                          ])
 def test_extract_inputs_only_getitem_and_attribute_access(code, expected):
-    atom_exp = get_first_leaf_with_value(code, 'name').parent
+    atom_exp = testutils.get_first_leaf_with_value(code, 'name').parent
     out = static_analysis.extract_inputs(
         atom_exp, only_getitem_and_attribute_access=True)
     assert out == expected
@@ -1017,21 +940,6 @@ def test_get_inputs_in_list_comprehension(code, expected):
         list_comp) == expected
 
 
-@pytest.mark.parametrize('code, expected',
-                         [['[x for x in range(10)]', True], ['[x, y]', False],
-                          ['[x.attribute for x in range(10)', True],
-                          ['[x for x in range(10) if x > 0', True]],
-                         ids=[
-                             'for',
-                             'list',
-                             'attribute',
-                             'conditional',
-                         ])
-def test_is_inside_list_comprehension(code, expected):
-    node = get_first_leaf_with_value(code, 'x')
-    assert static_analysis.is_inside_list_comprehension(node) is expected
-
-
 @pytest.mark.parametrize('code, expected', [
     ['for i in range(10):\n    y = x + i', {'i'}],
     ['for i, j in something():\n    y = x + i', {'i', 'j'}],
@@ -1045,23 +953,5 @@ def test_is_inside_list_comprehension(code, expected):
                              'def-many',
                          ])
 def test_get_local_scope(code, expected):
-    node = get_first_leaf_with_value(code, 'x')
+    node = testutils.get_first_leaf_with_value(code, 'x')
     assert static_analysis.get_local_scope(node) == expected
-
-
-@pytest.mark.parametrize('code, expected', [
-    ['x = 1', True],
-    ['x, y = 1, 2', True],
-    ['y, x = 1, 2', True],
-    ['(x, y) = 1, 2', True],
-    ['(y, x) = 1, 2', True],
-    ['[x, y] = 1, 2', True],
-    ['[y, x] = 1, 2', True],
-    ['(z, (y, x)) = 1, (2, 3)', True],
-    ['x(1)', False],
-    ['something(x)', False],
-    ['x == 1', False],
-])
-def test_is_left_side_of_assignment(code, expected):
-    node = get_first_leaf_with_value(code, 'x')
-    assert static_analysis.is_left_side_of_assignment(node) is expected
