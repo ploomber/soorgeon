@@ -1,0 +1,18 @@
+- url: https://www.kaggle.com/mnassrib/titanic-logistic-regression-with-python
+  data: https://www.kaggle.com/c/titanic
+
+- url: https://www.kaggle.com/karnikakapoor/customer-segmentation-clustering
+  data: https://www.kaggle.com/imakash3011/customer-personality-analysis
+
+- url: https://www.kaggle.com/iamleonie/intro-to-time-series-forecasting
+  data: https://www.kaggle.com/c/acea-water-prediction
+  files: Aquifer_Petrignano.csv
+
+- url: https://www.kaggle.com/kanncaa1/feature-selection-and-data-visualization/
+  data: https://www.kaggle.com/uciml/breast-cancer-wisconsin-data
+
+- url: https://www.kaggle.com/faressayah/linear-regression-house-price-prediction/
+  data: https://www.kaggle.com/vedavyasv/usa-housing
+
+- url: https://www.kaggle.com/yuyougnchan/look-at-this-note-feature-engineering-is-easy
+  data: https://www.kaggle.com/c/house-prices-advanced-regression-techniques
