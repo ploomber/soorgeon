@@ -1,10 +1,10 @@
 # Contributing to Soorgeon
 
-Hi! Thanks for considering a contribution to Soorgeon. We're building Soorgeon to help data scientists convert their monolithic notebooks into maintainable pipelines. Our command-line interface takes a notebook as an input and generates a [Ploomber pipeline](https://github.com/ploomber/ploomber) as output, and we need your help to ensure our tool is robust to real-world code (which is messy!).
+Hi! Thanks for considering a contribution to Soorgeon. We're building Soorgeon to help data scientists convert their monolithic notebooks into maintainable pipelines. Our command-line interface takes a notebook as an input and generates a [Ploomber pipeline](https://github.com/ploomber/ploomber) as output ([see demo here](https://www.youtube.com/watch?v=EJecqsZBr3Q)), and we need your help to ensure our tool is robust to real-world code (which is messy!).
 
 We're downloading publicly available notebooks from Kaggle and testing if our tools can successfully refactor them.
 
-This guide explains what the process looks like: from finding a candidate notebook to merging your changes. Hence, whenever we publish a new Soorgeon version, we test with all the contributed notebooks.
+This guide explains what the process looks like: from finding a candidate notebook to merging your changes. Hence, whenever we publish a new Soorgeon version, we'll test with all the contributed notebooks.
 
 ## Adding new test notebooks
 
@@ -16,11 +16,17 @@ Here's is a sample notebook that has all those characteristics: [kaggle.com/yuyo
 
 ### 2. Open an issue to suggest a notebook
 
-[Open an issue](https://github.com/ploomber/soorgeon/issues/new?title=Notebook%20suggestion) and share the URL with, we'll take a quick look and let you know what we think.
+[Open an issue](https://github.com/ploomber/soorgeon/issues/new?title=Notebook%20suggestion) and share the URL with us, we'll take a quick look and let you know what we think.
 
 ### 3. Configure development environment
 
-If we move forward, 
+If we move forward, you can setup the development environment with:
+
+```python
+pip install ".[dev]"
+```
+
+*Note: We recommmend you run the command above in a virtual environment.*
 
 ### 4. Configure Kaggle CLI
 
@@ -41,11 +47,11 @@ Note that the command above converts the notebook (`.ipynb`) to `.py` using `%%`
 
 ### 6. Download data
 
-If you go to the data section in the notebook, you'll see on the right side a list of inut datasets (look for the label `Input (X.X MB`). Sometimes, authors may include many datasets but the notebook may only use a few of them, so please check in the notebook contents which ones are actually used, we want to download as little data as possible to make testing fast.
+If you go to the data section in the notebook, you'll see a list (right side) of input datasets (look for the label `Input (X.X MB)`). Sometimes, authors may include many datasets, but the notebook may only use a few of them, so please check in the notebook contents which ones are actually used, we want to download as little data as possible to make testing fast.
 
-Our example notebook takes us to this url: https://www.kaggle.com/c/house-prices-advanced-regression-techniques
+Our example notebook takes us to this URL: https://www.kaggle.com/c/house-prices-advanced-regression-techniques
 
-We know this is a competition because the url has the form: `kaggle.com/c/{name}`
+We know this is a competition because the URL has the form: `kaggle.com/c/{name}`
 
 #### Downloading a competitions dataset
 
@@ -100,12 +106,11 @@ If you find any calls to pip like: `! pip install {package}`, remove them.
 
 Test it:
 
-<!-- note: maybe better to run with papermill? - maybe add quick cli for testing -->
-```
-python nb.py
+```sh
+python -m soorgeon._kaggle test nb.py
 ```
 
-A few things may go wrong, so you may have to so some edits.
+A few things may go wrong, so you may have to do some edits to `nb.py`.
 
 #### If missing dependencies
 
@@ -119,7 +124,7 @@ pandas
 matplotlib
 ```
 
-If the notebook is old, you may encounter problems if the API for certain library changed since the notebook ran. We recommend using notebooks that executed recently because fixing these API incompatibility issues requires a trial an error process of looking at the library's changelog and figuring out either what version to use or how to fix the code so it works with the latest version.
+If the notebook is old, you may encounter problems if the API for a specific library changed since the notebook ran. We recommend using notebooks that were executed recently because fixing these API incompatibility issues requires a trial and error process of looking at the library's changelog and figuring out either what version to use or how to fix the code. Hence, it works with the latest version.
 
 If you encounter issues like this, let us know by adding a comment in the issue you opened in Step 2.
 
@@ -131,17 +136,13 @@ Let's now check if ``sorgeon`` can handle the notebook:
 soorgeon refactor nb.py
 ```
 
-You may get errors that need manual fixing -  most likely functions with globals
+If the command above throws a `Looks like the following functions are using global variables...` error, [click here](doc/fn-global.md) to see fixing instructions.
 
-```
-Looks like the following functions are using global variables, this is unsupported. Please add all missing arguments.
-
-Function 'load_data' uses variables 'test_x_saved','train_x_saved'
-```
-
-Open an issue if the command throws a different error or if you're unable to fix the global variables issue.
+Add a comment on the issue you created in `Step 2` if the command throws a different error or if you cannot fix the global variables issue. Please include the entire error traceback in the Github's issue.
 
 ### 10. Testing the generated pipeline
+
+To ensure that the generate pipeline works, execute the following commands:
 
 ```
 ploomber status
@@ -149,9 +150,7 @@ ploomber plot
 ploomber build
 ```
 
-Open an issue if any of the commands throws an error.
-
-#### Open issue if `soorgeon` or `ploomber` throws an error
+Add a comment on the issue you created in `Step 2` if any command throws an error. Please include the entire error traceback in the Github's issue.
 
 ### 11. Registering the notebook
 

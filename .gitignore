@@ -1,3 +1,4 @@
+_kaggle/**/test.ipynb
 _kaggle/**/*.zip
 _kaggle/*/output
 _kaggle/*/tasks
