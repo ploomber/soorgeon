@@ -342,11 +342,6 @@ def find_inputs_and_outputs_from_leaf(leaf,
             inputs_current = inputs_current - set(_BUILTIN)
             inputs_current = inputs_current - set(defined_names)
 
-            # we dont call this anymore, we pass the local scope
-            # as an arg
-            # local = get_local_scope(leaf)
-            local = set()
-
             for variable in inputs_current:
                 # check if we're inside a for loop and ignore variables
                 # defined there
@@ -355,7 +350,6 @@ def find_inputs_and_outputs_from_leaf(leaf,
                 # locally
                 if (variable not in outputs
                         and variable not in ignore_input_names
-                        and variable not in local
                         and variable not in local_variables):
                     inputs.append(variable)
 
@@ -437,11 +431,8 @@ def find_inputs_and_outputs_from_leaf(leaf,
               not detect.is_inside_list_comprehension(leaf) and
               leaf.value not in outputs and
               leaf.value not in ignore_input_names and
-              leaf.value not in _BUILTIN and
-              #   NO LONGER NEED TO CALL GET LOCAL SCOPE
-              #   leaf.value not in get_local_scope(leaf) and
-              leaf.value not in defined_names and leaf.value
-              not in local_variables):
+              leaf.value not in _BUILTIN and leaf.value not in defined_names
+              and leaf.value not in local_variables):
             inputs.extend(extract_inputs(leaf))
         elif leaf.type == 'name' and detect.is_inside_list_comprehension(leaf):
             inputs_new = extract_inputs(leaf,
