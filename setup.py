@@ -38,6 +38,7 @@ DEV = [
     'pandas',
     'scikit-learn',
     'seaborn',
+    'papermill',
 ]
 
 setup(

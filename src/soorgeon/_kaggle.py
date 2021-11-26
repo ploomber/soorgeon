@@ -8,6 +8,7 @@ from pathlib import PurePosixPath, Path
 
 import click
 import jupytext
+import papermill as pm
 from kaggle import api
 
 
@@ -65,10 +66,13 @@ def notebook(kernel_path):
     ipynb = Path(name, f'{name}.ipynb')
     py = Path(name, 'nb.py')
     nb = jupytext.read(ipynb)
+    # TODO: remove cells that are !pip install ...
     jupytext.write(nb, py, fmt='py:percent')
     ipynb.unlink()
 
 
+# FIXME: have a single command that detects if it's a competition or not
+# update CONTRIBUTING.md
 # FIXME: add files arg
 @cli.command()
 @click.argument('name')
@@ -80,6 +84,16 @@ def competition(name):
 @click.argument('name')
 def dataset(name):
     download_from_dataset(name=name)
+
+
+@cli.command()
+@click.argument('path', type=click.Path(exists=True))
+def test(path):
+    nb = jupytext.read(path, fmt='py:percent')
+    click.echo('Generating test.ipynb...')
+    jupytext.write(nb, 'test.ipynb')
+    click.echo('Executing test.ipynb...')
+    pm.execute_notebook('test.ipynb', 'test.ipynb')
 
 
 if __name__ == '__main__':
