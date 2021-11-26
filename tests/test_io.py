@@ -4,7 +4,7 @@ from conftest import read_snippets
 import parso
 import pytest
 
-from soorgeon import static_analysis
+from soorgeon import io
 
 
 def get_first_sibling_after_assignment(code, index):
@@ -490,7 +490,7 @@ pd.DataFrame(data={'key': y})
         'nested_function_kwarg',
     ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
-    in_, out = static_analysis.find_inputs_and_outputs(code_str)
+    in_, out = io.find_inputs_and_outputs(code_str)
 
     assert in_ == inputs
     assert out == outputs
@@ -510,8 +510,7 @@ def test_find_inputs_and_outputs(code_str, inputs, outputs):
 def test_find_inputs_and_outputs_ignore_input_names(snippets,
                                                     ignore_input_names,
                                                     expected):
-    assert static_analysis.find_inputs_and_outputs(
-        snippets, ignore_input_names) == expected
+    assert io.find_inputs_and_outputs(snippets, ignore_input_names) == expected
 
 
 first = """
@@ -545,7 +544,7 @@ imports = {
 
 
 def test_providermapping():
-    m = static_analysis.ProviderMapping(static_analysis.find_io(eda))
+    m = io.ProviderMapping(io.find_io(eda))
 
     assert m._providers_for_task('load') == {}
     assert m._providers_for_task('clean') == {'df': 'load'}
@@ -554,7 +553,7 @@ def test_providermapping():
 
 
 def test_providermapping_error():
-    m = static_analysis.ProviderMapping(static_analysis.find_io(eda))
+    m = io.ProviderMapping(io.find_io(eda))
 
     with pytest.raises(KeyError) as excinfo:
         m.get('unknown_variable', 'clean')
@@ -582,7 +581,7 @@ def test_providermapping_error():
     }],
 ])
 def test_find_upstream(snippets, expected):
-    assert static_analysis.find_upstream(snippets) == expected
+    assert io.find_upstream(snippets) == expected
 
 
 @pytest.mark.parametrize('snippets, expected', [
@@ -617,10 +616,10 @@ def test_find_upstream(snippets, expected):
                              'imports',
                          ])
 def test_find_io(snippets, expected):
-    assert static_analysis.find_io(snippets) == expected
+    assert io.find_io(snippets) == expected
 
 
-@pytest.mark.parametrize('io, expected', [
+@pytest.mark.parametrize('io_, expected', [
     [{
         'one': ({'a'}, {'b', 'c'}),
         'two': ({'b'}, set()),
@@ -629,8 +628,8 @@ def test_find_io(snippets, expected):
         'two': ({'b'}, set()),
     }],
 ])
-def test_prune_io(io, expected):
-    assert static_analysis.prune_io(io) == expected
+def test_prune_io(io_, expected):
+    assert io.prune_io(io_) == expected
 
 
 exploratory = """
@@ -663,7 +662,7 @@ sns.histplot(df['petal length (cm)'])
     ],
 ])
 def test_importsparser(code_nb, code_task, expected):
-    ip = static_analysis.ImportsParser(code_nb)
+    ip = io.ImportsParser(code_nb)
     assert ip.get_imports_cell_for_task(code_task) == expected
 
 
@@ -674,7 +673,7 @@ def test_importsparser(code_nb, code_task, expected):
     ['import math\n1+1', '\n1+1'],
 ])
 def test_remove_imports(code, expected):
-    assert static_analysis.remove_imports(code) == expected
+    assert io.remove_imports(code) == expected
 
 
 @pytest.mark.parametrize('snippets, names, a, b', [
@@ -696,7 +695,7 @@ def test_remove_imports(code, expected):
      set(), {'x'}],
 ])
 def test_definitions_mapping(snippets, names, a, b):
-    im = static_analysis.DefinitionsMapping(snippets)
+    im = io.DefinitionsMapping(snippets)
 
     assert im._names == names
     assert im.get('a') == a
@@ -733,8 +732,7 @@ def test_find_for_loop_def_and_io(code, def_expected, in_expected,
                                   out_expected):
     tree = parso.parse(code)
     # TODO: test with non-empty local_scope parameter
-    def_, in_, out = (static_analysis.find_for_loop_def_and_io(
-        tree.children[0]))
+    def_, in_, out = (io.find_for_loop_def_and_io(tree.children[0]))
     assert def_ == def_expected
     assert in_ == in_expected
     assert out == out_expected
@@ -772,8 +770,7 @@ def test_find_function_scope_and_io(code, def_expected, in_expected,
                                     out_expected):
     tree = parso.parse(code)
     # TODO: test with non-empty local_scope parameter
-    def_, in_, out = (static_analysis.find_function_scope_and_io(
-        tree.children[0]))
+    def_, in_, out = (io.find_function_scope_and_io(tree.children[0]))
     assert def_ == def_expected
     assert in_ == in_expected
     assert out == out_expected
@@ -799,7 +796,7 @@ def test_find_function_scope_and_io(code, def_expected, in_expected,
     ])
 def test_extract_inputs(code, expected):
     atom_exp = testutils.get_first_leaf_with_value(code, 'name').parent
-    assert static_analysis.extract_inputs(atom_exp) == expected
+    assert io.extract_inputs(atom_exp) == expected
 
 
 @pytest.mark.parametrize('code, expected', [
@@ -814,8 +811,7 @@ def test_extract_inputs(code, expected):
                          ])
 def test_extract_inputs_only_getitem_and_attribute_access(code, expected):
     atom_exp = testutils.get_first_leaf_with_value(code, 'name').parent
-    out = static_analysis.extract_inputs(
-        atom_exp, only_getitem_and_attribute_access=True)
+    out = io.extract_inputs(atom_exp, only_getitem_and_attribute_access=True)
     assert out == expected
 
 
@@ -829,8 +825,8 @@ def test_extract_inputs_only_getitem_and_attribute_access(code, expected):
                          ])
 def test_extract_inputs_only_getitem_and_attribute_access_list_comprehension(
         code, expected):
-    out = static_analysis.extract_inputs(
-        parso.parse(code), only_getitem_and_attribute_access=True)
+    out = io.extract_inputs(parso.parse(code),
+                            only_getitem_and_attribute_access=True)
     assert out == expected
 
 
@@ -862,7 +858,7 @@ def test_extract_inputs_only_getitem_and_attribute_access_list_comprehension(
                          ])
 def test_extract_inputs_with_atom_expr(code, expected, index):
     atom_exp = get_first_sibling_after_assignment(code, index=index)
-    assert static_analysis.extract_inputs(atom_exp) == expected
+    assert io.extract_inputs(atom_exp) == expected
 
 
 # TODO: add nested list comprehension
@@ -886,8 +882,7 @@ def test_extract_inputs_with_atom_expr(code, expected, index):
 def test_get_inputs_in_list_comprehension(code, expected):
     tree = parso.parse(code)
     list_comp = tree.children[0].children[1]
-    assert static_analysis.get_inputs_in_list_comprehension(
-        list_comp) == expected
+    assert io.get_inputs_in_list_comprehension(list_comp) == expected
 
 
 @pytest.mark.parametrize('code, expected', [
@@ -904,4 +899,4 @@ def test_get_inputs_in_list_comprehension(code, expected):
                          ])
 def test_get_local_scope(code, expected):
     node = testutils.get_first_leaf_with_value(code, 'x')
-    assert static_analysis.get_local_scope(node) == expected
+    assert io.get_local_scope(node) == expected

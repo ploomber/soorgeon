@@ -8,7 +8,7 @@ import nbformat
 import jupytext
 from jinja2 import Template
 
-from soorgeon import static_analysis
+from soorgeon import io
 
 _PICKLING_TEMPLATE = Template("""
 {% for product in products %}
@@ -96,9 +96,8 @@ class ProtoTask:
 
     def _add_imports_cell(self, code_nb, add_pathlib_and_pickle, definitions):
         # FIXME: instatiate this in the constructor so we only build it once
-        ip = static_analysis.ImportsParser(code_nb)
-        source = ip.get_imports_cell_for_task(
-            static_analysis.remove_imports(str(self)))
+        ip = io.ImportsParser(code_nb)
+        source = ip.get_imports_cell_for_task(io.remove_imports(str(self)))
 
         # FIXME: only add them if they're not already there
         if add_pathlib_and_pickle:
@@ -116,7 +115,7 @@ class ProtoTask:
             cell.metadata['tags'] = ['soorgeon-imports']
             return cell
 
-    def export(self, upstream, io, providers, code_nb, definitions):
+    def export(self, upstream, io_, providers, code_nb, definitions):
         """Export as a Python string
 
         Parameters
@@ -137,20 +136,20 @@ class ProtoTask:
         # FIXME: remove function definitions and class definitions
         for cell in cells:
             if cell.cell_type == 'code':
-                cell['source'] = static_analysis.remove_imports(cell['source'])
+                cell['source'] = io.remove_imports(cell['source'])
 
         # remove empty cells and whitespace-only cells (we may have some after
         # removing imports)
         cells = [cell for cell in cells if cell['source'].strip()]
 
-        cell_unpickling = self._unpickling_cell(io, providers)
+        cell_unpickling = self._unpickling_cell(io_, providers)
 
         if cell_unpickling:
             cells = [cell_unpickling] + cells
 
         cells = self._add_parameters_cell(cells, upstream)
 
-        cell_pickling = self._pickling_cell(io)
+        cell_pickling = self._pickling_cell(io_)
 
         if cell_pickling:
             cells = cells + [cell_pickling]

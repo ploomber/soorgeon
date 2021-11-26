@@ -127,7 +127,7 @@ import parso
 import jupytext
 import yaml
 
-from soorgeon import split, static_analysis, definitions, proto
+from soorgeon import split, io, definitions, proto
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
@@ -185,9 +185,9 @@ class NotebookExporter:
         Generate the .py code strings (percent format) for each proto task
         """
         # FIXME: this calls find_providers, we should only call it once
-        upstream = static_analysis.find_upstream(self._snippets)
+        upstream = io.find_upstream(self._snippets)
 
-        providers = static_analysis.ProviderMapping(self.io)
+        providers = io.ProviderMapping(self.io)
 
         code_nb = self._get_code()
 
@@ -202,7 +202,7 @@ class NotebookExporter:
         """
         out = '\n\n'.join(self.definitions.values())
 
-        ip = static_analysis.ImportsParser(self._get_code())
+        ip = io.ImportsParser(self._get_code())
         imports = ip.get_imports_cell_for_task(out)
 
         if imports:
@@ -230,11 +230,11 @@ class NotebookExporter:
         {name: (inputs, outputs), ...}
         """
         if self._io is None:
-            io = static_analysis.find_io(self._snippets)
+            io_ = io.find_io(self._snippets)
 
-            logging.info(f'io: {pp.pformat(io)}\n')
+            logging.info(f'io: {pp.pformat(io_)}\n')
 
-            self._io = static_analysis.prune_io(io)
+            self._io = io.prune_io(io_)
 
             logging.info(f'pruned io: {pp.pformat(self._io)}\n')
 
@@ -257,8 +257,8 @@ def _check_functions_do_not_use_global_variables(code):
         # again, but for some reason,
         # using find_inputs_and_outputs_from_tree(funcdef) returns the name
         # of the function as an input
-        in_, _ = static_analysis.find_inputs_and_outputs(
-            funcdef.get_code(), ignore_input_names=local_scope)
+        in_, _ = io.find_inputs_and_outputs(funcdef.get_code(),
+                                            ignore_input_names=local_scope)
 
         if in_:
             needs_fix.append(
