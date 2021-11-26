@@ -1,15 +1,13 @@
 from functools import partial
-import zipfile
-import shutil
 from glob import glob
 from pathlib import Path
 
 import pytest
-from kaggle import api
 from ploomber.spec import DAGSpec
 from conftest import PATH_TO_TESTS
 
 from soorgeon import export
+from soorgeon._kaggle import download_from_dataset, download_from_competition
 
 path_to_nbs_root = str(Path(PATH_TO_TESTS, '..', '_kaggle', '*'))
 path_to_nbs = [
@@ -17,22 +15,6 @@ path_to_nbs = [
     if Path(path).is_dir() and not Path(path).name.startswith('_')
 ]
 ids = [Path(path).name for path in path_to_nbs]
-
-
-def download_from_competition(name, filename=None):
-    api.competition_download_cli(name, file_name=filename)
-
-    if not filename:
-        with zipfile.ZipFile(f'{name}.zip', 'r') as file:
-            file.extractall('input')
-    else:
-        Path('input').mkdir()
-        shutil.move(filename, Path('input', filename))
-
-
-def download_from_dataset(name):
-    api.dataset_download_cli(name, unzip=True, path='input')
-
 
 download = {
     'titanic-logistic-regression-with-python':
