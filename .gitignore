@@ -14,6 +14,7 @@ examples/**/output
 examples/**/outputs
 examples/**/pipeline.yaml
 examples/**/pipeline.png
+examples/**/exported.py
 
 
 # Byte-compiled / optimized / DLL files

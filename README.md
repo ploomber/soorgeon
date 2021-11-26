@@ -37,14 +37,14 @@ Exploratory notebook:
 
 ```sh
 cd examples/exploratory
-soorgeon refactor nb.py
+soorgeon refactor nb.ipynb
 ```
 
 Machine learning:
 
 ```sh
 cd examples/machine-learning
-soorgeon refactor nb.py
+soorgeon refactor nb.ipynb
 ```
 
 ## Known limitations
