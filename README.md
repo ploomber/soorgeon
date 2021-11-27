@@ -19,6 +19,13 @@
 
 Convert monolithic Jupyter notebooks into [Ploomber](https://github.com/ploomber/ploomber) pipelines. [3-minute demo](https://www.youtube.com/watch?v=EJecqsZBr3Q).
 
+Try the interactive demo:
+
+<p align="center">
+  <a href="https://mybinder.org/v2/gh/ploomber/binder-env/main?urlpath=git-pull%3Frepo%3Dhttps%253A%252F%252Fgithub.com%252Fploomber%252Fprojects%26urlpath%3Dlab%252Ftree%252Fprojects%252Fguides/refactor%252FREADME.ipynb%26branch%3Dmaster"> <img src="_static/open-jupyterlab.svg" alt="Open JupyerLab"> </a>
+</p>
+
+
 *Note: Soorgeon is in alpha, [help us make it better](CONTRIBUTING.md).*
 
 ## Install
@@ -33,18 +40,26 @@ pip install soorgeon
 git clone https://github.com/ploomber/soorgeon
 ```
 
-Exploratory notebook:
+Exploratory daya analysis notebook:
 
 ```sh
 cd examples/exploratory
 soorgeon refactor nb.ipynb
+
+# to run the pipeline
+pip install ploomber
+ploomber build
 ```
 
-Machine learning:
+Machine learning notebook:
 
 ```sh
 cd examples/machine-learning
 soorgeon refactor nb.ipynb
+
+# to run the pipeline
+pip install ploomber
+ploomber build
 ```
 
 ## Known limitations
