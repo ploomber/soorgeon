@@ -258,7 +258,7 @@ def _check_functions_do_not_use_global_variables(code):
         # using find_inputs_and_outputs_from_tree(funcdef) returns the name
         # of the function as an input
         in_, _ = io.find_inputs_and_outputs(funcdef.get_code(),
-                                            ignore_input_names=local_scope)
+                                            local_scope=local_scope)
 
         if in_:
             needs_fix.append(

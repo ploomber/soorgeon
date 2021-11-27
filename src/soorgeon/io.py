@@ -113,7 +113,7 @@ def find_for_loop_def_and_io(for_stmt, local_scope=None):
 
     body_in, body_out = find_inputs_and_outputs_from_leaf(
         body_node.get_first_leaf(),
-        ignore_input_names=defined,
+        local_scope=defined,
         leaf_end=body_node.get_last_leaf())
 
     # Strictly speaking variables defined after the for keyword are also
@@ -137,7 +137,7 @@ def find_function_scope_and_io(funcdef, local_scope=None):
 
     body_in, body_out = find_inputs_and_outputs_from_leaf(
         body_node.get_first_leaf(),
-        ignore_input_names=parameters,
+        local_scope=parameters,
         leaf_end=body_node.get_last_leaf())
 
     return parameters, body_in - local_scope, body_out
@@ -250,7 +250,7 @@ def extract_inputs(node,
     return set(names)
 
 
-def find_inputs_and_outputs(code_str, ignore_input_names=None):
+def find_inputs_and_outputs(code_str, local_scope=None):
     """
     Given a Python code string, find which variables the code consumes (not
     declared in the snipped) and which ones it exposes (declared in the
@@ -258,36 +258,31 @@ def find_inputs_and_outputs(code_str, ignore_input_names=None):
 
     Parameters
     ----------
-    ignore_input_names : set
+    local_scope : set
         Names that should not be considered inputs
     """
     tree = parso.parse(code_str)
-    return find_inputs_and_outputs_from_tree(
-        tree, ignore_input_names=ignore_input_names)
+    return find_inputs_and_outputs_from_tree(tree, local_scope=local_scope)
 
 
-# FIXME: add a until_leaf parameter
-def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
+def find_inputs_and_outputs_from_tree(tree, local_scope=None):
     leaf = tree.get_first_leaf()
     # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
     # move the functionality to a class so we only compute it once
     defined_names = set(definitions.from_imports(tree)) | set(
         definitions.from_def_and_class(tree))
 
-    ignore_input_names = ignore_input_names or set()
+    local_scope = local_scope or set()
 
-    return find_inputs_and_outputs_from_leaf(
-        leaf, ignore_input_names=ignore_input_names | defined_names)
+    return find_inputs_and_outputs_from_leaf(leaf,
+                                             local_scope=local_scope
+                                             | defined_names)
 
 
-# FIXME: defined_names and ignore_inputs names should be only one arg
-# maybe local_scope?
 # FIXME: try nested functions, and also functions inside for loops and loops
 # inside functions
-def find_inputs_and_outputs_from_leaf(leaf,
-                                      ignore_input_names=None,
-                                      leaf_end=None):
-    ignore_input_names = ignore_input_names or set()
+def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
+    local_scope = local_scope or set()
 
     inputs, outputs = [], set()
 
@@ -295,7 +290,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
 
     def clean_up_candidates(candidates, *others):
         candidates = candidates - set(_BUILTIN)
-        candidates = candidates - set(ignore_input_names)
+        candidates = candidates - set(local_scope)
         candidates = candidates - outputs
 
         for another in others:
@@ -313,7 +308,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_for_loop_def_and_io(
-                leaf.parent, local_scope=ignore_input_names)
+                leaf.parent, local_scope=local_scope)
             inputs.extend(clean_up_candidates(candidates_in, local_variables))
             outputs = outputs | candidates_out
             # jump to the end of the foor loop
@@ -322,7 +317,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_function_scope_and_io(
-                leaf.parent, local_scope=ignore_input_names)
+                leaf.parent, local_scope=local_scope)
             inputs.extend(clean_up_candidates(candidates_in, local_variables))
             outputs = outputs | candidates_out
             # jump to the end of the function definition loop
@@ -336,7 +331,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
             # Process inputs
             inputs_current = extract_inputs(next_s)
             inputs_current = inputs_current - set(_BUILTIN)
-            inputs_current = inputs_current - set(ignore_input_names)
+            inputs_current = inputs_current - set(local_scope)
 
             for variable in inputs_current:
                 # check if we're inside a for loop and ignore variables
@@ -344,8 +339,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
 
                 # only mark a variable as input if it hasn't been defined
                 # locally
-                if (variable not in outputs
-                        and variable not in ignore_input_names
+                if (variable not in outputs and variable not in local_scope
                         and variable not in local_variables):
                     inputs.append(variable)
 
@@ -359,9 +353,8 @@ def find_inputs_and_outputs_from_leaf(leaf,
             # a['x'] = 1
             # a.b = 1
 
-            if (previous.parent.type != 'argument'
-                    and not _modifies_existing_object(leaf, outputs,
-                                                      ignore_input_names)):
+            if (previous.parent.type != 'argument' and
+                    not _modifies_existing_object(leaf, outputs, local_scope)):
 
                 prev_sibling = leaf.get_previous_sibling()
 
@@ -425,10 +418,9 @@ def find_inputs_and_outputs_from_leaf(leaf,
               # conditional
               and not detect.is_left_side_of_assignment(leaf) and
               not detect.is_inside_list_comprehension(leaf) and
-              leaf.value not in outputs and
-              leaf.value not in ignore_input_names and
-              leaf.value not in _BUILTIN and leaf.value
-              not in ignore_input_names and leaf.value not in local_variables):
+              leaf.value not in outputs and leaf.value not in local_scope and
+              leaf.value not in _BUILTIN and leaf.value not in local_scope and
+              leaf.value not in local_variables):
             inputs.extend(extract_inputs(leaf))
         elif leaf.type == 'name' and detect.is_inside_list_comprehension(leaf):
             inputs_new = extract_inputs(leaf,
@@ -583,9 +575,8 @@ def find_io(snippets):
 
     # FIXME: find_upstream already calls this, we should only compute it once
     io = {
-        snippet_name:
-        find_inputs_and_outputs(snippet,
-                                ignore_input_names=im.get(snippet_name))
+        snippet_name: find_inputs_and_outputs(snippet,
+                                              local_scope=im.get(snippet_name))
         for snippet_name, snippet in snippets.items()
     }
 

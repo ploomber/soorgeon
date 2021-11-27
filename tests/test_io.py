@@ -496,7 +496,7 @@ def test_find_inputs_and_outputs(code_str, inputs, outputs):
     assert out == outputs
 
 
-@pytest.mark.parametrize('snippets, ignore_input_names, expected', [
+@pytest.mark.parametrize('snippets, local_scope, expected', [
     [
         'import pandas as pd\n df = pd.read_csv("data.csv")', {'pd'},
         (set(), {'df'})
@@ -507,10 +507,10 @@ def test_find_inputs_and_outputs(code_str, inputs, outputs):
     ],
 ],
                          ids=['simple', 'inside-function'])
-def test_find_inputs_and_outputs_ignore_input_names(snippets,
-                                                    ignore_input_names,
+def test_find_inputs_and_outputs_local_scope(snippets,
+                                                    local_scope,
                                                     expected):
-    assert io.find_inputs_and_outputs(snippets, ignore_input_names) == expected
+    assert io.find_inputs_and_outputs(snippets, local_scope) == expected
 
 
 first = """
