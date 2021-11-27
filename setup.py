@@ -39,16 +39,21 @@ DEV = [
     'scikit-learn',
     'seaborn',
     'papermill',
+    'pkgmt',
+    'twine',
 ]
+
+DESCRIPTION = ('Convert monolithic Jupyter notebooks'
+               ' into maintainable pipelines.')
 
 setup(
     name='soorgeon',
     version=VERSION,
-    description=None,
+    description=DESCRIPTION,
     license=None,
-    author=None,
-    author_email=None,
-    url=None,
+    author='Eduardo Blancas',
+    author_email='hello@ploomber.io',
+    url='https://github.com/ploomber/soorgeon',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
