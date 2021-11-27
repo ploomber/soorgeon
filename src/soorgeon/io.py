@@ -273,7 +273,6 @@ def find_inputs_and_outputs_from_tree(tree, ignore_input_names=None):
     # move the functionality to a class so we only compute it once
     defined_names = set(definitions.from_imports(tree)) | set(
         definitions.from_def_and_class(tree))
-    
 
     ignore_input_names = ignore_input_names or set()
 
@@ -289,17 +288,14 @@ def find_inputs_and_outputs_from_leaf(leaf,
                                       ignore_input_names=None,
                                       leaf_end=None):
     ignore_input_names = ignore_input_names or set()
-    defined_names = ignore_input_names
 
     inputs, outputs = [], set()
 
     local_variables = set()
 
     def clean_up_candidates(candidates, *others):
-        # FIXME: this is not taking into account ignore_input_names
-        # add a test to make it fail, then fix it
         candidates = candidates - set(_BUILTIN)
-        candidates = candidates - set(defined_names)
+        candidates = candidates - set(ignore_input_names)
         candidates = candidates - outputs
 
         for another in others:
@@ -340,7 +336,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
             # Process inputs
             inputs_current = extract_inputs(next_s)
             inputs_current = inputs_current - set(_BUILTIN)
-            inputs_current = inputs_current - set(defined_names)
+            inputs_current = inputs_current - set(ignore_input_names)
 
             for variable in inputs_current:
                 # check if we're inside a for loop and ignore variables
@@ -365,7 +361,7 @@ def find_inputs_and_outputs_from_leaf(leaf,
 
             if (previous.parent.type != 'argument'
                     and not _modifies_existing_object(leaf, outputs,
-                                                      defined_names)):
+                                                      ignore_input_names)):
 
                 prev_sibling = leaf.get_previous_sibling()
 
@@ -431,8 +427,8 @@ def find_inputs_and_outputs_from_leaf(leaf,
               not detect.is_inside_list_comprehension(leaf) and
               leaf.value not in outputs and
               leaf.value not in ignore_input_names and
-              leaf.value not in _BUILTIN and leaf.value not in defined_names
-              and leaf.value not in local_variables):
+              leaf.value not in _BUILTIN and leaf.value
+              not in ignore_input_names and leaf.value not in local_variables):
             inputs.extend(extract_inputs(leaf))
         elif leaf.type == 'name' and detect.is_inside_list_comprehension(leaf):
             inputs_new = extract_inputs(leaf,
