@@ -507,9 +507,7 @@ def test_find_inputs_and_outputs(code_str, inputs, outputs):
     ],
 ],
                          ids=['simple', 'inside-function'])
-def test_find_inputs_and_outputs_local_scope(snippets,
-                                                    local_scope,
-                                                    expected):
+def test_find_inputs_and_outputs_local_scope(snippets, local_scope, expected):
     assert io.find_inputs_and_outputs(snippets, local_scope) == expected
 
 
@@ -796,7 +794,7 @@ def test_find_function_scope_and_io(code, def_expected, in_expected,
     ])
 def test_extract_inputs(code, expected):
     atom_exp = testutils.get_first_leaf_with_value(code, 'name').parent
-    assert io.extract_inputs(atom_exp) == expected
+    assert io.extract_names(atom_exp) == expected
 
 
 @pytest.mark.parametrize('code, expected', [
@@ -811,7 +809,7 @@ def test_extract_inputs(code, expected):
                          ])
 def test_extract_inputs_only_getitem_and_attribute_access(code, expected):
     atom_exp = testutils.get_first_leaf_with_value(code, 'name').parent
-    out = io.extract_inputs(atom_exp, only_getitem_and_attribute_access=True)
+    out = io.extract_names(atom_exp, only_getitem_and_attribute_access=True)
     assert out == expected
 
 
@@ -825,8 +823,8 @@ def test_extract_inputs_only_getitem_and_attribute_access(code, expected):
                          ])
 def test_extract_inputs_only_getitem_and_attribute_access_list_comprehension(
         code, expected):
-    out = io.extract_inputs(parso.parse(code),
-                            only_getitem_and_attribute_access=True)
+    out = io.extract_names(parso.parse(code),
+                           only_getitem_and_attribute_access=True)
     assert out == expected
 
 
@@ -858,7 +856,7 @@ def test_extract_inputs_only_getitem_and_attribute_access_list_comprehension(
                          ])
 def test_extract_inputs_with_atom_expr(code, expected, index):
     atom_exp = get_first_sibling_after_assignment(code, index=index)
-    assert io.extract_inputs(atom_exp) == expected
+    assert io.extract_names(atom_exp) == expected
 
 
 # TODO: add nested list comprehension

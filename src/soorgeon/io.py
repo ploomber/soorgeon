@@ -108,8 +108,8 @@ def find_for_loop_def_and_io(for_stmt, local_scope=None):
     # get the parts that we need
     _, node_definition, _, node_iterator, _, body_node = for_stmt.children
 
-    defined = extract_inputs(node_definition, parse_list_comprehension=False)
-    iterator_in = extract_inputs(node_iterator, parse_list_comprehension=False)
+    defined = extract_names(node_definition, parse_list_comprehension=False)
+    iterator_in = extract_names(node_iterator, parse_list_comprehension=False)
 
     body_in, body_out = find_inputs_and_outputs_from_leaf(
         body_node.get_first_leaf(),
@@ -132,8 +132,7 @@ def find_function_scope_and_io(funcdef, local_scope=None):
     # get the parts that we need
     _, _, node_parameters, _, body_node = funcdef.children
 
-    parameters = extract_inputs(node_parameters,
-                                parse_list_comprehension=False)
+    parameters = extract_names(node_parameters, parse_list_comprehension=False)
 
     body_in, body_out = find_inputs_and_outputs_from_leaf(
         body_node.get_first_leaf(),
@@ -153,36 +152,34 @@ def get_inputs_in_list_comprehension(node):
     # parse the variables in the left expression
     # e.g., [expression(x) for x in range(10)]
     try:
-        inputs_left = extract_inputs(compfor.children[0],
-                                     parse_list_comprehension=False)
+        inputs_left = extract_names(compfor.children[0],
+                                    parse_list_comprehension=False)
     except AttributeError:
         # if there isn't an expression but a single variable, we just
         # get the name e.g., [x for x in range(10)]
         inputs_left = {compfor.value}
 
     # these are the variables that the list comprehension declares
-    declared = extract_inputs(synccompfor.children[1],
-                              parse_list_comprehension=False)
+    declared = extract_names(synccompfor.children[1],
+                             parse_list_comprehension=False)
 
     # parse the variables in the right expression
     # e,g, [x for x in expression(10)]
     # the expression part should be the element at index 3, note that this
     # is not the same as getting the last one because if the list comprehension
     # has an 'if' statement, that will be the last element
-    inputs_right = extract_inputs(synccompfor.children[3],
-                                  parse_list_comprehension=False)
+    inputs_right = extract_names(synccompfor.children[3],
+                                 parse_list_comprehension=False)
 
     return (inputs_left | inputs_right) - declared
 
 
-# TODO: this needs renaming, we are now using it to parse outputs as well
-# see line 442
-def extract_inputs(node,
-                   parse_list_comprehension=True,
-                   stop_at_end_of_list_comprehension=False,
-                   only_getitem_and_attribute_access=False):
+def extract_names(node,
+                  parse_list_comprehension=True,
+                  stop_at_end_of_list_comprehension=False,
+                  only_getitem_and_attribute_access=False):
     """
-    Extract inputs from an atomic expression
+    Extract names from an expression
     e.g. function(x, y) returns {'function', 'x', 'y'}
 
     Parameters
@@ -329,7 +326,7 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             previous = leaf.get_previous_leaf()
 
             # Process inputs
-            inputs_current = extract_inputs(next_s)
+            inputs_current = extract_names(next_s)
             inputs_current = inputs_current - set(_BUILTIN)
             inputs_current = inputs_current - set(local_scope)
 
@@ -370,7 +367,7 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
                         for name in prev_sibling.parent.get_defined_names())
                 # nope, only one value
                 elif prev_sibling.type == 'atom_expr':
-                    target = target | extract_inputs(
+                    target = target | extract_names(
                         prev_sibling, parse_list_comprehension=False)
                 else:
                     target.add(previous.value)
@@ -387,7 +384,7 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
                     # this is the only case where something on the left side
                     # can be considered an input but only if the object hasn't
                     # been declared so far
-                    inputs_candidates = extract_inputs(
+                    inputs_candidates = extract_names(
                         prev_sibling,
                         parse_list_comprehension=False,
                         only_getitem_and_attribute_access=True)
@@ -421,10 +418,10 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
               leaf.value not in outputs and leaf.value not in local_scope and
               leaf.value not in _BUILTIN and leaf.value not in local_scope and
               leaf.value not in local_variables):
-            inputs.extend(extract_inputs(leaf))
+            inputs.extend(extract_names(leaf))
         elif leaf.type == 'name' and detect.is_inside_list_comprehension(leaf):
-            inputs_new = extract_inputs(leaf,
-                                        stop_at_end_of_list_comprehension=True)
+            inputs_new = extract_names(leaf,
+                                       stop_at_end_of_list_comprehension=True)
             inputs.extend(inputs_new)
 
         next_s = leaf.get_next_sibling()
