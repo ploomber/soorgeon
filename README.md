@@ -62,11 +62,7 @@ pip install ploomber
 ploomber build
 ```
 
-## Known limitations
-
-* If a function depends on global variables, [manual editing is required](doc/fn-global.md).
-* Variables required from one task to the next one should be pickable (i.e., `pickle.dumps(obj)` should work)
-
+To learn more, check out our [guide](doc/guide.md).
 
 ## Community
 
