@@ -12,6 +12,22 @@ The output is a [Ploomber](https://github.com/ploomber/ploomber) pipeline compri
 2. `tasks/`: A task with `.py` files, one per task.
 3. `exported.py`: Functions and classes exported from the original notebook, if any.
 
+## Example
+
+```sh
+# install packages
+pip install soorgeon ploomber
+
+# get the example's code
+git clone https://github.com/ploomber/soorgeon
+
+# refactor the sample ML notebook
+cd examples/machine-learning
+soorgeon refactor nb.ipynb
+
+# run the auto-generated Ploomber pipeline
+ploomber build
+```
 
 ## How it works?
 
