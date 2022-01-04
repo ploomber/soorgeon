@@ -36,5 +36,6 @@ jobs:
         env:
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          PLOOMBER_STATS_ENABLED: false
         run: |
           pytest tests/test_sample_notebooks.py
