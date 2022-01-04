@@ -10,7 +10,7 @@ jobs:
       matrix:
         # python 3.6 throws an error:
         # https://stackoverflow.com/q/69174965/709975
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ['3.7', '3.8', '3.9', '3.10']
 
     steps:
       - uses: actions/checkout@v2
