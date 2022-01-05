@@ -1,6 +1,7 @@
 """
 Functions for splitting a notebook file into smaller parts
 """
+import string
 import re
 
 from soorgeon import exceptions
@@ -57,7 +58,13 @@ def _sanitize_name(name):
     """Sanitize content of an H2 header to be used as a filename
     """
     # replace all non-aplhanumeric with a dash
-    return re.sub('[^0-9a-zA-Z]+', '-', name.lower())
+    sanitized = re.sub('[^0-9a-zA-Z]+', '-', name.lower())
+
+    # argo does not allow names to start with a digit when using dependencies
+    if sanitized[0] in string.digits:
+        sanitized = 'section-' + sanitized
+
+    return sanitized
 
 
 def _get_h2_header(md):

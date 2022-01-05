@@ -106,11 +106,12 @@ def test_names_with_breaks(tmp_empty, nb_str, expected):
     ['task', 'task'],
     ['a task', 'a-task'],
     ['a ta/sk', 'a-ta-sk'],
-    ['1.1 some stuff', '1-1-some-stuff'],
     ['some_task', 'some-task'],
     ['this & that', 'this-that'],
     ['some-task', 'some-task'],
     ['`some_function()`', '-some-function-'],
+    ['some.task', 'some-task'],
+    ['1.1 some stuff', 'section-1-1-some-stuff'],
 ])
 def test_sanitize_name(name, expected):
     assert split._sanitize_name(name) == expected
