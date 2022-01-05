@@ -19,3 +19,20 @@ def refactor(path, log, product_prefix):
     """Refactor a monolithic notebook
     """
     export.from_path(path, log, product_prefix=product_prefix)
+    click.secho(f'Finished refactoring {path!r}, use Ploomber to continue.',
+                fg='green')
+    click.echo(f"""
+Install:
+    $ pip install ploomber
+
+List tasks:
+    $ ploomber status
+
+Execute pipeline:
+    $ ploomber build
+
+Plot pipeline (note: this requires pygraphviz):
+    $ ploomber plot
+
+Documentation: https://docs.ploomber.io
+""")
