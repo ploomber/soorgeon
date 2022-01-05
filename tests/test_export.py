@@ -237,6 +237,13 @@ def test_export_definitions(tmp_empty, code, expected):
     assert Path('exported.py').read_text() == expected
 
 
+def test_does_not_create_exported_py_if_no_definitions(tmp_empty):
+    exporter = export.NotebookExporter(_read(simple))
+    exporter.export_definitions()
+
+    assert not Path('exported.py').exists()
+
+
 def test_get_sources_includes_import_from_exported_definitions(tmp_empty):
     exporter = export.NotebookExporter(_read(with_definitions))
 

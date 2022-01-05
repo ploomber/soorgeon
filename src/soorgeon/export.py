@@ -203,6 +203,10 @@ class NotebookExporter:
     def export_definitions(self):
         """Create an exported.py file with function and class definitions
         """
+        # do not create exported.py if there are no definitions
+        if not self.definitions:
+            return
+
         out = '\n\n'.join(self.definitions.values())
 
         ip = io.ImportsParser(self._get_code())
