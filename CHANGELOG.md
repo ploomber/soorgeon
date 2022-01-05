@@ -3,6 +3,8 @@
 ## 0.0.4dev
 
 ## 0.0.3 (2022-01-05)
+* `soorgeon refactor` prints informative message (#19)
+* `soorgeon refactor` does not create `exported.py` if there are no definitions
 
 ## 0.0.2 (2022-01-04)
 * Improved name sanitizer (replaces non-alphanumeric characters with '-')
