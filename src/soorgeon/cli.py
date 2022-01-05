@@ -21,7 +21,7 @@ def refactor(path, log, product_prefix):
     export.from_path(path, log, product_prefix=product_prefix)
     click.secho(f'Finished refactoring {path!r}, use Ploomber to continue.',
                 fg='green')
-    click.echo(f"""
+    click.echo("""
 Install:
     $ pip install ploomber
 
