@@ -54,7 +54,10 @@ def names_with_breaks(cells, breaks):
 
 
 def _sanitize_name(name):
-    return name.lower().replace(' ', '-').replace('/', '-')
+    """Sanitize content of an H2 header to be used as a filename
+    """
+    # replace all non-aplhanumeric with a dash
+    return re.sub('[^0-9a-zA-Z]+', '-', name.lower())
 
 
 def _get_h2_header(md):
