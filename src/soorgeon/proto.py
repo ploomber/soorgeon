@@ -167,17 +167,26 @@ class ProtoTask:
 
         return jupytext.writes(nb, fmt='py:percent')
 
-    def to_spec(self, io):
+    def to_spec(self, io, product_prefix=None):
+        """
+
+        Parameters
+        ----------
+        product_prefix : str
+            A prefix to add to all products. If None, it's set to 'output'
+        """
+        product_prefix = product_prefix or 'output'
+
         _, outputs = io[self.name]
 
         # prefix products by name to guarantee they're unique
         products = {
-            out: str(Path('output', f'{self.name}-{out}.pkl'))
+            out: str(Path(product_prefix, f'{self.name}-{out}.pkl'))
             for out in outputs
         }
 
         # FIXME: check that there isn't an nb key already
-        products['nb'] = str(Path('output', f'{self.name}.ipynb'))
+        products['nb'] = str(Path(product_prefix, f'{self.name}.ipynb'))
 
         return {
             'source': str(Path('tasks', self.name + '.py')),

@@ -175,10 +175,13 @@ class NotebookExporter:
             for name, cell_group in zip(names, cells_split)
         ]
 
-    def get_task_specs(self):
+    def get_task_specs(self, product_prefix=None):
         """Return task specs (dictionary) for each proto task
         """
-        return {pt.name: pt.to_spec(self.io) for pt in self._proto_tasks}
+        return {
+            pt.name: pt.to_spec(self.io, product_prefix=product_prefix)
+            for pt in self._proto_tasks
+        }
 
     def get_sources(self):
         """
@@ -284,7 +287,14 @@ def _check_functions_do_not_use_global_variables(code):
         raise ValueError(message)
 
 
-def from_nb(nb, log=None):
+def from_nb(nb, log=None, product_prefix=None):
+    """
+
+    Parameters
+    ----------
+    product_prefix : str
+        A prefix to add to all products. If None, it's set to 'output'
+    """
     if log:
         logging.basicConfig(level=log.upper())
 
@@ -293,7 +303,7 @@ def from_nb(nb, log=None):
     # export functions and classes to a separate file
     exporter.export_definitions()
 
-    task_specs = exporter.get_task_specs()
+    task_specs = exporter.get_task_specs(product_prefix=product_prefix)
 
     sources = exporter.get_sources()
 
@@ -316,5 +326,5 @@ def from_nb(nb, log=None):
     # the same text)
 
 
-def from_path(path, log=None):
-    from_nb(jupytext.read(path), log=log)
+def from_path(path, log=None, product_prefix=None):
+    from_nb(jupytext.read(path), log=log, product_prefix=product_prefix)

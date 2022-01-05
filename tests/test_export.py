@@ -115,6 +115,20 @@ def test_from_nb(tmp_empty, nb_str, tasks):
     assert list(dag) == tasks
 
 
+def test_from_nb_with_product_prefix(tmp_empty):
+    export.from_nb(_read(simple), product_prefix='some-directory')
+
+    dag = DAGSpec('pipeline.yaml').to_dag()
+
+    products = [
+        i for meta in (t.product.to_json_serializable().values()
+                       for t in dag.values()) for i in meta
+    ]
+
+    expected = str(Path(tmp_empty, 'some-directory'))
+    assert all([p.startswith(expected) for p in products])
+
+
 def test_spec_style(tmp_empty):
     export.from_nb(_read(simple))
     spec = Path('pipeline.yaml').read_text()
