@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.0.4dev
+* Better list comprehension and f-string parsing
 
 ## 0.0.3 (2022-01-05)
 * `soorgeon refactor` prints informative message (#19)
