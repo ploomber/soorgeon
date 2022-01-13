@@ -976,7 +976,7 @@ def test_find_inputs_with_atom_expr(code, expected, index):
 def test_find_list_comprehension_inputs(code, expected):
     tree = parso.parse(code)
     list_comp = tree.children[0].children[1]
-    assert io.find_list_comprehension_inputs(list_comp) == expected
+    assert io.find_comprehension_inputs(list_comp) == expected
 
 
 @pytest.mark.parametrize('code, expected', [

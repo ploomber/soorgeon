@@ -209,7 +209,9 @@ def find_function_scope_and_io(funcdef, local_scope=None):
     return parameters, body_in - local_scope, body_out
 
 
-def find_list_comprehension_inputs(node):
+def find_comprehension_inputs(node):
+    """Find inpust for list/set/dict comprehension or generator
+    """
     types = {'testlist_comp', 'dictorsetmaker'}
     if node.type not in types:
         raise ValueError('Expected node type be one of '
@@ -289,8 +291,8 @@ def find_inputs(node,
     last = node.get_last_leaf()
 
     while leaf:
-        if detect.is_list_comprehension(leaf):
-            inputs = find_list_comprehension_inputs(leaf.get_next_sibling())
+        if detect.is_comprehension(leaf):
+            inputs = find_comprehension_inputs(leaf.get_next_sibling())
             names.extend(list(inputs))
             leaf = leaf.parent.get_last_leaf()
 
@@ -535,8 +537,8 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
               leaf.value not in _BUILTIN and leaf.value not in local_scope and
               leaf.value not in local_variables):
             inputs.extend(find_inputs(leaf))
-        elif detect.is_list_comprehension(leaf):
-            inputs_new = find_list_comprehension_inputs(
+        elif detect.is_comprehension(leaf):
+            inputs_new = find_comprehension_inputs(
                 leaf.get_next_sibling())
             inputs.extend(inputs_new)
             leaf = leaf.parent.get_last_leaf()

@@ -65,9 +65,9 @@ def test_is_for_loop(code, expected):
                              'dict-comp-conditional',
                              'generator',
                          ])
-def test_is_list_comprehension(code, expected):
+def test_is_comprehension(code, expected):
     leaf = parso.parse(code).get_first_leaf()
-    assert detect.is_list_comprehension(leaf) is expected
+    assert detect.is_comprehension(leaf) is expected
 
 
 @pytest.mark.parametrize('code, expected', [

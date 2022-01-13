@@ -35,10 +35,10 @@ def is_for_loop(leaf):
     return False
 
 
-def is_list_comprehension(leaf):
+def is_comprehension(leaf):
     """
-    Return true if the leaf is the beginning of a list comprehension. Returns
-    true for generators as well
+    Return true if the leaf is the beginning of a list/set/dict comprehension.
+    Returns true for generators as well
     """
     if leaf.type != 'operator' or leaf.value not in {'[', '(', '{'}:
         return False
