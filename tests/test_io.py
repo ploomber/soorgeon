@@ -847,6 +847,14 @@ def test_find_context_manager_def_and_io(code, def_expected, in_expected,
      set()],
     ['def fn(x, y):\n    z', {'x', 'y'}, {'z'},
      set()],
+    ['def fn() -> Mapping[str, int]:\n    pass',
+     set(), {'Mapping'},
+     set()],
+    [
+        'def fn(x: int, y: Mapping[str, int]):\n    z + x + y',
+        {'Mapping', 'x', 'y'}, {'z'},
+        set()
+    ],
 ],
                          ids=[
                              'arg-one',
@@ -857,6 +865,8 @@ def test_find_context_manager_def_and_io(code, def_expected, in_expected,
                              'uses-outer-scope-getitem',
                              'uses-outer-scope-no-assignment',
                              'uses-outer-scope-reference',
+                             'annotation-return',
+                             'annotation-args',
                          ])
 def test_find_function_scope_and_io(code, def_expected, in_expected,
                                     out_expected):

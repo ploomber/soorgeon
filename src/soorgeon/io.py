@@ -190,14 +190,36 @@ def find_context_manager_def_and_io(with_stmt, local_scope=None):
 
 
 def find_function_scope_and_io(funcdef, local_scope=None):
+    """Find function scope, input, and output
+
+    Returns
+    -------
+    set
+        Parameters in the signature
+
+    set
+        Variable from the global scope (used in the body, but missing in the
+        signature), also includes return annotations (e.f., fn() -> str)
+
+    set
+        Variables declared in the body
+    """
     if funcdef.type != 'funcdef':
         raise ValueError(f'Expected a node with type "funcdef", '
                          f'got: {funcdef} with type {funcdef.type}')
 
     local_scope = local_scope or set()
 
-    # get the parts that we need
-    _, _, node_parameters, _, body_node = funcdef.children
+    # regular definition
+    if len(funcdef.children) == 5:
+        _, _, node_parameters, _, body_node = funcdef.children
+        annotation_return = None
+
+    # return annotation
+    elif len(funcdef.children) == 7:
+        node_parameters = funcdef.children[2]
+        annotation_return = funcdef.children[4]
+        body_node = funcdef.children[6]
 
     parameters = find_inputs(node_parameters, parse_list_comprehension=False)
 
@@ -205,6 +227,10 @@ def find_function_scope_and_io(funcdef, local_scope=None):
         body_node.get_first_leaf(),
         local_scope=parameters,
         leaf_end=body_node.get_last_leaf())
+
+    if annotation_return:
+        body_in = body_in | find_inputs(annotation_return,
+                                        parse_list_comprehension=False)
 
     return parameters, body_in - local_scope, body_out
 
@@ -429,6 +455,9 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             # jump to the end of the foor loop
             leaf = leaf.parent.get_last_leaf()
         elif detect.is_funcdef(leaf):
+            # NOTE: we're verifying that the function does not use any global
+            # variables so candidates_in should only contain the return
+            # annotations
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_function_scope_and_io(
@@ -538,8 +567,7 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
               leaf.value not in local_variables):
             inputs.extend(find_inputs(leaf))
         elif detect.is_comprehension(leaf):
-            inputs_new = find_comprehension_inputs(
-                leaf.get_next_sibling())
+            inputs_new = find_comprehension_inputs(leaf.get_next_sibling())
             inputs.extend(inputs_new)
             leaf = leaf.parent.get_last_leaf()
 
