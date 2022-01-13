@@ -244,7 +244,6 @@ def find_list_comprehension_inputs(node):
 
 def extract_names(node,
                   parse_list_comprehension=True,
-                  stop_at_end_of_list_comprehension=False,
                   only_getitem_and_attribute_access=False):
     """
     Extract names from an expression
@@ -274,9 +273,6 @@ def extract_names(node,
 
             # skip to the end of the list comprehension
             leaf = list_comp.get_last_leaf()
-
-            if stop_at_end_of_list_comprehension:
-                break
 
         # something else
         else:
