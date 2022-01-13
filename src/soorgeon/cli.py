@@ -1,9 +1,10 @@
 import click
 
-from soorgeon import export
+from soorgeon import __version__, export
 
 
 @click.group()
+@click.version_option(__version__)
 def cli():
     pass
 
