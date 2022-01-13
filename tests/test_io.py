@@ -372,6 +372,10 @@ f_string = """
 f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
 """
 
+f_string_assignment = """
+s = f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
+"""
+
 
 @pytest.mark.parametrize(
     'code_str, inputs, outputs', [
@@ -449,7 +453,8 @@ f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
         ],
         [list_comprehension_with_f_string,
          set(), set()],
-         [list_comprehension_with_f_string_assignment, set(), {'y'}],
+        [list_comprehension_with_f_string_assignment,
+         set(), {'y'}],
         [function_with_global_variable,
          {'b'}, set()],
         [mutating_input, {'df'}, {'df'}],
@@ -462,6 +467,10 @@ f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
         [
             f_string, {'some_variable', 'a_number', 'an_object', 'another'},
             set()
+        ],
+        [
+            f_string_assignment,
+            {'some_variable', 'a_number', 'an_object', 'another'}, {'s'}
         ],
     ],
     ids=[
@@ -518,6 +527,7 @@ f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
         'nested_function_kwarg',
         'context_manager',
         'f_string',
+        'f_string_assignment',
     ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = io.find_inputs_and_outputs(code_str)
@@ -896,7 +906,7 @@ def test_find_inputs_only_getitem_and_attribute_access(code, expected):
 def test_find_inputs_only_getitem_and_attribute_access_list_comprehension(
         code, expected):
     out = io.find_inputs(parso.parse(code),
-                           only_getitem_and_attribute_access=True)
+                         only_getitem_and_attribute_access=True)
     assert out == expected
 
 

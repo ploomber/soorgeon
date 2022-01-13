@@ -5,7 +5,7 @@ from functools import reduce
 
 import parso
 
-from soorgeon import detect, get, definitions
+from soorgeon import detect, definitions
 
 _BUILTIN = set(__builtins__)
 
@@ -261,17 +261,10 @@ def find_inputs(node,
     last = node.get_last_leaf()
 
     while leaf:
-        # FIXME: delete this, this should not receive a whole list
-        # comprehension as input, but their elements
-        # list comprehension
-        if (parse_list_comprehension
-                and detect.is_inside_list_comprehension(leaf)):
-            list_comp = get.first_non_atom_expr_parent(leaf)
-            inputs = find_list_comprehension_inputs(list_comp)
+        if detect.is_list_comprehension(leaf):
+            inputs = find_list_comprehension_inputs(leaf.get_next_sibling())
             names.extend(list(inputs))
-
-            # skip to the end of the list comprehension
-            leaf = list_comp.get_last_leaf()
+            leaf = leaf.parent.get_last_leaf()
 
         # something else
         else:

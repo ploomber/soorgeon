@@ -76,6 +76,7 @@ def is_left_side_of_assignment(node):
     return to_check.children[1].value == '='
 
 
+# FIXME: delete
 def is_inside_list_comprehension(node):
     parent = get.first_non_atom_expr_parent(node)
 
