@@ -121,9 +121,15 @@ try:
 except Exception as e:
     print('something happened')
 
+    if False:
+        raise Exception from e
+
 z = y + 1
 
 stuff = [f"'{s}'" for s in [] if s not in []]
+
+a_, b_ = range(10), range(10)
+things = {f'"{a}"': b for a, b in a_, b_ if b > 3}
 """
 
 
