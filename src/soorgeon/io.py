@@ -18,6 +18,7 @@ class ImportsParser:
     code_nb : str
         Notebook's source code
     """
+
     def __init__(self, code_nb):
         self._tree = parso.parse(code_nb)
         # maps defined names (from imports) to the source code
@@ -120,6 +121,60 @@ def find_for_loop_def_and_io(for_stmt, local_scope=None):
     # outputs, since they're available after the loop ends (with the loop's
     # last value, however, we don't consider them here)
     return defined, (iterator_in | body_in) - local_scope, body_out
+
+
+def _find_type_value_idx_in_children(type_, value, node):
+    for idx, child in enumerate(node.children):
+        if (child.type, getattr(child, 'value', None)) == (type_, value):
+            return idx
+
+    return None
+
+
+def _process_context(context):
+    if ('keyword', 'as') in ((n.type, getattr(n, 'value', None))
+                             for n in context.children):
+        node_expression, _, node_definition = context.children
+        defined = extract_names(node_definition,
+                                parse_list_comprehension=False)
+    else:
+        node_expression = context
+        defined = set()
+
+    # FIXME: this could have a list comprehension
+    exp = extract_names(node_expression, parse_list_comprehension=False)
+
+    return exp, defined
+
+
+def find_context_manager_def_and_io(with_stmt, local_scope=None):
+    if with_stmt.type != 'with_stmt':
+        raise ValueError(f'Expected a node with type "with_stmt", '
+                         f'got: {with_stmt} with type {with_stmt.type}')
+
+    local_scope = local_scope or set()
+
+    idx_colon = _find_type_value_idx_in_children('operator', ':', with_stmt)
+
+    # get children that are relevant (ignore with keyword, commads, and colon
+    # operator)
+    contexts = with_stmt.children[1:idx_colon:2]
+
+    body_node = with_stmt.children[-1]
+
+    exp, defined = set(), set()
+
+    for context in contexts:
+        exp_, defined_ = _process_context(context)
+        exp = exp | exp_
+        defined = defined | defined_
+
+    body_in, body_out = find_inputs_and_outputs_from_leaf(
+        body_node.get_first_leaf(),
+        local_scope=defined,
+        leaf_end=body_node.get_last_leaf())
+
+    return defined, (exp | body_in) - local_scope, body_out
 
 
 def find_function_scope_and_io(funcdef, local_scope=None):
@@ -279,6 +334,9 @@ def find_inputs_and_outputs_from_tree(tree, local_scope=None):
 # FIXME: try nested functions, and also functions inside for loops and loops
 # inside functions
 def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
+    """
+    Find inputs and outputs. Starts parsing at the given leaf
+    """
     local_scope = local_scope or set()
 
     inputs, outputs = [], set()
@@ -306,6 +364,16 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_for_loop_def_and_io(
                 leaf.parent, local_scope=local_scope)
+            inputs.extend(clean_up_candidates(candidates_in, local_variables))
+            outputs = outputs | candidates_out
+            # jump to the end of the foor loop
+            leaf = leaf.parent.get_last_leaf()
+        elif detect.is_context_manager(leaf):
+            # FIXME: i think is hould also pass the current foudn inputs
+            # to local scope - write a test to break this
+            (_, candidates_in,
+             candidates_out) = find_context_manager_def_and_io(
+                 leaf.parent, local_scope=local_scope)
             inputs.extend(clean_up_candidates(candidates_in, local_variables))
             outputs = outputs | candidates_out
             # jump to the end of the foor loop
@@ -468,6 +536,7 @@ class ProviderMapping:
         important, and is assumed that the order of the task_name keys matches
         the order of appearance of their corresponding cells in the notebook.
     """
+
     def __init__(self, io):
         self._io = io
 
@@ -512,6 +581,7 @@ class DefinitionsMapping:
     snippet. We use this to determine which names should not be considered
     inputs in tasks, since they are module names
     """
+
     def __init__(self, snippets):
         self._names = {
             name: set(definitions.find_defined_names(parso.parse(code)))

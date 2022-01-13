@@ -43,6 +43,19 @@ def test_is_for_loop(code, expected):
 
 
 @pytest.mark.parametrize('code, expected', [
+    ['for x in range(10):\n    pass', False],
+    ['with open(x) as f:\n    pass', True],
+],
+                         ids=[
+                             'not-context-manager',
+                             'simple',
+                         ])
+def test_is_context_manager(code, expected):
+    leaf = testutils.get_first_leaf_with_value(code, 'x')
+    assert detect.is_context_manager(leaf) is expected
+
+
+@pytest.mark.parametrize('code, expected', [
     ['[x for x in range(10)]', True],
     ['[x, y]', False],
     ['[x.attribute for x in range(10)', True],

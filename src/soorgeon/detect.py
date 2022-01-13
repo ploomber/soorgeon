@@ -31,6 +31,25 @@ def is_for_loop(leaf):
     return False
 
 
+def is_context_manager(leaf):
+    """
+    Returns true if the leaf is the beginning of a context manager
+    """
+    has_suite_parent = False
+    parent = leaf.parent
+
+    while parent:
+        if parent.type == 'suite':
+            has_suite_parent = True
+
+        if parent.type == 'with_stmt':
+            return not has_suite_parent
+
+        parent = parent.parent
+
+    return False
+
+
 def is_left_side_of_assignment(node):
     to_check = get.first_expr_stmt_parent(node)
 

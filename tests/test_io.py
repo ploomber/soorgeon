@@ -354,6 +354,12 @@ import pd
 pd.DataFrame(data={'key': y})
 """
 
+# TODO: test nested context managers
+context_manager = """
+with open('file.txt') as f:
+    x = f.read()
+"""
+
 
 @pytest.mark.parametrize(
     'code_str, inputs, outputs', [
@@ -437,6 +443,7 @@ pd.DataFrame(data={'key': y})
          set(), set()],
         [nested_function_arg, {'y'}, set()],
         [nested_function_kwarg, {'y'}, set()],
+        [context_manager, set(), {'x'}],
     ],
     ids=[
         'only_outputs',
@@ -488,6 +495,7 @@ pd.DataFrame(data={'key': y})
         'function_mutating_local_object',
         'nested_function_arg',
         'nested_function_kwarg',
+        'context_manager',
     ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = io.find_inputs_and_outputs(code_str)
@@ -730,7 +738,46 @@ def test_find_for_loop_def_and_io(code, def_expected, in_expected,
                                   out_expected):
     tree = parso.parse(code)
     # TODO: test with non-empty local_scope parameter
-    def_, in_, out = (io.find_for_loop_def_and_io(tree.children[0]))
+    def_, in_, out = io.find_for_loop_def_and_io(tree.children[0])
+    assert def_ == def_expected
+    assert in_ == in_expected
+    assert out == out_expected
+
+
+@pytest.mark.parametrize('code, def_expected, in_expected, out_expected', [
+    ['with open("file") as f:\n    pass', {'f'},
+     set(), set()],
+    ['with open("file"):\n    pass', set(),
+     set(), set()],
+    ['with open("file") as f, open("another") as g:\n    pass', {'f', 'g'},
+     set(), set()],
+    ['with open("file") as f:\n    x = f.read()', {'f'},
+     set(), {'x'}],
+    ['with open("file") as f:\n    x, y = f.read()', {'f'},
+     set(), {'x', 'y'}],
+    [
+        'with open(some_path) as f:\n    x = f.read()', {'f'}, {'some_path'},
+        {'x'}
+    ],
+    [
+        'with open(some_path, another_path) as (f, ff):\n    x = f.read()',
+        {'f', 'ff'}, {'some_path', 'another_path'}, {'x'}
+    ],
+],
+                         ids=[
+                             'one',
+                             'no-alias',
+                             'two',
+                             'output-one',
+                             'output-many',
+                             'input-one',
+                             'input-many',
+                         ])
+def test_find_context_manager_def_and_io(code, def_expected, in_expected,
+                                         out_expected):
+    tree = parso.parse(code)
+    # TODO: test with non-empty local_scope parameter
+    def_, in_, out = io.find_context_manager_def_and_io(tree.children[0])
     assert def_ == def_expected
     assert in_ == in_expected
     assert out == out_expected
