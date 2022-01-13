@@ -864,9 +864,9 @@ def test_find_function_scope_and_io(code, def_expected, in_expected,
         'getitem',
         'attribute',
     ])
-def test_extract_inputs(code, expected):
+def test_find_inputs(code, expected):
     atom_exp = testutils.get_first_leaf_with_value(code, 'name').parent
-    assert io.extract_names(atom_exp) == expected
+    assert io.find_inputs(atom_exp) == expected
 
 
 @pytest.mark.parametrize('code, expected', [
@@ -879,9 +879,9 @@ def test_extract_inputs(code, expected):
                              'attribute',
                              'name',
                          ])
-def test_extract_inputs_only_getitem_and_attribute_access(code, expected):
+def test_find_inputs_only_getitem_and_attribute_access(code, expected):
     atom_exp = testutils.get_first_leaf_with_value(code, 'name').parent
-    out = io.extract_names(atom_exp, only_getitem_and_attribute_access=True)
+    out = io.find_inputs(atom_exp, only_getitem_and_attribute_access=True)
     assert out == expected
 
 
@@ -893,9 +893,9 @@ def test_extract_inputs_only_getitem_and_attribute_access(code, expected):
                              'getitem',
                              'getitem-nested',
                          ])
-def test_extract_inputs_only_getitem_and_attribute_access_list_comprehension(
+def test_find_inputs_only_getitem_and_attribute_access_list_comprehension(
         code, expected):
-    out = io.extract_names(parso.parse(code),
+    out = io.find_inputs(parso.parse(code),
                            only_getitem_and_attribute_access=True)
     assert out == expected
 
@@ -926,9 +926,9 @@ def test_extract_inputs_only_getitem_and_attribute_access_list_comprehension(
                              'list-comprehension',
                              'list-comprehension-as-arg',
                          ])
-def test_extract_inputs_with_atom_expr(code, expected, index):
+def test_find_inputs_with_atom_expr(code, expected, index):
     atom_exp = get_first_sibling_after_assignment(code, index=index)
-    assert io.extract_names(atom_exp) == expected
+    assert io.find_inputs(atom_exp) == expected
 
 
 # TODO: add nested list comprehension
