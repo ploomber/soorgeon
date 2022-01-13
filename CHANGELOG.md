@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.0.5dev
+
 ## 0.0.4 (2022-01-12)
 * Better list comprehension and f-string parsing
 
