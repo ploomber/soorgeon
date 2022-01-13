@@ -95,16 +95,49 @@ y = x + 1
 z = y + 1
 """
 
+complex = """\
+# ## one
+
+with open('one-1', 'w') as f:
+    with open('one-2', 'w') as g:
+        f.write(''), g.write('')
+
+x = 1
+
+# ## two
+
+
+with open('one-1', 'w') as f, open('one-2', 'w') as g:
+    f.write(''), g.write('')
+
+y = 1 + 1
+
+print(f'{x} {y!r} {x:.2f}')
+
+# ## three
+
+try:
+    raise ValueError
+except Exception as e:
+    print('something happened')
+
+z = y + 1
+
+stuff = [f"'{s}'" for s in [] if s not in []]
+"""
+
 
 @pytest.mark.parametrize('nb_str, tasks', [
     [simple, ['cell-0', 'cell-2', 'cell-4']],
     [simple_branch, ['first', 'second', 'third-a', 'third-b']],
     [eda, ['load', 'clean', 'plot']],
+    [complex, ['one', 'two', 'three']],
 ],
                          ids=[
                              'simple',
                              'simple-branch',
                              'eda',
+                             'complex',
                          ])
 def test_from_nb(tmp_empty, nb_str, tasks):
     export.from_nb(_read(nb_str))

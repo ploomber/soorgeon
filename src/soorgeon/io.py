@@ -147,6 +147,19 @@ def _process_context(context):
     return exp, defined
 
 
+def find_f_string_inputs(fstring_start, local_scope=None):
+    if fstring_start.type != 'fstring_start':
+        raise ValueError(
+            f'Expected a node with type "fstring_start", '
+            f'got: {fstring_start} with type {fstring_start.type}')
+
+    f_string = fstring_start.parent
+
+    names = extract_names(f_string, parse_list_comprehension=False)
+
+    return names - local_scope
+
+
 def find_context_manager_def_and_io(with_stmt, local_scope=None):
     if with_stmt.type != 'with_stmt':
         raise ValueError(f'Expected a node with type "with_stmt", '
@@ -250,6 +263,7 @@ def extract_names(node,
     last = node.get_last_leaf()
 
     while leaf:
+        # list comprehension
         if (parse_list_comprehension
                 and detect.is_inside_list_comprehension(leaf)):
             list_comp = get.first_non_atom_expr_parent(leaf)
@@ -261,7 +275,17 @@ def extract_names(node,
 
             if stop_at_end_of_list_comprehension:
                 break
+
+        # something else
         else:
+            # ignore f-string format specs {number:.2f}
+            # and f-string conversions {object!r}
+            if leaf.parent.type in {
+                    'fstring_format_spec', 'fstring_conversion'
+            }:
+                leaf = leaf.get_next_leaf()
+                continue
+
             # is this a kwarg?
             try:
                 key_arg = leaf.get_next_leaf().value == '='
@@ -359,7 +383,13 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
         if not _inside_funcdef:
             local_variables = set()
 
-        if detect.is_for_loop(leaf):
+        if detect.is_f_string(leaf):
+            candidates_in = find_f_string_inputs(leaf, local_scope=local_scope)
+            inputs.extend(clean_up_candidates(candidates_in, local_variables))
+            # jump to the end of the f-string
+            leaf = leaf.parent.get_last_leaf()
+
+        elif detect.is_for_loop(leaf):
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_for_loop_def_and_io(

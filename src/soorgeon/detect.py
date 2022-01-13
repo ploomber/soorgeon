@@ -4,6 +4,10 @@ Detect which kind of structure we're dealing with
 from soorgeon import get
 
 
+def is_f_string(leaf):
+    return leaf.type == 'fstring_start'
+
+
 def is_funcdef(leaf):
     """
     Returns true if the leaf is the beginning of a function definition (def

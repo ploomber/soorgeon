@@ -281,6 +281,10 @@ df = pd.read_csv("data.csv")
 features = [feature for feature in df.columns]
 """
 
+list_comprehension_with_f_string = """
+[f"'{s}'" for s in [] if s not in []]
+"""
+
 function_with_global_variable = """
 def some_function(a):
     return a + b
@@ -360,6 +364,10 @@ with open('file.txt') as f:
     x = f.read()
 """
 
+f_string = """
+f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
+"""
+
 
 @pytest.mark.parametrize(
     'code_str, inputs, outputs', [
@@ -435,6 +443,8 @@ with open('file.txt') as f:
             list_comprehension_with_conditional_and_local_variable,
             set(), {'df', 'features'}
         ],
+        [list_comprehension_with_f_string,
+         set(), set()],
         [function_with_global_variable,
          {'b'}, set()],
         [mutating_input, {'df'}, {'df'}],
@@ -444,6 +454,10 @@ with open('file.txt') as f:
         [nested_function_arg, {'y'}, set()],
         [nested_function_kwarg, {'y'}, set()],
         [context_manager, set(), {'x'}],
+        [
+            f_string, {'some_variable', 'a_number', 'an_object', 'another'},
+            set()
+        ],
     ],
     ids=[
         'only_outputs',
@@ -489,6 +503,7 @@ with open('file.txt') as f:
         'list_comprehension_attributes',
         'list_comprehension_with_conditional',
         'list_comprehension_with_conditional_and_local_variable',
+        'list_comprehension_with_f_string',
         'function_with_global_variable',
         'mutating_input',
         'mutating_input_implicit',
@@ -496,6 +511,7 @@ with open('file.txt') as f:
         'nested_function_arg',
         'nested_function_kwarg',
         'context_manager',
+        'f_string',
     ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = io.find_inputs_and_outputs(code_str)
@@ -747,10 +763,13 @@ def test_find_for_loop_def_and_io(code, def_expected, in_expected,
 @pytest.mark.parametrize('code, def_expected, in_expected, out_expected', [
     ['with open("file") as f:\n    pass', {'f'},
      set(), set()],
-    ['with open("file"):\n    pass', set(),
-     set(), set()],
-    ['with open("file") as f, open("another") as g:\n    pass', {'f', 'g'},
-     set(), set()],
+    ['with open("file"):\n    pass',
+     set(), set(), set()],
+    [
+        'with open("file") as f, open("another") as g:\n    pass', {'f', 'g'},
+        set(),
+        set()
+    ],
     ['with open("file") as f:\n    x = f.read()', {'f'},
      set(), {'x'}],
     ['with open("file") as f:\n    x, y = f.read()', {'f'},
@@ -909,6 +928,7 @@ def test_extract_inputs_with_atom_expr(code, expected, index):
 # TODO: add nested list comprehension
 @pytest.mark.parametrize('code, expected', [
     ['[x for x in range(10)]', set()],
+    ['[f"{x}" for x in range(10)]', set()],
     ['(x for x in range(10))', set()],
     ['[function(x) for x in range(10)]', {'function'}],
     ['[(x, y) for x, y in something(10)]', {'something'}],
@@ -918,6 +938,7 @@ def test_extract_inputs_with_atom_expr(code, expected, index):
 ],
                          ids=[
                              'left-expression',
+                             'f-string',
                              'generator',
                              'both-expressions',
                              'many-variables',
