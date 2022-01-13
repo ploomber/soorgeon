@@ -285,6 +285,10 @@ list_comprehension_with_f_string = """
 [f"'{s}'" for s in [] if s not in []]
 """
 
+list_comprehension_with_f_string_assignment = """
+y = [f"'{s}'" for s in [] if s not in []]
+"""
+
 function_with_global_variable = """
 def some_function(a):
     return a + b
@@ -445,6 +449,7 @@ f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
         ],
         [list_comprehension_with_f_string,
          set(), set()],
+         [list_comprehension_with_f_string_assignment, set(), {'y'}],
         [function_with_global_variable,
          {'b'}, set()],
         [mutating_input, {'df'}, {'df'}],
@@ -504,6 +509,7 @@ f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
         'list_comprehension_with_conditional',
         'list_comprehension_with_conditional_and_local_variable',
         'list_comprehension_with_f_string',
+        'list_comprehension_with_f_string_assignment',
         'function_with_global_variable',
         'mutating_input',
         'mutating_input_implicit',

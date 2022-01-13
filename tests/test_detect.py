@@ -1,6 +1,7 @@
 import testutils
 
 import pytest
+import parso
 
 from soorgeon import detect
 
@@ -40,6 +41,21 @@ def test_is_left_side_of_assignment(code, expected):
 def test_is_for_loop(code, expected):
     leaf = testutils.get_first_leaf_with_value(code, 'x')
     assert detect.is_for_loop(leaf) is expected
+
+
+@pytest.mark.parametrize('code, expected', [
+    ['[1, 2, 3]', False],
+    ['[x for x in range(10)]', True],
+    ['(x for x in range(10))', True],
+],
+                         ids=[
+                             'list',
+                             'generator',
+                             'simple',
+                         ])
+def test_is_list_comprehension(code, expected):
+    leaf = parso.parse(code).get_first_leaf()
+    assert detect.is_list_comprehension(leaf) is expected
 
 
 @pytest.mark.parametrize('code, expected', [

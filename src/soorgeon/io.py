@@ -263,6 +263,8 @@ def extract_names(node,
     last = node.get_last_leaf()
 
     while leaf:
+        # FIXME: delete this, this should not receive a whole list
+        # comprehension as input, but their elements
         # list comprehension
         if (parse_list_comprehension
                 and detect.is_inside_list_comprehension(leaf)):
@@ -517,13 +519,16 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
               leaf.value not in _BUILTIN and leaf.value not in local_scope and
               leaf.value not in local_variables):
             inputs.extend(extract_names(leaf))
-        elif leaf.type == 'name' and detect.is_inside_list_comprehension(leaf):
-            inputs_new = extract_names(leaf,
-                                       stop_at_end_of_list_comprehension=True)
+        elif detect.is_list_comprehension(leaf):
+            inputs_new = find_list_comprehension_inputs(
+                leaf.get_next_sibling())
             inputs.extend(inputs_new)
+            leaf = leaf.parent.get_last_leaf()
 
         next_s = leaf.get_next_sibling()
 
+        # FIXME: this should not happen anymore since we skip til the end
+        # after we parse the list comprehension
         # if we just parsed a list comprehension, skip until the end of it
         try:
             list_comp = next_s.children[1].type == 'testlist_comp'
