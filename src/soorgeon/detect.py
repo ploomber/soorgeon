@@ -40,12 +40,13 @@ def is_list_comprehension(leaf):
     Return true if the leaf is the beginning of a list comprehension. Returns
     true for generators as well
     """
-    if leaf.type != 'operator' or leaf.value not in {'[', '('}:
+    if leaf.type != 'operator' or leaf.value not in {'[', '(', '{'}:
         return False
 
     sibling = leaf.get_next_sibling()
-    return (sibling.type == 'testlist_comp'
-            and sibling.children[1].type == 'sync_comp_for')
+
+    return (sibling.type in {'testlist_comp', 'dictorsetmaker'}
+            and sibling.children[-1].type == 'sync_comp_for')
 
 
 def is_context_manager(leaf):

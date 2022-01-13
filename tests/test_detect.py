@@ -45,13 +45,25 @@ def test_is_for_loop(code, expected):
 
 @pytest.mark.parametrize('code, expected', [
     ['[1, 2, 3]', False],
+    ['{1, 2, 3}', False],
+    ['{1: 1, 2: 2, 3: 3}', False],
     ['[x for x in range(10)]', True],
+    ['{x for x in range(10)}', True],
+    ['{x for x in range(10) if x > 1}', True],
+    ['{x: x + 1 for x in range(10)}', True],
+    ['{x: x + 1 for x in range(10) if x > 1 and x < 8}', True],
     ['(x for x in range(10))', True],
 ],
                          ids=[
                              'list',
-                             'generator',
+                             'set',
+                             'dict',
                              'simple',
+                             'set-comp',
+                             'set-comp-conditional',
+                             'dict-comp',
+                             'dict-comp-conditional',
+                             'generator',
                          ])
 def test_is_list_comprehension(code, expected):
     leaf = parso.parse(code).get_first_leaf()

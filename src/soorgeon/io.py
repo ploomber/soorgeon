@@ -210,21 +210,31 @@ def find_function_scope_and_io(funcdef, local_scope=None):
 
 
 def find_list_comprehension_inputs(node):
-    if node.type != 'testlist_comp':
-        raise ValueError('Expected node to have type '
-                         f'"testlist_comp", got: {node.type}')
+    types = {'testlist_comp', 'dictorsetmaker'}
+    if node.type not in types:
+        raise ValueError('Expected node type be one of '
+                         f'{types!r}, got: {node.type}')
 
-    compfor, synccompfor = node.children
+    if len(node.children) == 2:
+        compfor, synccompfor = node.children
 
-    # parse the variables in the left expression
-    # e.g., [expression(x) for x in range(10)]
-    try:
-        inputs_left = find_inputs(compfor.children[0],
-                                  parse_list_comprehension=False)
-    except AttributeError:
-        # if there isn't an expression but a single variable, we just
-        # get the name e.g., [x for x in range(10)]
-        inputs_left = {compfor.value}
+        # parse the variables in the left expression
+        # e.g., [expression(x) for x in range(10)]
+        try:
+            inputs_left = find_inputs(compfor.children[0],
+                                      parse_list_comprehension=False)
+        except AttributeError:
+            # if there isn't an expression but a single variable, we just
+            # get the name e.g., [x for x in range(10)]
+            inputs_left = {compfor.value}
+
+    # dict comprehension contains:
+    # key: value
+    else:
+        synccompfor = node.children[-1]
+
+        inputs_left = find_inputs_for_each(node.children[:-1],
+                                           parse_list_comprehension=False)
 
     # these are the variables that the list comprehension declares
     declared = find_inputs(synccompfor.children[1],
@@ -239,6 +249,24 @@ def find_list_comprehension_inputs(node):
                                parse_list_comprehension=False)
 
     return (inputs_left | inputs_right) - declared
+
+
+def find_inputs_for_each(nodes,
+                         parse_list_comprehension=True,
+                         only_getitem_and_attribute_access=False):
+    """Like find_inputs, but takes a list of nodes
+    """
+    inputs = set()
+
+    for node in nodes:
+        inputs_new = find_inputs(
+            node,
+            parse_list_comprehension=parse_list_comprehension,
+            only_getitem_and_attribute_access=only_getitem_and_attribute_access
+        )
+        inputs = inputs | inputs_new
+
+    return inputs
 
 
 def find_inputs(node,
