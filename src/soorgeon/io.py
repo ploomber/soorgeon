@@ -210,7 +210,7 @@ def find_function_scope_and_io(funcdef, local_scope=None):
     return parameters, body_in - local_scope, body_out
 
 
-def get_inputs_in_list_comprehension(node):
+def find_list_comprehension_inputs(node):
     if node.type != 'testlist_comp':
         raise ValueError('Expected node to have type '
                          f'"testlist_comp", got: {node.type}')
@@ -267,7 +267,7 @@ def extract_names(node,
         if (parse_list_comprehension
                 and detect.is_inside_list_comprehension(leaf)):
             list_comp = get.first_non_atom_expr_parent(leaf)
-            inputs = get_inputs_in_list_comprehension(list_comp)
+            inputs = find_list_comprehension_inputs(list_comp)
             names.extend(list(inputs))
 
             # skip to the end of the list comprehension

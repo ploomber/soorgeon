@@ -945,10 +945,10 @@ def test_extract_inputs_with_atom_expr(code, expected, index):
                              'attributes',
                              'conditional',
                          ])
-def test_get_inputs_in_list_comprehension(code, expected):
+def test_find_list_comprehension_inputs(code, expected):
     tree = parso.parse(code)
     list_comp = tree.children[0].children[1]
-    assert io.get_inputs_in_list_comprehension(list_comp) == expected
+    assert io.find_list_comprehension_inputs(list_comp) == expected
 
 
 @pytest.mark.parametrize('code, expected', [
