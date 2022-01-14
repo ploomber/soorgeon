@@ -6,6 +6,14 @@ from invoke import task
 
 
 @task
+def test(c):
+    """Run unit tests + flake8
+    """
+    c.run('pytest --ignore=tests/test_sample_notebooks.py', pty=True)
+    c.run('flake8')
+
+
+@task
 def setup(c, version=None):
     """
     Setup dev environment, requires conda
