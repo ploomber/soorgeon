@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.0.5dev
+## 0.0.5 (2022-01-14)
 * Adds `--version` to CLI (#20)
 * Support for set and dict comprehension
 * Support for fn return type annotations (#25)
