@@ -387,3 +387,36 @@ y = something.another()
 
     assert 'import something' in sources['first']
     assert 'import something' in sources['second']
+
+
+def test_get_task_specs():
+    code = """\
+# ## first
+
+import something
+
+x = something.do()
+
+# ## second
+
+y = x + something.another()
+"""
+    nb = jupytext.reads(code, fmt='py:light')
+    exporter = export.NotebookExporter(nb)
+    specs = exporter.get_task_specs()
+
+    assert specs == {
+        'first': {
+            'source': 'tasks/first.py',
+            'product': {
+                'x': 'output/first-x.pkl',
+                'nb': 'output/first.ipynb'
+            }
+        },
+        'second': {
+            'source': 'tasks/second.py',
+            'product': {
+                'nb': 'output/second.ipynb'
+            }
+        }
+    }

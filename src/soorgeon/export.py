@@ -152,6 +152,30 @@ class NotebookExporter:
         self._io = None
         self._definitions = None
 
+    def export(self, product_prefix=None):
+        """Export the project
+        """
+        # export functions and classes to a separate file
+        self.export_definitions()
+
+        task_specs = self.get_task_specs(product_prefix=product_prefix)
+
+        sources = self.get_sources()
+
+        dag_spec = {'tasks': list(task_specs.values())}
+
+        for name, task_spec in task_specs.items():
+            path = Path(task_spec['source'])
+            path.parent.mkdir(exist_ok=True, parents=True)
+            path.write_text(sources[name])
+
+        out = yaml.dump(dag_spec, sort_keys=False)
+        # pyyaml doesn't have an easy way to control whitespace, but we want
+        # tasks to have an empty line between them
+        out = out.replace('\n- ', '\n\n- ')
+
+        Path('pipeline.yaml').write_text(out)
+
     def _check(self):
         """
         Run a few checks before continuing the refactoring. If this fails,
@@ -320,27 +344,7 @@ def from_nb(nb, log=None, product_prefix=None):
         logging.basicConfig(level=log.upper())
 
     exporter = NotebookExporter(nb)
-
-    # export functions and classes to a separate file
-    exporter.export_definitions()
-
-    task_specs = exporter.get_task_specs(product_prefix=product_prefix)
-
-    sources = exporter.get_sources()
-
-    dag_spec = {'tasks': list(task_specs.values())}
-
-    for name, task_spec in task_specs.items():
-        path = Path(task_spec['source'])
-        path.parent.mkdir(exist_ok=True, parents=True)
-        path.write_text(sources[name])
-
-    out = yaml.dump(dag_spec, sort_keys=False)
-    # pyyaml doesn't have an easy way to control whitespace, but we want
-    # tasks to have an empty line between them
-    out = out.replace('\n- ', '\n\n- ')
-
-    Path('pipeline.yaml').write_text(out)
+    exporter.export(product_prefix=product_prefix)
 
     # TODO: instantiate dag since this may raise issues and we want to capture
     # them to let the user know how to fix them (e.g., more >1 H2 headers with
