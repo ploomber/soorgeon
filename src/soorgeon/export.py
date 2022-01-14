@@ -118,6 +118,7 @@ Step 8. Generate step.
 
 Finally, we generate the pipeline.yaml file.
 """
+import ast
 import pprint
 from collections import namedtuple
 from pathlib import Path
@@ -136,6 +137,7 @@ pp = pprint.PrettyPrinter(indent=4)
 class NotebookExporter:
     """Converts a notebook into a Ploomber pipeline
     """
+
     def __init__(self, nb):
         self._nb = nb
 
@@ -155,7 +157,9 @@ class NotebookExporter:
         Run a few checks before continuing the refactoring. If this fails,
         we'll require the user to do some small changes to their code.
         """
-        _check_functions_do_not_use_global_variables(self._get_code())
+        code = self._get_code()
+        _check_syntax(code)
+        _check_functions_do_not_use_global_variables(code)
 
     def _init_proto_tasks(self, nb):
         """Breask notebook into smaller sections
@@ -237,7 +241,7 @@ class NotebookExporter:
         {name: (inputs, outputs), ...}
         """
         if self._io is None:
-            io_ = io.find_io(self._snippets)
+            io_ = self._get_raw_io()
 
             logging.info(f'io: {pp.pformat(io_)}\n')
 
@@ -247,8 +251,18 @@ class NotebookExporter:
 
         return self._io
 
+    def _get_raw_io(self):
+        return io.find_io(self._snippets)
+
 
 FunctionNeedsFix = namedtuple('FunctionNeedsFix', ['name', 'pos', 'args'])
+
+
+def _check_syntax(code):
+    try:
+        ast.parse(code)
+    except SyntaxError as e:
+        raise SyntaxError(f'Error refactoring notebook: invalid syntax') from e
 
 
 # see issue #12 on github

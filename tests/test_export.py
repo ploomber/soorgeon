@@ -129,7 +129,7 @@ z = y + 1
 stuff = [f"'{s}'" for s in [] if s not in []]
 
 a_, b_ = range(10), range(10)
-things = {f'"{a}"': b for a, b in a_, b_ if b > 3}
+things = {f'"{a}"': b for a, b in zip(a_, b_) if b > 3}
 """
 
 
@@ -316,3 +316,35 @@ def test_raise_an_error_if_function_uses_global_variables():
 
 
 # FIXME: test logging option
+
+list_comp = """
+# ## first
+
+x = [1, 2, 3]
+
+[y for y in x]
+"""
+
+
+@pytest.mark.parametrize('code, expected', [
+    [list_comp, {
+        'first': (set(), {'x'})
+    }],
+])
+def test_get_raw_io(code, expected):
+    nb = jupytext.reads(code, fmt='py:light')
+    exporter = export.NotebookExporter(nb)
+
+    assert exporter._get_raw_io() == expected
+
+
+def test_exporter_init_with_syntax_error():
+    code = """\
+# ## first
+
+if
+"""
+    nb = jupytext.reads(code, fmt='py:light')
+
+    with pytest.raises(SyntaxError):
+        export.NotebookExporter(nb)
