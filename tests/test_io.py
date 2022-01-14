@@ -412,7 +412,7 @@ class_ = """
 class SomeClass:
     def __init__(self, param):
         self._param = param
-    
+
     def some_method(self, a, b=0):
         return a + b
 
@@ -616,16 +616,9 @@ def test_flatten_sync_comp_for(code, expected_len):
 
 @pytest.mark.parametrize('code, in_expected, declared_expected', [
     ['[x for x in range(10)]', set(), {'x'}],
-    ['[i for row in matrix for i in row]', {'matrix'}, {'row', 'i'}],
-    [
-        '[i for matrix in tensor for row in matrix for i in row]', {'tensor'},
-        {'matrix', 'row', 'i'}
-    ],
 ],
                          ids=[
                              'simple',
-                             'nested',
-                             'nested-double',
                          ])
 def test_find_sync_comp_for_inputs_and_scope(code, in_expected,
                                              declared_expected):
@@ -1112,4 +1105,5 @@ def test_get_local_scope(code, expected):
 # ])
 # def test_modifies_existing_object(code, expected):
 #     leaf = testutils.get_first_leaf_with_value(code, '=')
-#     assert io._modifies_existing_object(leaf, {'existing'}, set()) is expected
+#     assert io._modifies_existing_object(leaf, {'existing'}, set()) is
+# expected

@@ -262,7 +262,7 @@ def _check_syntax(code):
     try:
         ast.parse(code)
     except SyntaxError as e:
-        raise SyntaxError(f'Error refactoring notebook: invalid syntax') from e
+        raise SyntaxError('Error refactoring notebook: invalid syntax') from e
 
 
 # see issue #12 on github

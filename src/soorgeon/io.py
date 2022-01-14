@@ -1,7 +1,6 @@
 """
 Module to determine inputs and outputs from code snippets.
 """
-import logging
 from functools import reduce
 
 import parso
@@ -252,6 +251,10 @@ def _flatten_sync_comp_for(node):
 
 
 def _find_sync_comp_for_inputs_and_scope(synccompfor):
+    """
+    Find inputs and scope for a sync comp for node, note that this only
+    parses a single node, for parsing nested ones use find_comprehension_inputs
+    """
     # these are the variables that the list comprehension declares
     declared = find_inputs(synccompfor.children[1],
                            parse_list_comprehension=False)
@@ -500,6 +503,10 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             # TODO: parse annotations
 
             leaf = leaf.parent.get_last_leaf()
+        elif detect.is_comprehension(leaf):
+            inputs_new = find_comprehension_inputs(leaf.get_next_sibling())
+            inputs.extend(clean_up_candidates(inputs_new, local_variables))
+            leaf = leaf.parent.get_last_leaf()
 
         # the = operator is an indicator of [outputs] = [inputs]
         elif leaf.type == 'operator' and leaf.value == '=':
@@ -600,28 +607,11 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
               leaf.value not in _BUILTIN and leaf.value not in local_scope and
               leaf.value not in local_variables):
             inputs.extend(find_inputs(leaf))
-        elif detect.is_comprehension(leaf):
-            inputs_new = find_comprehension_inputs(leaf.get_next_sibling())
-            inputs.extend(clean_up_candidates(inputs_new, local_variables))
-            leaf = leaf.parent.get_last_leaf()
-
-        next_s = leaf.get_next_sibling()
-
-        # FIXME: this should not happen anymore since we skip til the end
-        # after we parse the list comprehension
-        # if we just parsed a list comprehension, skip until the end of it
-        try:
-            list_comp = next_s.children[1].type == 'testlist_comp'
-        except (AttributeError, IndexError):
-            list_comp = False
 
         if leaf_end and leaf == leaf_end:
             break
 
-        if list_comp:
-            leaf = next_s.get_last_leaf()
-        else:
-            leaf = leaf.get_next_leaf()
+        leaf = leaf.get_next_leaf()
 
     return set(inputs), outputs
 
@@ -629,6 +619,24 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
 def _modifies_existing_object(leaf, outputs, names_from_imports):
     current = leaf.get_previous_sibling().get_first_leaf().value
     return current in outputs or current in names_from_imports
+
+    names = []
+    sibling = leaf.get_previous_sibling()
+    current = sibling.get_first_leaf()
+    leaf_last = sibling.get_last_leaf()
+
+    # iterate over leaves and grab names since the assignment may be modifying
+    # more than one object
+    while current:
+        if current.type == 'name':
+            names.append(current.value)
+
+        current = current.get_next_leaf()
+
+        if current == leaf_last:
+            break
+
+    return all(name in outputs or name in names_from_imports for name in names)
 
 
 def _map_outputs(name, outputs):
