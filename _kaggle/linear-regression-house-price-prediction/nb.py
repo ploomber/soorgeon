@@ -51,7 +51,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import hvplot.pandas
-# %matplotlib inline
 
 # sns.set_style("whitegrid")
 # plt.style.use("fivethirtyeight")
