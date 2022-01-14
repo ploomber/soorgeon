@@ -44,6 +44,21 @@ def test_is_for_loop(code, expected):
 
 
 @pytest.mark.parametrize('code, expected', [
+    ['def a():\n    pass', False],
+    ['class A:\n    pass', True],
+    ['class A:\n    def __init__(self):\n        pass', True],
+],
+                         ids=[
+                             'function',
+                             'class-empty',
+                             'class',
+                         ])
+def test_is_classdef(code, expected):
+    leaf = parso.parse(code).get_first_leaf()
+    assert detect.is_classdef(leaf) is expected
+
+
+@pytest.mark.parametrize('code, expected', [
     ['[1, 2, 3]', False],
     ['{1, 2, 3}', False],
     ['{1: 1, 2: 2, 3: 3}', False],

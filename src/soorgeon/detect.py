@@ -16,6 +16,13 @@ def is_funcdef(leaf):
     return leaf.type == 'keyword' and leaf.value == 'def'
 
 
+def is_classdef(leaf):
+    """
+    Returns true if the leaf is the beginning of a class definition
+    """
+    return leaf.type == 'keyword' and leaf.value == 'class'
+
+
 def is_for_loop(leaf):
     """
     Returns true if the leaf is the beginning of a for loop
