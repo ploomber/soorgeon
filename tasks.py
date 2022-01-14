@@ -6,10 +6,11 @@ from invoke import task
 
 
 @task
-def test(c):
+def test(c, nbs=False):
     """Run unit tests + flake8
     """
-    c.run('pytest --ignore=tests/test_sample_notebooks.py', pty=True)
+    args = '' if nbs else '--ignore=tests/test_sample_notebooks.py'
+    c.run(f'pytest {args}', pty=True)
     c.run('flake8')
 
 

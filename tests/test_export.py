@@ -4,6 +4,7 @@ import parso
 import pytest
 import jupytext
 from ploomber.spec import DAGSpec
+import papermill as pm
 
 from soorgeon import export
 
@@ -245,9 +246,9 @@ def plot(x):
 df = load(1)
 """
 
-with_definitions_expected = ('## load\ndef load(x):\n    return x'
-                             '\n\n## plot\ndef plot(x):\n    return x\n\n'
-                             '## clean\nclass Cleaner:\n    pass')
+with_definitions_expected = (
+    'def load(x):\n    return x\n\ndef plot(x):\n    return x\n\n'
+    'class Cleaner:\n    pass')
 
 definition_with_import = """# ## load
 
@@ -260,7 +261,7 @@ def plot(x):
 df = load()
 """
 
-definition_with_import_expected = ('## load\nimport matplotlib.pyplot as plt'
+definition_with_import_expected = ('import matplotlib.pyplot as plt'
                                    '\n\n\ndef plot(x):\n    plt.plot()')
 
 
@@ -348,3 +349,41 @@ if
 
     with pytest.raises(SyntaxError):
         export.NotebookExporter(nb)
+
+
+def test_get_code(tmp_empty):
+    code = """\
+# ## first
+
+# ### this should not appear since its a markdown cell
+
+print('hello')
+"""
+    nb_ = jupytext.reads(code, fmt='py:light')
+    jupytext.write(nb_, 'nb.ipynb')
+    pm.execute_notebook('nb.ipynb', 'nb.ipynb', kernel_name='python3')
+
+    nb = jupytext.read('nb.ipynb')
+    exporter = export.NotebookExporter(nb)
+
+    assert exporter._get_code() == "print('hello')"
+
+
+def test_get_sources():
+    code = """\
+# ## first
+
+import something
+
+x = something.do()
+
+# ## second
+
+y = something.another()
+"""
+    nb = jupytext.reads(code, fmt='py:light')
+    exporter = export.NotebookExporter(nb)
+    sources = exporter.get_sources()
+
+    assert 'import something' in sources['first']
+    assert 'import something' in sources['second']

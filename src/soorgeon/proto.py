@@ -26,6 +26,7 @@ _UNPICKLING_TEMPLATE = Template("""
 class ProtoTask:
     """A group of cells that will be converted into a Ploomber task
     """
+
     def __init__(self, name, cells):
         self._name = name
         self._cells = cells

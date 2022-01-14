@@ -224,7 +224,10 @@ class NotebookExporter:
         Path('exported.py').write_text(exported)
 
     def _get_code(self):
-        return '\n'.join(cell['source'] for cell in self._nb.cells)
+        """Returns the source of code cells
+        """
+        return '\n'.join(cell['source'] for cell in self._nb.cells
+                         if cell['cell_type'] == 'code')
 
     @property
     def definitions(self):
