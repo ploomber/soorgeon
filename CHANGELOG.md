@@ -1,6 +1,12 @@
 # CHANGELOG
 
 ## 0.0.5dev
+* Adds `--version` to CLI (#20)
+* Support for set and dict comprehension
+* Support for fn return type annotations (#25)
+* Checking if input code does not have syntax errors (#14)
+* Detecting and skipping class definitions
+* Support for nested list comprehensions
 
 ## 0.0.4 (2022-01-12)
 * Better list comprehension and f-string parsing
