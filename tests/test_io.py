@@ -132,6 +132,14 @@ def fn():
     f, ax = do_stuff()
 """
 
+define_multiple_replace_existing = """
+b = 1
+
+b, c = 2, 3
+
+c.stuff()
+"""
+
 local_function = """
 def x():
     pass
@@ -289,12 +297,28 @@ list_comprehension_with_f_string_assignment = """
 y = [f"'{s}'" for s in [] if s not in []]
 """
 
+list_comprehension_nested = """
+out = [item for sublist in reduced_cats.values() for item in sublist]
+"""
+
+list_comprehension_nested_another = """
+out = [[j for j in range(5)] for i in range(5)]
+"""
+
+list_comprehension_with_left_input = """
+[x + y for x in range(10)]
+"""
+
 set_comprehension = """
 output = {x for x in numbers if x % 2 == 0}
 """
 
 dict_comprehension = """
 output  = {x: y + 1 for x in numbers if x % 2 == 0}
+"""
+
+dict_comprehension_zip = """
+output  = {x: y + 1 for x, z in zip(range(10), range(10)) if x % 2 == 0}
 """
 
 function_with_global_variable = """
@@ -384,6 +408,17 @@ f_string_assignment = """
 s = f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
 """
 
+class_ = """
+class SomeClass:
+    def __init__(self, param):
+        self._param = param
+    
+    def some_method(self, a, b=0):
+        return a + b
+
+some_object = SomeClass(param=1)
+"""
+
 
 @pytest.mark.parametrize(
     'code_str, inputs, outputs', [
@@ -414,6 +449,8 @@ s = f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
          set(), {'a', 'b', 'c'}],
         [define_multiple_outputs_inside_function,
          set(), set()],
+        [define_multiple_replace_existing,
+         set(), {'b', 'c'}],
         [local_function, set(), {'y'}],
         [local_function_with_args, set(), {'y'}],
         [local_function_with_args_and_body,
@@ -463,8 +500,14 @@ s = f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
          set(), set()],
         [list_comprehension_with_f_string_assignment,
          set(), {'y'}],
+        [list_comprehension_nested, {'reduced_cats'}, {'out'}],
+        [list_comprehension_nested_another,
+         set(), {'out'}],
+        [list_comprehension_with_left_input,
+         {'y'}, set()],
         [set_comprehension, {'numbers'}, {'output'}],
         [dict_comprehension, {'numbers', 'y'}, {'output'}],
+        [dict_comprehension_zip, {'y'}, {'output'}],
         [function_with_global_variable,
          {'b'}, set()],
         [mutating_input, {'df'}, {'df'}],
@@ -482,6 +525,7 @@ s = f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
             f_string_assignment,
             {'some_variable', 'a_number', 'an_object', 'another'}, {'s'}
         ],
+        [class_, set(), {'some_object'}],
     ],
     ids=[
         'only_outputs',
@@ -502,6 +546,7 @@ s = f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
         'define_multiple_outputs_square_brackets',
         'define_multiple_outputs_parenthesis',
         'define_multiple_outputs_inside_function',
+        'define_multiple_replace_existing',
         'local_function',
         'local_function_with_args',
         'local_function_with_args_and_body',
@@ -529,8 +574,12 @@ s = f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
         'list_comprehension_with_conditional_and_local_variable',
         'list_comprehension_with_f_string',
         'list_comprehension_with_f_string_assignment',
+        'list_comprehension_nested',
+        'list_comprehension_nested_another',
+        'list_comprehension_with_left_input',
         'set_comprehension',
         'dict_comprehension',
+        'dict_comprehension_zip',
         'function_with_global_variable',
         'mutating_input',
         'mutating_input_implicit',
@@ -540,12 +589,52 @@ s = f'{some_variable} {a_number:.2f} {an_object!r} {another!s}'
         'context_manager',
         'f_string',
         'f_string_assignment',
+        'class_',
     ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = io.find_inputs_and_outputs(code_str)
 
     assert in_ == inputs
     assert out == outputs
+
+
+@pytest.mark.parametrize('code, expected_len', [
+    ['[x for x in range(10)]', 1],
+    ['[i for row in matrix for i in row]', 2],
+    ['[i for matrix in tensor for row in matrix for i in row]', 3],
+],
+                         ids=[
+                             'simple',
+                             'nested',
+                             'nested-nested',
+                         ])
+def test_flatten_sync_comp_for(code, expected_len):
+    synccompfor = parso.parse(code).children[0].children[1].children[1]
+
+    assert len(io._flatten_sync_comp_for(synccompfor)) == expected_len
+
+
+@pytest.mark.parametrize('code, in_expected, declared_expected', [
+    ['[x for x in range(10)]', set(), {'x'}],
+    ['[i for row in matrix for i in row]', {'matrix'}, {'row', 'i'}],
+    [
+        '[i for matrix in tensor for row in matrix for i in row]', {'tensor'},
+        {'matrix', 'row', 'i'}
+    ],
+],
+                         ids=[
+                             'simple',
+                             'nested',
+                             'nested-double',
+                         ])
+def test_find_sync_comp_for_inputs_and_scope(code, in_expected,
+                                             declared_expected):
+    synccompfor = parso.parse(code).children[0].children[1].children[1]
+
+    in_, declared = io._find_sync_comp_for_inputs_and_scope(synccompfor)
+
+    assert in_ == in_expected
+    assert declared == declared_expected
 
 
 @pytest.mark.parametrize('snippets, local_scope, expected', [
@@ -963,7 +1052,6 @@ def test_find_inputs_with_atom_expr(code, expected, index):
     assert io.find_inputs(atom_exp) == expected
 
 
-# TODO: add nested list comprehension
 @pytest.mark.parametrize('code, expected', [
     ['[x for x in range(10)]', set()],
     ['[f"{x}" for x in range(10)]', set()],
@@ -973,6 +1061,8 @@ def test_find_inputs_with_atom_expr(code, expected, index):
     ['[x.attribute for x in range(10)]',
      set()],
     ['[x for x in obj if x > 0]', {'obj'}],
+    ['[i for row in matrix for i in row]', {'matrix'}],
+    ['[i for matrix in tensor for row in matrix for i in row]', {'tensor'}],
 ],
                          ids=[
                              'left-expression',
@@ -982,6 +1072,8 @@ def test_find_inputs_with_atom_expr(code, expected, index):
                              'many-variables',
                              'attributes',
                              'conditional',
+                             'nested',
+                             'nested-double',
                          ])
 def test_find_list_comprehension_inputs(code, expected):
     tree = parso.parse(code)
@@ -1004,3 +1096,20 @@ def test_find_list_comprehension_inputs(code, expected):
 def test_get_local_scope(code, expected):
     node = testutils.get_first_leaf_with_value(code, 'x')
     assert io.get_local_scope(node) == expected
+
+
+# TODO: try nested
+# @pytest.mark.parametrize('code, expected', [
+#     ['a = 1', False],
+#     ['a, b = 1, 2', False],
+#     ['existing = 1', True],
+#     ['a, existing = 1, 2', True],
+#     ['existing, b = 1, 2', True],
+#     ['(a, existing) = 1, 2', True],
+#     ['(existing, b) = 1, 2', True],
+#     ['[a, existing] = 1, 2', True],
+#     ['[existing, b] = 1, 2', True],
+# ])
+# def test_modifies_existing_object(code, expected):
+#     leaf = testutils.get_first_leaf_with_value(code, '=')
+#     assert io._modifies_existing_object(leaf, {'existing'}, set()) is expected

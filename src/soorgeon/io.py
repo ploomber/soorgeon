@@ -1,6 +1,7 @@
 """
 Module to determine inputs and outputs from code snippets.
 """
+import logging
 from functools import reduce
 
 import parso
@@ -235,14 +236,48 @@ def find_function_scope_and_io(funcdef, local_scope=None):
     return parameters, body_in - local_scope, body_out
 
 
+def _flatten_sync_comp_for(node):
+    if node.type != 'sync_comp_for':
+        raise ValueError('Expected node type to be '
+                         f'"syncompfor" but got: {node.type}')
+
+    total = [node]
+
+    for child in node.children:
+        if child.type == 'sync_comp_for':
+            nodes = _flatten_sync_comp_for(child)
+            total += nodes
+
+    return total
+
+
+def _find_sync_comp_for_inputs_and_scope(synccompfor):
+    # these are the variables that the list comprehension declares
+    declared = find_inputs(synccompfor.children[1],
+                           parse_list_comprehension=False)
+
+    # parse the variables in the right expression
+    # e,g, given: [x for x in expression(10)]
+    # the expression is expression(10)
+    # the expression part should be the element at index 3, note that this
+    # is not the same as getting the last one because if the list comprehension
+    # has an 'if' statement, that will be the last element
+    inputs_right = find_inputs(synccompfor.children[3],
+                               parse_list_comprehension=False)
+
+    return inputs_right, declared
+
+
 def find_comprehension_inputs(node):
     """Find inpust for list/set/dict comprehension or generator
     """
     types = {'testlist_comp', 'dictorsetmaker'}
+
     if node.type not in types:
         raise ValueError('Expected node type be one of '
                          f'{types!r}, got: {node.type}')
 
+    # list/set comprehension or generator
     if len(node.children) == 2:
         compfor, synccompfor = node.children
 
@@ -264,19 +299,14 @@ def find_comprehension_inputs(node):
         inputs_left = find_inputs_for_each(node.children[:-1],
                                            parse_list_comprehension=False)
 
-    # these are the variables that the list comprehension declares
-    declared = find_inputs(synccompfor.children[1],
-                           parse_list_comprehension=False)
+    inputs, declared = set(), set()
 
-    # parse the variables in the right expression
-    # e,g, [x for x in expression(10)]
-    # the expression part should be the element at index 3, note that this
-    # is not the same as getting the last one because if the list comprehension
-    # has an 'if' statement, that will be the last element
-    inputs_right = find_inputs(synccompfor.children[3],
-                               parse_list_comprehension=False)
+    for node in _flatten_sync_comp_for(synccompfor):
+        inputs_, declared_ = _find_sync_comp_for_inputs_and_scope(node)
+        inputs = inputs | inputs_
+        declared = declared | declared_
 
-    return (inputs_left | inputs_right) - declared
+    return (inputs_left | inputs) - declared
 
 
 def find_inputs_for_each(nodes,
@@ -466,6 +496,10 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             outputs = outputs | candidates_out
             # jump to the end of the function definition loop
             leaf = leaf.parent.get_last_leaf()
+        elif detect.is_classdef(leaf):
+            # TODO: parse annotations
+
+            leaf = leaf.parent.get_last_leaf()
 
         # the = operator is an indicator of [outputs] = [inputs]
         elif leaf.type == 'operator' and leaf.value == '=':
@@ -568,7 +602,7 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             inputs.extend(find_inputs(leaf))
         elif detect.is_comprehension(leaf):
             inputs_new = find_comprehension_inputs(leaf.get_next_sibling())
-            inputs.extend(inputs_new)
+            inputs.extend(clean_up_candidates(inputs_new, local_variables))
             leaf = leaf.parent.get_last_leaf()
 
         next_s = leaf.get_next_sibling()
