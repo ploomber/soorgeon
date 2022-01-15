@@ -212,16 +212,18 @@ def find_function_scope_and_io(funcdef, local_scope=None):
 
     # regular definition
     if len(funcdef.children) == 5:
-        _, _, node_parameters, _, body_node = funcdef.children
+        _, _, node_signature, _, body_node = funcdef.children
         annotation_return = None
 
     # return annotation
     elif len(funcdef.children) == 7:
-        node_parameters = funcdef.children[2]
+        node_signature = funcdef.children[2]
         annotation_return = funcdef.children[4]
         body_node = funcdef.children[6]
 
-    parameters = find_inputs(node_parameters, parse_list_comprehension=False)
+    parameters = find_inputs(node_signature,
+                             parse_list_comprehension=False,
+                             allow_kwargs=True)
 
     body_in, body_out = find_inputs_and_outputs_from_leaf(
         body_node.get_first_leaf(),
@@ -332,7 +334,8 @@ def find_inputs_for_each(nodes,
 
 def find_inputs(node,
                 parse_list_comprehension=True,
-                only_getitem_and_attribute_access=False):
+                only_getitem_and_attribute_access=False,
+                allow_kwargs=False):
     """
     Extract inputs from an expression
     e.g. function(x, y) returns {'function', 'x', 'y'}
@@ -369,6 +372,9 @@ def find_inputs(node,
             try:
                 key_arg = leaf.get_next_leaf().value == '='
             except Exception:
+                key_arg = False
+
+            if allow_kwargs:
                 key_arg = False
 
             # is this an attribute?
