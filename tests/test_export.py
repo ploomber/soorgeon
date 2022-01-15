@@ -432,3 +432,12 @@ y = x + something.another()
             }
         }
     }
+
+
+def test_check_functions_do_not_use_global_variables():
+    code = """
+def my_function(a, b, c=None):
+    return a + b + c
+"""
+
+    export._check_functions_do_not_use_global_variables(code)

@@ -363,6 +363,18 @@ def test_find_context_manager_def_and_io(code, def_expected, in_expected,
         {'Mapping', 'x', 'y'}, {'z'},
         set()
     ],
+    [
+        'def fn(a=1):\n    pass',
+        {'a'},
+        set(),
+        set(),
+    ],
+    [
+        'def fn(a: str=1):\n    pass',
+        {'a'},
+        set(),
+        set(),
+    ],
 ],
                          ids=[
                              'arg-one',
@@ -375,6 +387,8 @@ def test_find_context_manager_def_and_io(code, def_expected, in_expected,
                              'uses-outer-scope-reference',
                              'annotation-return',
                              'annotation-args',
+                             'kwargs',
+                             'annotation-kwargs',
                          ])
 def test_find_function_scope_and_io(code, def_expected, in_expected,
                                     out_expected):

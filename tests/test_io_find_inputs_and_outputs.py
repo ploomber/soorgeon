@@ -141,6 +141,13 @@ def x(z):
 y = x(10)
 """
 
+local_function_with_kwargs = """
+def my_function(a, b, c=None):
+    return a + b + c
+
+y = my_function(1, 2, 3)
+"""
+
 local_class = """
 class X:
     pass
@@ -438,8 +445,16 @@ some_object = SomeClass(param=1)
         ],
         [local_function, set(), {'y'}],
         [local_function_with_args, set(), {'y'}],
-        [local_function_with_args_and_body,
-         set(), {'y'}],
+        [
+            local_function_with_args_and_body,
+            set(),
+            {'y'},
+        ],
+        [
+            local_function_with_kwargs,
+            set(),
+            {'y'},
+        ],
         [local_class, set(), {'y'}],
         [for_loop, {'z'}, {'y'}],
         [for_loop_many, set(), {'y'}],
@@ -546,6 +561,7 @@ some_object = SomeClass(param=1)
         'local_function',
         'local_function_with_args',
         'local_function_with_args_and_body',
+        'local_function_with_kwargs',
         'local_class',
         'for_loop',
         'for_loop_many',
