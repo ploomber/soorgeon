@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.0.7dev
+
 ## 0.0.6 (2022-01-15)
 * Improved parsing for nested list comprehensions
 * Fixes error when assigning >1 variable in the same equal statement
