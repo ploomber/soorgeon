@@ -283,6 +283,10 @@ list_comprehension_nested_another = """
 out = [[j for j in range(5)] for i in range(5)]
 """
 
+list_comprehension_nested_more = """
+out = [[[k for k in range(j)] for j in range(i)] for i in range(5)]
+"""
+
 list_comprehension_with_left_input = """
 [x + y for x in range(10)]
 """
@@ -427,9 +431,11 @@ some_object = SomeClass(param=1)
          set(), {'a', 'b', 'c'}],
         [define_multiple_outputs_inside_function,
          set(), set()],
-        pytest.param(define_multiple_replace_existing,
-                     set(), {'b', 'c'},
-                     marks=pytest.mark.xfail),
+        [
+            define_multiple_replace_existing,
+            set(),
+            {'b', 'c'},
+        ],
         [local_function, set(), {'y'}],
         [local_function_with_args, set(), {'y'}],
         [local_function_with_args_and_body,
@@ -480,11 +486,21 @@ some_object = SomeClass(param=1)
         [list_comprehension_with_f_string_assignment,
          set(), {'y'}],
         [list_comprehension_nested, {'reduced_cats'}, {'out'}],
-        [list_comprehension_nested_another,
-         set(), {'out'}],
-        pytest.param(list_comprehension_with_left_input, {'y'},
-                     set(),
-                     marks=pytest.mark.xfail),
+        [
+            list_comprehension_nested_another,
+            set(),
+            {'out'},
+        ],
+        [
+            list_comprehension_nested_more,
+            set(),
+            {'out'},
+        ],
+        [
+            list_comprehension_with_left_input,
+            {'y'},
+            set(),
+        ],
         [set_comprehension, {'numbers'}, {'output'}],
         [dict_comprehension, {'numbers', 'y'}, {'output'}],
         [dict_comprehension_zip, {'y'}, {'output'}],
@@ -556,6 +572,7 @@ some_object = SomeClass(param=1)
         'list_comprehension_with_f_string_assignment',
         'list_comprehension_nested',
         'list_comprehension_nested_another',
+        'list_comprehension_nested_more',
         'list_comprehension_with_left_input',
         'set_comprehension',
         'dict_comprehension',

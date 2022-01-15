@@ -286,9 +286,9 @@ def find_comprehension_inputs(node):
 
         # parse the variables in the left expression
         # e.g., [expression(x) for x in range(10)]
+
         try:
-            inputs_left = find_inputs(compfor.children[0],
-                                      parse_list_comprehension=False)
+            inputs_left = find_inputs(compfor, parse_list_comprehension=False)
         except AttributeError:
             # if there isn't an expression but a single variable, we just
             # get the name e.g., [x for x in range(10)]
@@ -532,7 +532,8 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
 
             # ignore keyword arguments, they aren't outputs
             # e.g. 'key' in something(key=value)
-            # also ignore previous if modifying an existing object
+            # also ignore previous if modifying a variable defined in the
+            # current section
             # e.g.,
             # a = {}
             # a['x'] = 1
@@ -617,9 +618,6 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
 
 
 def _modifies_existing_object(leaf, outputs, names_from_imports):
-    current = leaf.get_previous_sibling().get_first_leaf().value
-    return current in outputs or current in names_from_imports
-
     names = []
     sibling = leaf.get_previous_sibling()
     current = sibling.get_first_leaf()
@@ -631,10 +629,10 @@ def _modifies_existing_object(leaf, outputs, names_from_imports):
         if current.type == 'name':
             names.append(current.value)
 
-        current = current.get_next_leaf()
-
         if current == leaf_last:
             break
+
+        current = current.get_next_leaf()
 
     return all(name in outputs or name in names_from_imports for name in names)
 

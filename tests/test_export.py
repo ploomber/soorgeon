@@ -103,7 +103,10 @@ with open('one-1', 'w') as f:
     with open('one-2', 'w') as g:
         f.write(''), g.write('')
 
-x = 1
+x, xx = 1, 2
+
+matrix = [range(10) for _ in range(10)]
+numbers = [i for row in matrix for i in row]
 
 # ## two
 
@@ -114,6 +117,15 @@ with open('one-1', 'w') as f, open('one-2', 'w') as g:
 y = 1 + 1
 
 print(f'{x} {y!r} {x:.2f}')
+
+for n in range(xx):
+    for m in range(y):
+        with open('file', 'w') as f:
+            f.write(f'{n} {m}')
+
+
+matrix_another = [range(10) for _ in range(10)]
+[i + x + y for row in matrix for i in row]
 
 # ## three
 
