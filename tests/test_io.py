@@ -517,19 +517,22 @@ def test_get_local_scope(code, expected):
     assert io.get_local_scope(node) == expected
 
 
-# TODO: try nested
-# @pytest.mark.parametrize('code, expected', [
-#     ['a = 1', False],
-#     ['a, b = 1, 2', False],
-#     ['existing = 1', True],
-#     ['a, existing = 1, 2', True],
-#     ['existing, b = 1, 2', True],
-#     ['(a, existing) = 1, 2', True],
-#     ['(existing, b) = 1, 2', True],
-#     ['[a, existing] = 1, 2', True],
-#     ['[existing, b] = 1, 2', True],
-# ])
-# def test_modifies_existing_object(code, expected):
-#     leaf = testutils.get_first_leaf_with_value(code, '=')
-#     assert io._modifies_existing_object(leaf, {'existing'}, set()) is
-# expected
+@pytest.mark.parametrize('code, expected', [
+    ['a = 1', set()],
+    ['a, b = 1, 2', set()],
+    ['i = 1', {'i'}],
+    ['a, i = 1, 2', {'i'}],
+    ['i, b = 1, 2', {'i'}],
+    ['(a, i) = 1, 2', {'i'}],
+    ['(i, b) = 1, 2', {'i'}],
+    ['[a, i] = 1, 2', {'i'}],
+    ['[i, b] = 1, 2', {'i'}],
+    ['[i["key"], b] = 1, 2', {'i'}],
+    ['[i.attribute, b] = 1, 2', {'i'}],
+    ['[i[key], b] = 1, 2', {'i'}],
+    ['(i, (j, a)) = 1, (2, 3)', {'i', 'j'}],
+    ['(i, (j, (k, a))) = 1, (2, (3, 4))', {'i', 'j', 'k'}],
+])
+def test_get_modified_objects(code, expected):
+    leaf = testutils.get_first_leaf_with_value(code, '=')
+    assert (io._get_modified_objects(leaf, {'i', 'j', 'k'}, set()) == expected)

@@ -1,6 +1,9 @@
 # CHANGELOG
 
 ## 0.0.6dev
+* Improved parsing for nested list comprehensions
+* Fixes error when assigning >1 variable in the same equal statement
+* Fixes error when replacing a locally defined variable
 
 ## 0.0.5 (2022-01-14)
 * Adds `--version` to CLI (#20)

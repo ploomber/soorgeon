@@ -539,12 +539,17 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             # a['x'] = 1
             # a.b = 1
 
-            if (previous.parent.type != 'argument' and
-                    not _modifies_existing_object(leaf, outputs, local_scope)):
+            if previous.parent.type != 'argument':
 
                 prev_sibling = leaf.get_previous_sibling()
 
+                # if we're inside a function, we're not storing outputs
+                # but local variables
                 target = local_variables if _inside_funcdef else outputs
+
+                # existing variables (definde in the current
+                # section) as outputs
+                modified = _get_modified_objects(leaf, outputs, local_scope)
 
                 # check if assigning multiple values
                 # e.g., a, b = 1, 2 (testlist_star_expr)
@@ -556,9 +561,10 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
                         for name in prev_sibling.parent.get_defined_names())
                 # nope, only one value
                 elif prev_sibling.type == 'atom_expr':
-                    target = target | find_inputs(
-                        prev_sibling, parse_list_comprehension=False)
-                else:
+                    target = target | (find_inputs(
+                        prev_sibling, parse_list_comprehension=False) -
+                                       modified)
+                elif previous.value not in modified:
                     target.add(previous.value)
 
                 if _inside_funcdef:
@@ -578,8 +584,9 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
                         parse_list_comprehension=False,
                         only_getitem_and_attribute_access=True)
 
-                    # add to inputs if they haven't been locally defined
-                    inputs_new = inputs_candidates - outputs
+                    # add to inputs if they haven't been locally defined or
+                    # modified
+                    inputs_new = inputs_candidates - outputs - modified
                     inputs.extend(inputs_new)
 
                     outputs = target
@@ -617,24 +624,26 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
     return set(inputs), outputs
 
 
-def _modifies_existing_object(leaf, outputs, names_from_imports):
+def _get_modified_objects(leaf, outputs, names_from_imports):
     names = []
     sibling = leaf.get_previous_sibling()
     current = sibling.get_first_leaf()
     leaf_last = sibling.get_last_leaf()
+    existing = outputs | names_from_imports
 
     # iterate over leaves and grab names since the assignment may be modifying
     # more than one object
     while current:
         if current.type == 'name':
-            names.append(current.value)
+            if current.value in existing:
+                names.append(current.value)
 
         if current == leaf_last:
             break
 
         current = current.get_next_leaf()
 
-    return all(name in outputs or name in names_from_imports for name in names)
+    return set(names)
 
 
 def _map_outputs(name, outputs):
