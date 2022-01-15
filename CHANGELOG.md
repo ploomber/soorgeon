@@ -1,6 +1,9 @@
 # CHANGELOG
 
 ## 0.0.7dev
+* Fixes function signature parsing
+* Support for lambdas
+* Adds more notebooks for testing
 
 ## 0.0.6 (2022-01-15)
 * Improved parsing for nested list comprehensions
