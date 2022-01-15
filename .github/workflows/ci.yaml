@@ -3,8 +3,7 @@ name: CI
 on: [push]
 
 jobs:
-  build:
-
+  unit-tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,6 +28,33 @@ jobs:
       - name: Unit tests
         run: |
           pytest --ignore=tests/test_sample_notebooks.py
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9]
+        notebook:
+          - titanic-logistic-regression-with-python
+          - customer-segmentation-clustering
+          - intro-to-time-series-forecasting
+          - feature-selection-and-data-visualization
+          - linear-regression-house-price-prediction
+          - look-at-this-note-feature-engineering-is-easy
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Lint with flake8
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+          flake8
+      - name: Install dependencies
+        run: |
+          pip install ".[dev]"
       - name: Install integration tests dependencies
         run: |
           pip install -r _kaggle/requirements.txt
@@ -38,4 +64,4 @@ jobs:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           PLOOMBER_STATS_ENABLED: false
         run: |
-          pytest tests/test_sample_notebooks.py
+          pytest "tests/test_sample_notebooks.py::test_notebooks[${{ matrix.notebook }}]"
