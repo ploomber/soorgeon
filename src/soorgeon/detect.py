@@ -16,6 +16,13 @@ def is_funcdef(leaf):
     return leaf.type == 'keyword' and leaf.value == 'def'
 
 
+def is_lambda(leaf, raise_=False):
+    """
+    Returns true if the leaf is the beginning of a lambda definition
+    """
+    return leaf.type == 'keyword' and leaf.value == 'lambda'
+
+
 def is_classdef(leaf):
     """
     Returns true if the leaf is the beginning of a class definition

@@ -408,6 +408,32 @@ class SomeClass:
 some_object = SomeClass(param=1)
 """
 
+lambda_ = """
+lambda x: x
+"""
+
+lambda_with_input = """
+lambda x: x + y
+"""
+
+lambda_as_arg = """
+import something
+something(1, lambda x: x)
+"""
+
+lambda_assignment = """
+out = lambda x: x
+"""
+
+lambda_with_input_assignment = """
+out = lambda x: x + y
+"""
+
+lambda_as_arg_assignment = """
+import something
+out = something(1, lambda x: x)
+"""
+
 
 @pytest.mark.parametrize(
     'code_str, inputs, outputs', [
@@ -537,6 +563,12 @@ some_object = SomeClass(param=1)
             {'some_variable', 'a_number', 'an_object', 'another'}, {'s'}
         ],
         [class_, set(), {'some_object'}],
+        [lambda_, set(), set()],
+        [lambda_with_input, {'y'}, set()],
+        [lambda_as_arg, set(), set()],
+        [lambda_assignment, set(), {'out'}],
+        [lambda_with_input_assignment, {'y'}, {'out'}],
+        [lambda_as_arg_assignment, set(), {'out'}],
     ],
     ids=[
         'only_outputs',
@@ -603,6 +635,12 @@ some_object = SomeClass(param=1)
         'f_string',
         'f_string_assignment',
         'class_',
+        'lambda_',
+        'lambda_with_input',
+        'lambda_as_arg',
+        'lambda_assignment',
+        'lambda_with_input_assignment',
+        'lambda_as_arg_assignment',
     ])
 def test_find_inputs_and_outputs(code_str, inputs, outputs):
     in_, out = io.find_inputs_and_outputs(code_str)

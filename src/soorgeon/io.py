@@ -221,6 +221,8 @@ def find_function_scope_and_io(funcdef, local_scope=None):
         annotation_return = funcdef.children[4]
         body_node = funcdef.children[6]
 
+    # FIXME: test what happens if they user has a list comprehension as
+    # argument. e.g. fn(x=[1,2,3])
     parameters = find_inputs(node_signature,
                              parse_list_comprehension=False,
                              allow_kwargs=True)
@@ -235,6 +237,26 @@ def find_function_scope_and_io(funcdef, local_scope=None):
                                         parse_list_comprehension=False)
 
     return parameters, body_in - local_scope, body_out
+
+
+# TODO: add unit tests
+def find_lambda_scope_and_inputs(lambda_, local_scope=None):
+    if lambda_.type != 'lambdef':
+        raise ValueError(f'Expected a lambdef, got {lambda_}')
+
+    local_scope = local_scope or set()
+
+    _, node_signature, _, body_node = lambda_.children
+
+    # FIXME: test what happens if they user has a list comprehension as
+    # argument. e.g. fn(x=[1,2,3])
+    parameters = find_inputs(node_signature,
+                             parse_list_comprehension=False,
+                             allow_kwargs=True)
+
+    body_in = find_inputs(body_node)
+
+    return parameters, body_in - local_scope - parameters
 
 
 def _flatten_sync_comp_for(node):
@@ -357,7 +379,12 @@ def find_inputs(node,
             inputs = find_comprehension_inputs(leaf.get_next_sibling())
             names.extend(list(inputs))
             leaf = leaf.parent.get_last_leaf()
-
+        if detect.is_lambda(leaf):
+            scope, inputs = find_lambda_scope_and_inputs(leaf.parent)
+            names.extend(list(inputs - scope))
+            # lambda's last leaf is the next one after the last in the
+            # lambda node
+            leaf = leaf.parent.get_last_leaf().get_next_leaf()
         # something else
         else:
             # ignore f-string format specs {number:.2f}
@@ -473,7 +500,15 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             inputs.extend(clean_up_candidates(candidates_in, local_variables))
             # jump to the end of the f-string
             leaf = leaf.parent.get_last_leaf()
-
+        elif detect.is_lambda(leaf):
+            # FIXME: i think is hould also pass the current foudn inputs
+            # to local scope - write a test to break this
+            _, candidates_in = find_lambda_scope_and_inputs(
+                leaf.parent, local_scope=local_scope)
+            inputs.extend(clean_up_candidates(candidates_in, local_variables))
+            # lambda's last leaf is the next one after the last in the
+            # lambda node
+            leaf = leaf.parent.get_last_leaf().get_next_leaf()
         elif detect.is_for_loop(leaf):
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
