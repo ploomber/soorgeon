@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.0.7dev
+## 0.0.7 (2022-01-15)
 * Fixes function signature parsing
 * Support for lambdas
 * Adds more notebooks for testing
