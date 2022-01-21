@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## 0.0.8dev
+* Auto-generated `requirements.txt` file after running `soorgeon refactor`
+* Auto-generated serialization cell creates parent directories if needed
 
 ## 0.0.7 (2022-01-15)
 * Fixes function signature parsing

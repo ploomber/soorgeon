@@ -10,8 +10,10 @@ from jinja2 import Template
 
 from soorgeon import io
 
+# TODO: add unit test to ensure parent directories are created
 _PICKLING_TEMPLATE = Template("""
 {% for product in products %}
+Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
 {% endfor %}
 """)

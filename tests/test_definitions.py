@@ -40,6 +40,10 @@ from sklearn import ensemble, linear_model
 from collections.abc import Generator, Collection
 """
 
+two_import_as = """
+import matplotlib.pyplot as plt, numpy as np
+"""
+
 
 @pytest.mark.parametrize('code, expected', [
     [
@@ -55,38 +59,51 @@ def test_from_imports(code, expected):
 
 @pytest.mark.parametrize(
     'code, expected',
-    [[
-        simple_imports,
+    [
         [
-            'numpy',
-            'pandas',
+            simple_imports,
+            [
+                'numpy',
+                'pandas',
+            ],
+        ],
+        [
+            mixed_imports,
+            [
+                'another',
+                'matplotlib',
+                'numpy',
+                'pandas',
+                'scikit-learn',
+            ]
+        ],
+        [
+            relative_imports,
+            [],
+        ],
+        [
+            duplicated_imports,
+            ['scikit-learn'],
+        ],
+        [
+            comma_imports,
+            ['scikit-learn'],
+        ],
+        [
+            two_import_as,
+            [
+                'matplotlib',
+                'numpy',
+            ],
         ],
     ],
-     [
-         mixed_imports,
-         [
-             'another',
-             'matplotlib',
-             'numpy',
-             'pandas',
-             'scikit-learn',
-         ]
-     ], [
-         relative_imports,
-         [],
-     ], [
-         duplicated_imports,
-         ['scikit-learn'],
-     ], [
-         comma_imports,
-         ['scikit-learn'],
-     ]],
     ids=[
         'simple',
         'mixed',
         'relative',
         'duplicated',
         'comma',
+        'two-import-as',
     ],
 )
 def test_packages_used(code, expected):
