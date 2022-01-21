@@ -44,4 +44,4 @@ the last leaf, so we can pass this to the parsing function in the until leaf
 argument.
 """
 
-__version__ = '0.0.8'
+__version__ = '0.0.9dev'
