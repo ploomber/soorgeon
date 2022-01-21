@@ -8,6 +8,38 @@ import pandas as pd
 import numpy as np
 """
 
+mixed_imports = """
+import pandas
+import numpy as np
+from sklearn import ensemble
+from another.sub import stuff
+import matplotlib.pyplot as plt
+
+
+import math
+import ast as ast_
+from random import choice
+from collections.abc import Generator
+from collections.abc import Generator as Gen
+"""
+
+relative_imports = """
+from . import x
+from .x import y
+from ..x import y
+"""
+
+duplicated_imports = """
+from sklearn import ensemble
+from sklearn import linear_model
+"""
+
+comma_imports = """
+from sklearn import ensemble, linear_model
+
+from collections.abc import Generator, Collection
+"""
+
 
 @pytest.mark.parametrize('code, expected', [
     [
@@ -17,8 +49,48 @@ import numpy as np
         }
     ],
 ])
-def test_find_defined_names_from_imports(code, expected):
+def test_from_imports(code, expected):
     assert definitions.from_imports(parso.parse(code)) == expected
+
+
+@pytest.mark.parametrize(
+    'code, expected',
+    [[
+        simple_imports,
+        [
+            'numpy',
+            'pandas',
+        ],
+    ],
+     [
+         mixed_imports,
+         [
+             'another',
+             'matplotlib',
+             'numpy',
+             'pandas',
+             'scikit-learn',
+         ]
+     ], [
+         relative_imports,
+         [],
+     ], [
+         duplicated_imports,
+         ['scikit-learn'],
+     ], [
+         comma_imports,
+         ['scikit-learn'],
+     ]],
+    ids=[
+        'simple',
+        'mixed',
+        'relative',
+        'duplicated',
+        'comma',
+    ],
+)
+def test_packages_used(code, expected):
+    assert definitions.packages_used(parso.parse(code)) == expected
 
 
 @pytest.mark.parametrize(

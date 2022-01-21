@@ -7,6 +7,7 @@ _kaggle/*/exported.py
 _kaggle/*/pipeline.yaml
 _kaggle/*/pipeline.png
 _kaggle/*/nb.ipynb
+_kaggle/*/requirements.txt
 
 examples/**/*.ipynb
 examples/**/tasks
@@ -15,6 +16,7 @@ examples/**/outputs
 examples/**/pipeline.yaml
 examples/**/pipeline.png
 examples/**/exported.py
+examples/**/requirements.txt
 
 
 # Byte-compiled / optimized / DLL files

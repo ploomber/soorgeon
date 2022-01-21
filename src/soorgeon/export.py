@@ -151,12 +151,16 @@ class NotebookExporter:
 
         self._io = None
         self._definitions = None
+        self._tree = None
 
     def export(self, product_prefix=None):
         """Export the project
         """
         # export functions and classes to a separate file
         self.export_definitions()
+
+        # export requirements.txt
+        self.export_requirements()
 
         task_specs = self.get_task_specs(product_prefix=product_prefix)
 
@@ -247,6 +251,16 @@ class NotebookExporter:
 
         Path('exported.py').write_text(exported)
 
+    def export_requirements(self):
+        pkgs = definitions.packages_used(self.tree)
+
+        if pkgs:
+            pkgs_txt = '\n'.join(pkgs)
+            Path('requirements.txt').write_text(f"""\
+# Auto-generated file, may need manual editing
+{pkgs_txt}
+""")
+
     def _get_code(self):
         """Returns the source of code cells
         """
@@ -256,11 +270,17 @@ class NotebookExporter:
     @property
     def definitions(self):
         if self._definitions is None:
-            code = self._get_code()
-            tree = parso.parse(code)
-            self._definitions = (definitions.from_def_and_class(tree))
+            self._definitions = (definitions.from_def_and_class(self.tree))
 
         return self._definitions
+
+    @property
+    def tree(self):
+        if self._tree is None:
+            code = self._get_code()
+            self._tree = parso.parse(code)
+
+        return self._tree
 
     @property
     def io(self):

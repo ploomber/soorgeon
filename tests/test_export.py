@@ -289,6 +289,26 @@ def test_export_definitions(tmp_empty, code, expected):
     assert Path('exported.py').read_text() == expected
 
 
+@pytest.mark.parametrize('code, expected', [
+    [with_definitions, None],
+    [definition_with_import, 'matplotlib\n'],
+],
+                         ids=[
+                             'with_definitions',
+                             'definition_with_import',
+                         ])
+def test_export_requirements(tmp_empty, code, expected):
+    exporter = export.NotebookExporter(_read(code))
+    exporter.export_requirements()
+
+    if expected is None:
+        assert not Path('requirements.txt').exists()
+    else:
+        expected = ('# Auto-generated file, may need manual '
+                    f'editing\n{expected}')
+        assert Path('requirements.txt').read_text() == expected
+
+
 def test_does_not_create_exported_py_if_no_definitions(tmp_empty):
     exporter = export.NotebookExporter(_read(simple))
     exporter.export_definitions()

@@ -21,6 +21,7 @@ REQUIRES = [
     'jinja2',
     'pyyaml',
     'click',
+    'isort',
 ]
 
 DEV = [
