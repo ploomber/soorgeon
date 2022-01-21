@@ -441,3 +441,19 @@ def my_function(a, b, c=None):
 """
 
     export._check_functions_do_not_use_global_variables(code)
+
+
+# FIXME: this is broken because we consider all the definitions in the file
+# but we should only take into account the ones that happen before the node
+# we're parsing
+@pytest.mark.xfail
+def test_check_functions_do_not_use_global_variables_exception():
+    code = """
+def my_function(a, b):
+    return a + b + c
+
+class c:
+    pass
+"""
+
+    export._check_functions_do_not_use_global_variables(code)
