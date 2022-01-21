@@ -1,7 +1,8 @@
 # CHANGELOG
 
 ## 0.0.9dev
-* Auto-generted `requirements.txt` includes `ploomber` by default
+* Auto-generated `requirements.txt` includes `ploomber` by default
+* Appends extracted packages to `requirements.txt` if already exists
 
 ## 0.0.8 (2022-01-20)
 * Auto-generated `requirements.txt` file after running `soorgeon refactor`

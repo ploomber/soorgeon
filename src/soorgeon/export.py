@@ -252,15 +252,23 @@ class NotebookExporter:
         Path('exported.py').write_text(exported)
 
     def export_requirements(self):
-        """Generates requirements.txt file
+        """Generates requirements.txt file, appends it at the end if already
+        exists
         """
         pkgs = ['ploomber'] + definitions.packages_used(self.tree)
 
         pkgs_txt = '\n'.join(pkgs)
-        Path('requirements.txt').write_text(f"""\
+
+        reqs = Path('requirements.txt')
+
+        out = f"""\
 # Auto-generated file, may need manual editing
 {pkgs_txt}
-""")
+"""
+        if reqs.exists():
+            reqs.write_text(reqs.read_text() + out)
+        else:
+            reqs.write_text(out)
 
     def _get_code(self):
         """Returns the source of code cells
