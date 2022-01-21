@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.0.9dev
+* Auto-generted `requirements.txt` includes `ploomber` by default
 
 ## 0.0.8 (2022-01-20)
 * Auto-generated `requirements.txt` file after running `soorgeon refactor`

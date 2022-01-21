@@ -252,11 +252,12 @@ class NotebookExporter:
         Path('exported.py').write_text(exported)
 
     def export_requirements(self):
-        pkgs = definitions.packages_used(self.tree)
+        """Generates requirements.txt file
+        """
+        pkgs = ['ploomber'] + definitions.packages_used(self.tree)
 
-        if pkgs:
-            pkgs_txt = '\n'.join(pkgs)
-            Path('requirements.txt').write_text(f"""\
+        pkgs_txt = '\n'.join(pkgs)
+        Path('requirements.txt').write_text(f"""\
 # Auto-generated file, may need manual editing
 {pkgs_txt}
 """)
@@ -373,3 +374,6 @@ def from_nb(nb, log=None, product_prefix=None):
 
 def from_path(path, log=None, product_prefix=None):
     from_nb(jupytext.read(path), log=log, product_prefix=product_prefix)
+
+
+# %%
