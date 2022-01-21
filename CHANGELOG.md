@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.0.8dev
+## 0.0.8 (2022-01-20)
 * Auto-generated `requirements.txt` file after running `soorgeon refactor`
 * Auto-generated serialization cell creates parent directories if needed
 
