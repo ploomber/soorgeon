@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 0.0.9dev
+## 0.0.9 (2022-01-22)
 * Auto-generated `requirements.txt` includes `ploomber` by default
 * Appends extracted packages to `requirements.txt` if already exists
 
