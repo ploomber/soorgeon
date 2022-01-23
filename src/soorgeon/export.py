@@ -188,6 +188,7 @@ class NotebookExporter:
         code = self._get_code()
         _check_syntax(code)
         _check_functions_do_not_use_global_variables(code)
+        _check_no_star_imports(code)
 
     def _init_proto_tasks(self, nb):
         """Breask notebook into smaller sections
@@ -319,6 +320,23 @@ def _check_syntax(code):
         ast.parse(code)
     except SyntaxError as e:
         raise SyntaxError('Error refactoring notebook: invalid syntax') from e
+
+
+def _check_no_star_imports(code):
+    tree = parso.parse(code)
+
+    star_imports = [
+        import_ for import_ in tree.iter_imports() if import_.is_star_import()
+    ]
+
+    if star_imports:
+        star_imports_ = '\n'.join(import_.get_code()
+                                  for import_ in star_imports)
+        url = ('https://github.com/ploomber/soorgeon/blob/main/doc'
+               '/star-imports.md')
+        raise ValueError('Star imports are not supported, please change '
+                         f'the following:\n\n{star_imports_}\n\n'
+                         f'For more details, see: {url}')
 
 
 # see issue #12 on github

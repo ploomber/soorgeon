@@ -167,6 +167,24 @@ def test_from_nb(tmp_empty, nb_str, tasks):
     assert list(dag) == tasks
 
 
+def test_from_nb_with_star_imports(tmp_empty):
+    nb_str = """\
+# ## Some header
+
+from math import *
+
+# ## Another header
+
+from pathlib import *
+"""
+
+    with pytest.raises(ValueError) as excinfo:
+        export.from_nb(_read(nb_str))
+
+    assert 'from math import *' in str(excinfo.value)
+    assert 'from pathlib import *' in str(excinfo.value)
+
+
 def test_from_nb_upstream_cell_only_shows_unique_values(tmp_empty):
     export.from_nb(_read(complex))
 
