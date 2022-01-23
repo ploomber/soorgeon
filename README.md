@@ -17,7 +17,11 @@
 
 ![header](_static/header.png)
 
-Convert monolithic Jupyter notebooks into [Ploomber](https://github.com/ploomber/ploomber) pipelines. [3-minute demo](https://www.youtube.com/watch?v=EJecqsZBr3Q).
+Convert monolithic Jupyter notebooks into [Ploomber](https://github.com/ploomber/ploomber) pipelines.
+
+https://user-images.githubusercontent.com/989250/150660392-559eca67-b630-4ef2-b660-4f5ddb5a8d65.mp4
+
+[3-minute video tutorial](https://www.youtube.com/watch?v=EJecqsZBr3Q).
 
 Try the interactive demo:
 
