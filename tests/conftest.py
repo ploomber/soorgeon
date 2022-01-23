@@ -23,7 +23,7 @@ def read_nb(name):
 
 
 def read_snippets(name):
-    ne = NotebookExporter(jupytext.reads(read_nb('ml'), fmt='py:percent'))
+    ne = NotebookExporter(jupytext.reads(read_nb(name), fmt='py:percent'))
     return ne._snippets
 
 

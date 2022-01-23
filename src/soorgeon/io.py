@@ -782,10 +782,8 @@ def find_upstream(snippets):
 
     providers = ProviderMapping(io)
 
-    # FIXME: this is going to generate duplicates if the task depends on >1
-    # input from a given task, so we must remove duplicates
     upstream = {
-        snippet_name: _get_upstream(snippet_name, v[0], providers)
+        snippet_name: list(set(_get_upstream(snippet_name, v[0], providers)))
         for snippet_name, v in io.items()
     }
 

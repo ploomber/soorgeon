@@ -167,6 +167,15 @@ def test_from_nb(tmp_empty, nb_str, tasks):
     assert list(dag) == tasks
 
 
+def test_from_nb_upstream_cell_only_shows_unique_values(tmp_empty):
+    export.from_nb(_read(complex))
+
+    dag = DAGSpec('pipeline.yaml').to_dag()
+
+    expected = "upstream = ['one']\nproduct = None"
+    assert dag['two'].source._get_parameters_cell() == expected
+
+
 def test_from_nb_with_product_prefix(tmp_empty):
     export.from_nb(_read(simple), product_prefix='some-directory')
 

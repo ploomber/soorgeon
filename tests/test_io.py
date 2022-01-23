@@ -137,6 +137,15 @@ def test_providermapping_error():
         'clean': ['load'],
         'plot': ['clean']
     }],
+    [
+        read_snippets('ml'), {
+            'load': [],
+            'clean': ['load'],
+            'train-test-split': ['clean'],
+            'linear-regression': ['train-test-split'],
+            'random-forest-regressor': ['train-test-split']
+        }
+    ],
 ])
 def test_find_upstream(snippets, expected):
     assert io.find_upstream(snippets) == expected
