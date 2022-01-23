@@ -208,6 +208,40 @@ def test_from_nb_with_product_prefix(tmp_empty):
     assert all([p.startswith(expected) for p in products])
 
 
+@pytest.mark.parametrize('prefix, expected', [
+    ['some-directory', 'some-directory\n'],
+    [None, 'output\n'],
+])
+def test_from_nb_creates_gitignore(tmp_empty, prefix, expected):
+    export.from_nb(_read(simple), product_prefix=prefix)
+
+    assert Path('.gitignore').read_text() == expected
+
+
+def test_from_nb_appends_gitignore(tmp_empty):
+    path = Path('.gitignore')
+    path.write_text('something')
+
+    export.from_nb(_read(simple), product_prefix='some-directory')
+
+    assert path.read_text() == 'something\nsome-directory\n'
+
+
+def test_from_nb_doesnt_create_gitignore_if_absolute_prefix(tmp_empty):
+    export.from_nb(_read(simple), product_prefix='/some/absolute/dir')
+
+    assert not Path('.gitignore').exists()
+
+
+def test_from_nb_doesnt_append_gitignore_if_absolute_prefix(tmp_empty):
+    path = Path('.gitignore')
+    path.write_text('something')
+
+    export.from_nb(_read(simple), product_prefix='/some/absolute/dir')
+
+    assert path.read_text() == 'something'
+
+
 def test_spec_style(tmp_empty):
     export.from_nb(_read(simple))
     spec = Path('pipeline.yaml').read_text()
@@ -471,7 +505,7 @@ y = x + something.another()
 """
     nb = jupytext.reads(code, fmt='py:light')
     exporter = export.NotebookExporter(nb)
-    specs = exporter.get_task_specs()
+    specs = exporter.get_task_specs(product_prefix='output')
 
     assert specs == {
         'first': {

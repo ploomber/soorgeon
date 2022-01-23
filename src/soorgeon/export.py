@@ -122,8 +122,9 @@ import ast
 import pprint
 from collections import namedtuple
 from pathlib import Path
-
 import logging
+
+import click
 import parso
 import jupytext
 import yaml
@@ -138,7 +139,7 @@ class NotebookExporter:
     """Converts a notebook into a Ploomber pipeline
     """
 
-    def __init__(self, nb):
+    def __init__(self, nb, verbose=True):
         self._nb = nb
 
         self._check()
@@ -152,15 +153,26 @@ class NotebookExporter:
         self._io = None
         self._definitions = None
         self._tree = None
+        self._verbose = verbose
 
     def export(self, product_prefix=None):
         """Export the project
+
+        Parameters
+        ---------
+        product_prefix : str
+            A prefix to append to all products. If None, it is set to 'output'
         """
+        product_prefix = product_prefix or 'output'
+
         # export functions and classes to a separate file
         self.export_definitions()
 
         # export requirements.txt
         self.export_requirements()
+
+        # export .gitignore
+        self.export_gitignore(product_prefix)
 
         task_specs = self.get_task_specs(product_prefix=product_prefix)
 
@@ -276,6 +288,18 @@ class NotebookExporter:
         """
         return '\n'.join(cell['source'] for cell in self._nb.cells
                          if cell['cell_type'] == 'code')
+
+    def export_gitignore(self, product_prefix):
+        if product_prefix and not Path(product_prefix).is_absolute():
+            path = Path('.gitignore')
+            content = '' if not path.exists() else path.read_text() + '\n'
+            path.write_text(content + product_prefix + '\n')
+            self._echo(f'Added {str(product_prefix)!r} directory'
+                       ' to .gitignore...')
+
+    def _echo(self, msg):
+        if self._verbose:
+            click.echo(msg)
 
     @property
     def definitions(self):

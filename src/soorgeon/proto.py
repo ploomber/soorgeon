@@ -170,16 +170,14 @@ class ProtoTask:
 
         return jupytext.writes(nb, fmt='py:percent')
 
-    def to_spec(self, io, product_prefix=None):
+    def to_spec(self, io, product_prefix):
         """
 
         Parameters
         ----------
         product_prefix : str
-            A prefix to add to all products. If None, it's set to 'output'
+            A prefix to add to all products
         """
-        product_prefix = product_prefix or 'output'
-
         _, outputs = io[self.name]
 
         # prefix products by name to guarantee they're unique
