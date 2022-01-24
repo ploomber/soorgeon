@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.0.11dev
+
 ## 0.0.10 (2022-01-23)
 * Adds `--df-format/-d` option to customize data frame serialization ([#18](https://github.com/ploomber/soorgeon/issues/18))
 * Raising error if notebook has star imports ([#21](https://github.com/ploomber/soorgeon/issues/21))
