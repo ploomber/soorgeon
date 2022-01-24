@@ -38,6 +38,23 @@ Try the interactive demo:
 pip install soorgeon
 ```
 
+## Usage
+
+```sh
+# refactor notebook
+soorgeon refactor nb.ipynb
+
+# all variables with the df prefix are stored in csv files
+soorgeon refactor nb.ipynb --df-format csv
+# all variables with the df prefix are stored in parquet files
+soorgeon refactor nb.ipynb --df-format parquet
+
+# store task output in 'some-directory' (if missing, this defaults to 'output')
+soorgeon refactor nb.ipynb --product-prefix some-directory
+```
+
+To learn more, check out our [guide](doc/guide.md).
+
 ## Examples
 
 ```sh

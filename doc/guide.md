@@ -83,6 +83,20 @@ To learn more about Ploomber pipelines, check out our [introductory tutorial.](h
 
 **Important:** Since Soorgeon only analyses your code *statically*, that is, it doesn't execute it but only parses the source code, it doesn't know if a variable `df` is a data frame or something else. Hence it uses the `pickle` module, a flexible method for serializing a wide range of object types; however, we highly recommend you change the output format once you finish with the refactoring process (`.parquet` is an excellent format for data frames).
 
+### Customizing output format
+
+You can pass the `--df-format` option to customize how data frames are serialized/unserialized:
+
+```sh
+# all variables with the df prefix are stored in csv files
+soorgeon refactor nb.ipynb --df-format csv
+
+# all variables with the df prefix are stored in parquet files
+soorgeon refactor nb.ipynb --df-format parquet
+```
+
+Any variable that *do not* have the `df` prefix are serialized with `pickle`.
+
 ### Exporting functions and classes
 
 Finally, any function or class definitions:

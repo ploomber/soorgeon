@@ -10,28 +10,54 @@ from jinja2 import Template
 
 from soorgeon import io
 
-# TODO: add unit test to ensure parent directories are created
-_PICKLING_TEMPLATE = Template("""
-{% for product in products %}
+_PICKLING_TEMPLATE = Template("""\
+{%- for product in products -%}
+{%- if product.startswith('df') and df_format in ('parquet', 'csv') -%}
+Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
+{{product}}.to_{{df_format}}(product['{{product}}'], index=False)
+{%- else -%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
-{% endfor %}
+{%- endif %}
+
+{% endfor -%}\
 """)
 
-_UNPICKLING_TEMPLATE = Template("""
-{% for up, key in up_and_in %}
+_UNPICKLING_TEMPLATE = Template("""\
+{%- for up, key in up_and_in -%}
+{%- if key.startswith('df') and df_format in ('parquet', 'csv') -%}
+{{key}} = pd.read_{{df_format}}(upstream['{{up}}']['{{key}}'])
+{%- else -%}
 {{key}} = pickle.loads(Path(upstream['{{up}}']['{{key}}']).read_bytes())
-{% endfor %}
+{%- endif %}
+{% endfor -%}\
 """)
+
+
+def _new_pickling_cell(outputs, df_format):
+    df_format = df_format or ''
+    source = _PICKLING_TEMPLATE.render(products=sorted(outputs),
+                                       df_format=df_format).strip()
+    return nbformat.v4.new_code_cell(source=source)
+
+
+def _new_unpickling_cell(up_and_in, df_format):
+    df_format = df_format or ''
+    source = _UNPICKLING_TEMPLATE.render(up_and_in=sorted(up_and_in,
+                                                          key=lambda t:
+                                                          (t[0], t[1])),
+                                         df_format=df_format).strip()
+    return nbformat.v4.new_code_cell(source=source)
 
 
 class ProtoTask:
     """A group of cells that will be converted into a Ploomber task
     """
 
-    def __init__(self, name, cells):
+    def __init__(self, name, cells, df_format):
         self._name = name
         self._cells = cells
+        self._df_format = df_format
 
     @property
     def name(self):
@@ -53,8 +79,7 @@ class ProtoTask:
         _, outputs = io[self.name]
 
         if outputs:
-            pickling = nbformat.v4.new_code_cell(
-                source=_PICKLING_TEMPLATE.render(products=outputs))
+            pickling = _new_pickling_cell(outputs, self._df_format)
             pickling.metadata['tags'] = ['soorgeon-pickle']
 
             return pickling
@@ -70,8 +95,7 @@ class ProtoTask:
             up_and_in = [(providers.get(input_, self.name), input_)
                          for input_ in inputs]
 
-            unpickling = nbformat.v4.new_code_cell(
-                source=_UNPICKLING_TEMPLATE.render(up_and_in=up_and_in))
+            unpickling = _new_unpickling_cell(up_and_in, self._df_format)
             unpickling.metadata['tags'] = ['soorgeon-unpickle']
 
             return unpickling
@@ -97,7 +121,8 @@ class ProtoTask:
 
         return [parameters] + cells
 
-    def _add_imports_cell(self, code_nb, add_pathlib_and_pickle, definitions):
+    def _add_imports_cell(self, code_nb, add_pathlib_and_pickle, definitions,
+                          df_format):
         # FIXME: instatiate this in the constructor so we only build it once
         ip = io.ImportsParser(code_nb)
         source = ip.get_imports_cell_for_task(io.remove_imports(str(self)))
@@ -107,6 +132,10 @@ class ProtoTask:
             source = source or ''
             source += '\nfrom pathlib import Path'
             source += '\nimport pickle'
+
+        # only add them if unserializing or serializing
+        if df_format in {'parquet', 'csv'}:
+            source += '\nimport pandas as pd'
 
         if definitions:
             names = ', '.join(definitions)
@@ -118,7 +147,15 @@ class ProtoTask:
             cell.metadata['tags'] = ['soorgeon-imports']
             return cell
 
-    def export(self, upstream, io_, providers, code_nb, definitions):
+    def export(
+        self,
+        upstream,
+        io_,
+        providers,
+        code_nb,
+        definitions,
+        df_format,
+    ):
         """Export as a Python string
 
         Parameters
@@ -160,7 +197,8 @@ class ProtoTask:
         cell_imports = self._add_imports_cell(
             code_nb,
             add_pathlib_and_pickle=cell_pickling or cell_unpickling,
-            definitions=definitions)
+            definitions=definitions,
+            df_format=self._df_format)
 
         pre = [cell_imports] if cell_imports else []
 
@@ -182,7 +220,9 @@ class ProtoTask:
 
         # prefix products by name to guarantee they're unique
         products = {
-            out: str(Path(product_prefix, f'{self.name}-{out}.pkl'))
+            out: str(
+                Path(product_prefix,
+                     _product_name(self.name, out, self._df_format)))
             for out in outputs
         }
 
@@ -199,3 +239,9 @@ class ProtoTask:
         """
         return '\n'.join(cell['source'] for cell in self._cells
                          if cell.cell_type == 'code')
+
+
+def _product_name(task, variable, df_format):
+    ext = ('pkl'
+           if not df_format or not variable.startswith('df') else df_format)
+    return f'{task}-{variable}.{ext}'

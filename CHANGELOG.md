@@ -9,6 +9,7 @@
 ## 0.0.8 (2022-01-20)
 * Auto-generated `requirements.txt` file after running `soorgeon refactor`
 * Auto-generated serialization cell creates parent directories if needed
+* Adds `--df-format/-d` option to customize data frame serialization (#18)
 
 ## 0.0.7 (2022-01-15)
 * Fixes function signature parsing

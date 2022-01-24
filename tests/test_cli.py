@@ -40,3 +40,159 @@ def test_refactor(tmp_empty, args, product_prefix):
 
     assert result.exit_code == 0
     assert all([p.startswith(product_prefix) for p in paths])
+
+
+with_dfs = """\
+# ## first
+
+df = 1
+
+# ## second
+
+df_2 = df + 1
+
+"""
+
+mixed = """\
+# ## first
+
+df = 1
+x = 2
+
+# ## second
+
+df_2 = x + df + 1
+
+"""
+
+
+@pytest.mark.parametrize('args, ext, requirements', [
+    [['nb.py'], 'pkl', None],
+    [['nb.py', '--df-format', 'parquet'], 'parquet', 'pyarrow'],
+    [['nb.py', '--df-format', 'csv'], 'csv', None],
+],
+                         ids=[
+                             'none',
+                             'parquet',
+                             'csv',
+                         ])
+@pytest.mark.parametrize('nb, products_expected', [
+    [
+        simple,
+        [
+            'output/cell-0-x.pkl',
+            'output/cell-0.ipynb',
+            'output/cell-2-y.pkl',
+            'output/cell-2.ipynb',
+            'output/cell-4.ipynb',
+        ]
+    ],
+    [
+        with_dfs,
+        [
+            'output/first-df.{ext}',
+            'output/first.ipynb',
+            'output/second.ipynb',
+        ]
+    ],
+    [
+        mixed,
+        [
+            'output/first-x.pkl',
+            'output/first-df.{ext}',
+            'output/first.ipynb',
+            'output/second.ipynb',
+        ]
+    ],
+],
+                         ids=[
+                             'simple',
+                             'with-dfs',
+                             'mixed',
+                         ])
+def test_refactor_df_format(tmp_empty, args, ext, nb, products_expected,
+                            requirements):
+    Path('nb.py').write_text(nb)
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, args)
+
+    spec = DAGSpec('pipeline.yaml')
+
+    paths = [
+        i for product in [t['product'].values() for t in spec['tasks']]
+        for i in product
+    ]
+
+    assert result.exit_code == 0
+    assert set(paths) == set(p.format(ext=ext) for p in products_expected)
+
+    if requirements:
+        content = ('# Auto-generated file'
+                   f', may need manual editing\n{requirements}\n')
+        assert Path('requirements.txt').read_text() == content
+    else:
+        assert not Path('requirements.txt').exists()
+
+
+imports_pyarrow = """\
+# ## first
+
+import pyarrow
+
+df = 1
+
+# ## second
+
+df_2 = df + 1
+
+"""
+
+imports_fastparquet = """\
+# ## first
+
+df = 1
+
+# ## second
+
+import fastparquet
+
+df_2 = df + 1
+
+"""
+
+imports_nothing = """\
+# ## first
+
+df = 1
+
+# ## second
+
+df_2 = df + 1
+
+"""
+
+
+@pytest.mark.parametrize('nb, requirements', [
+    [imports_pyarrow, 'pyarrow'],
+    [imports_fastparquet, 'fastparquet'],
+    [imports_nothing, 'pyarrow'],
+],
+                         ids=[
+                             'pyarrow',
+                             'fastparquet',
+                             'nothing',
+                         ])
+def test_refactor_parquet_requirements(tmp_empty, nb, requirements):
+    Path('nb.py').write_text(nb)
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, ['nb.py', '--df-format', 'parquet'])
+
+    assert result.exit_code == 0
+    content = ('# Auto-generated file'
+               f', may need manual editing\n{requirements}\n')
+    assert Path('requirements.txt').read_text() == content
+
+
+# adds import if needed / and doesn't add import pickle

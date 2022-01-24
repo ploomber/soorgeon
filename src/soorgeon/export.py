@@ -139,8 +139,20 @@ class NotebookExporter:
     """Converts a notebook into a Ploomber pipeline
     """
 
-    def __init__(self, nb, verbose=True):
+    def __init__(self, nb, verbose=True, df_format=None):
+        if df_format not in {None, 'parquet', 'csv'}:
+            raise ValueError("df_format must be one of "
+                             "None, 'parquet' or 'csv', "
+                             f"got: {df_format!r}")
+
         self._nb = nb
+        self._df_format = df_format
+        self._verbose = verbose
+
+        self._io = None
+        self._definitions = None
+        self._tree = None
+        self._providers = None
 
         self._check()
 
@@ -149,11 +161,6 @@ class NotebookExporter:
         # snippets map names with the code the task will contain, we use
         # them to run static analysis
         self._snippets = {pt.name: str(pt) for pt in self._proto_tasks}
-
-        self._io = None
-        self._definitions = None
-        self._tree = None
-        self._verbose = verbose
 
     def export(self, product_prefix=None):
         """Export the project
@@ -216,7 +223,7 @@ class NotebookExporter:
 
         # initialize proto tasks
         return [
-            proto.ProtoTask(name, cell_group)
+            proto.ProtoTask(name, cell_group, df_format=self._df_format)
             for name, cell_group in zip(names, cells_split)
         ]
 
@@ -235,13 +242,17 @@ class NotebookExporter:
         # FIXME: this calls find_providers, we should only call it once
         upstream = io.find_upstream(self._snippets)
 
-        providers = io.ProviderMapping(self.io)
-
         code_nb = self._get_code()
 
         return {
-            pt.name: pt.export(upstream, self._io, providers, code_nb,
-                               self.definitions)
+            pt.name: pt.export(
+                upstream,
+                self.io,
+                self.providers,
+                code_nb,
+                self.definitions,
+                df_format=self._df_format,
+            )
             for pt in self._proto_tasks
         }
 
@@ -268,11 +279,17 @@ class NotebookExporter:
         """Generates requirements.txt file, appends it at the end if already
         exists
         """
+        reqs = Path('requirements.txt')
+
+        # ploomber is added by default
         pkgs = ['ploomber'] + definitions.packages_used(self.tree)
 
-        pkgs_txt = '\n'.join(pkgs)
+        # add pyarrow to requirements if needed
+        if (self._df_format == 'parquet' and 'pyarrow' not in pkgs
+                and 'fastparquet' not in pkgs):
+            pkgs = ['pyarrow'] + pkgs
 
-        reqs = Path('requirements.txt')
+        pkgs_txt = '\n'.join(sorted(pkgs))
 
         out = f"""\
 # Auto-generated file, may need manual editing
@@ -315,6 +332,13 @@ class NotebookExporter:
             self._tree = parso.parse(code)
 
         return self._tree
+
+    @property
+    def providers(self):
+        if self._providers is None:
+            self._providers = io.ProviderMapping(self.io)
+
+        return self._providers
 
     @property
     def io(self):
@@ -403,7 +427,7 @@ def _check_functions_do_not_use_global_variables(code):
         raise ValueError(message)
 
 
-def from_nb(nb, log=None, product_prefix=None):
+def from_nb(nb, log=None, product_prefix=None, df_format=None):
     """
 
     Parameters
@@ -414,7 +438,7 @@ def from_nb(nb, log=None, product_prefix=None):
     if log:
         logging.basicConfig(level=log.upper())
 
-    exporter = NotebookExporter(nb)
+    exporter = NotebookExporter(nb, df_format=df_format)
     exporter.export(product_prefix=product_prefix)
 
     # TODO: instantiate dag since this may raise issues and we want to capture
@@ -422,8 +446,8 @@ def from_nb(nb, log=None, product_prefix=None):
     # the same text)
 
 
-def from_path(path, log=None, product_prefix=None):
-    from_nb(jupytext.read(path), log=log, product_prefix=product_prefix)
-
-
-# %%
+def from_path(path, log=None, product_prefix=None, df_format=None):
+    from_nb(jupytext.read(path),
+            log=log,
+            product_prefix=product_prefix,
+            df_format=df_format)

@@ -546,3 +546,84 @@ class c:
 """
 
     export._check_functions_do_not_use_global_variables(code)
+
+
+none_pickling = """\
+Path(product['df']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['df']).write_bytes(pickle.dumps(df))
+
+Path(product['x']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['x']).write_bytes(pickle.dumps(x))\
+"""
+
+none_unpickling = """\
+df = pickle.loads(Path(upstream['first']['df']).read_bytes())
+x = pickle.loads(Path(upstream['first']['x']).read_bytes())\
+"""
+
+parquet_pickling = """\
+Path(product['df']).parent.mkdir(exist_ok=True, parents=True)
+df.to_parquet(product['df'], index=False)
+
+Path(product['x']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['x']).write_bytes(pickle.dumps(x))\
+"""
+
+parquet_unpickling = """\
+df = pd.read_parquet(upstream['first']['df'])
+x = pickle.loads(Path(upstream['first']['x']).read_bytes())\
+"""
+
+csv_pickling = """\
+Path(product['df']).parent.mkdir(exist_ok=True, parents=True)
+df.to_csv(product['df'], index=False)
+
+Path(product['x']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['x']).write_bytes(pickle.dumps(x))\
+"""
+
+csv_unpickling = """\
+df = pd.read_csv(upstream['first']['df'])
+x = pickle.loads(Path(upstream['first']['x']).read_bytes())\
+"""
+
+
+@pytest.mark.parametrize('df_format, pickling, unpickling', [
+    [None, none_pickling, none_unpickling],
+    ['parquet', parquet_pickling, parquet_unpickling],
+    ['csv', csv_pickling, csv_unpickling],
+],
+                         ids=[
+                             'none',
+                             'parquet',
+                             'csv',
+                         ])
+def test_prototask_un_pickling_cells(df_format, pickling, unpickling):
+    code = """\
+# ## first
+
+import something
+
+df = 1
+x = 1
+
+# ## second
+
+df_2 = x + df + 1
+"""
+    exporter = export.NotebookExporter(_read(code), df_format=df_format)
+    one, two = exporter._proto_tasks
+
+    assert one._pickling_cell(exporter.io)['source'] == pickling
+    assert two._pickling_cell(exporter.io) is None
+
+    assert one._unpickling_cell(exporter.io, exporter.providers) is None
+    assert two._unpickling_cell(exporter.io,
+                                exporter.providers)['source'] == unpickling
+
+
+def test_validates_df_format():
+    with pytest.raises(ValueError) as excinfo:
+        export.NotebookExporter(_read(''), df_format='something')
+
+    assert 'df_format must be one of ' in str(excinfo.value)
