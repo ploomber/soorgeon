@@ -23,7 +23,18 @@ def cli():
               default=None,
               help='Prefix for all products')
 def refactor(path, log, product_prefix, df_format):
-    """Refactor a monolithic notebook
+    """
+    Refactor a monolithic notebook.
+
+    * Sections must be separated by markdown H2 headings
+
+    * Star imports (from math import *) not supported
+
+    * Functions should not use global variables
+
+    $ soorgeon refactor nb.ipynb
+
+    User guide: https://github.com/ploomber/soorgeon/blob/main/doc/guide.md
     """
     export.from_path(path,
                      log,
