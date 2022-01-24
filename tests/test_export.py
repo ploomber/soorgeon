@@ -1,4 +1,6 @@
 from pathlib import Path
+from importlib import resources
+
 import yaml
 import parso
 import pytest
@@ -6,6 +8,7 @@ import jupytext
 from ploomber.spec import DAGSpec
 import papermill as pm
 
+from soorgeon import assets
 from soorgeon import export
 
 
@@ -627,3 +630,11 @@ def test_validates_df_format():
         export.NotebookExporter(_read(''), df_format='something')
 
     assert 'df_format must be one of ' in str(excinfo.value)
+
+
+def test_creates_readme(tmp_empty):
+    exporter = export.NotebookExporter(_read(simple))
+    exporter.export()
+
+    assert Path('README.md').read_text() == resources.read_text(
+        assets, 'README.md')

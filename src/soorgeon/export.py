@@ -123,6 +123,8 @@ import pprint
 from collections import namedtuple
 from pathlib import Path
 import logging
+from importlib import resources
+from soorgeon import assets
 
 import click
 import parso
@@ -198,6 +200,8 @@ class NotebookExporter:
         out = out.replace('\n- ', '\n\n- ')
 
         Path('pipeline.yaml').write_text(out)
+
+        self.export_readme()
 
     def _check(self):
         """
@@ -313,6 +317,9 @@ class NotebookExporter:
             path.write_text(content + product_prefix + '\n')
             self._echo(f'Added {str(product_prefix)!r} directory'
                        ' to .gitignore...')
+
+    def export_readme(self):
+        Path('README.md').write_text(resources.read_text(assets, 'README.md'))
 
     def _echo(self, msg):
         if self._verbose:

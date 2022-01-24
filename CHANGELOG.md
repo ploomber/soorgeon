@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.0.11dev
+* Auto-generated `README.md` (#2)
 
 ## 0.0.10 (2022-01-23)
 * Adds `--df-format/-d` option to customize data frame serialization ([#18](https://github.com/ploomber/soorgeon/issues/18))
