@@ -1,10 +1,10 @@
 # CHANGELOG
 
-## 0.0.10dev
-* Adds `--df-format/-d` option to customize data frame serialization (#18)
-* Raising error if notebook has star imports (#21)
-* Fixed bug that caused the `upstream` cell to have duplicates (#31)
-* Refactor adds/appends output prefix to `.gitignore` (#4)
+## 0.0.10 (2022-01-23)
+* Adds `--df-format/-d` option to customize data frame serialization ([#18](https://github.com/ploomber/soorgeon/issues/18))
+* Raising error if notebook has star imports ([#21](https://github.com/ploomber/soorgeon/issues/21))
+* Fixed bug that caused the `upstream` cell to have duplicates ([#31](https://github.com/ploomber/soorgeon/issues/31))
+* Refactor adds/appends output prefix to `.gitignore` ([#4](https://github.com/ploomber/soorgeon/issues/4))
 
 ## 0.0.9 (2022-01-22)
 * Auto-generated `requirements.txt` includes `ploomber` by default
