@@ -352,7 +352,7 @@ def test_export_definitions(tmp_empty, code, expected):
 
 @pytest.mark.parametrize('code, expected', [
     [with_definitions, 'ploomber\n'],
-    [definition_with_import, 'ploomber\nmatplotlib\n'],
+    [definition_with_import, 'matplotlib\nploomber\n'],
 ],
                          ids=[
                              'with_definitions',
@@ -375,7 +375,7 @@ def test_export_requirements_doesnt_overwrite(tmp_empty):
     exporter.export_requirements()
 
     expected = ('soorgeon\n# Auto-generated file, may need manual '
-                'editing\nploomber\nmatplotlib\n')
+                'editing\nmatplotlib\nploomber\n')
     assert reqs.read_text() == expected
 
 

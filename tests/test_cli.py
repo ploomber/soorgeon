@@ -67,9 +67,9 @@ df_2 = x + df + 1
 
 
 @pytest.mark.parametrize('args, ext, requirements', [
-    [['nb.py'], 'pkl', None],
-    [['nb.py', '--df-format', 'parquet'], 'parquet', 'pyarrow'],
-    [['nb.py', '--df-format', 'csv'], 'csv', None],
+    [['nb.py'], 'pkl', 'ploomber'],
+    [['nb.py', '--df-format', 'parquet'], 'parquet', 'ploomber\npyarrow'],
+    [['nb.py', '--df-format', 'csv'], 'csv', 'ploomber'],
 ],
                          ids=[
                              'none',
@@ -127,12 +127,9 @@ def test_refactor_df_format(tmp_empty, args, ext, nb, products_expected,
     assert result.exit_code == 0
     assert set(paths) == set(p.format(ext=ext) for p in products_expected)
 
-    if requirements:
-        content = ('# Auto-generated file'
-                   f', may need manual editing\n{requirements}\n')
-        assert Path('requirements.txt').read_text() == content
-    else:
-        assert not Path('requirements.txt').exists()
+    content = ('# Auto-generated file'
+               f', may need manual editing\n{requirements}\n')
+    assert Path('requirements.txt').read_text() == content
 
 
 imports_pyarrow = """\
@@ -174,9 +171,9 @@ df_2 = df + 1
 
 
 @pytest.mark.parametrize('nb, requirements', [
-    [imports_pyarrow, 'pyarrow'],
-    [imports_fastparquet, 'fastparquet'],
-    [imports_nothing, 'pyarrow'],
+    [imports_pyarrow, 'ploomber\npyarrow'],
+    [imports_fastparquet, 'fastparquet\nploomber'],
+    [imports_nothing, 'ploomber\npyarrow'],
 ],
                          ids=[
                              'pyarrow',
