@@ -638,3 +638,12 @@ def test_creates_readme(tmp_empty):
 
     assert Path('README.md').read_text() == resources.read_text(
         assets, 'README.md')
+
+
+def test_appends_to_readme(tmp_empty):
+    Path('README.md').write_text('# Some stuff')
+    exporter = export.NotebookExporter(_read(simple))
+    exporter.export()
+
+    expected = '# Some stuff\n' + resources.read_text(assets, 'README.md')
+    assert Path('README.md').read_text() == expected

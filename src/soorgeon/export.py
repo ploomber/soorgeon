@@ -319,7 +319,16 @@ class NotebookExporter:
                        ' to .gitignore...')
 
     def export_readme(self):
-        Path('README.md').write_text(resources.read_text(assets, 'README.md'))
+        path = Path('README.md')
+
+        if path.exists():
+            content = path.read_text() + '\n'
+            self._echo('README.md found, appended auto-generated content')
+        else:
+            content = ''
+            self._echo('Added README.md')
+
+        path.write_text(content + resources.read_text(assets, 'README.md'))
 
     def _echo(self, msg):
         if self._verbose:
