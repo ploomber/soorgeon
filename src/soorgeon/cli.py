@@ -22,7 +22,11 @@ def cli():
               '-p',
               default=None,
               help='Prefix for all products')
-def refactor(path, log, product_prefix, df_format):
+@click.option('--single-task',
+              '-s',
+              is_flag=True,
+              help=('Create a pipeline with a single task'))
+def refactor(path, log, product_prefix, df_format, single_task):
     """
     Refactor a monolithic notebook.
 
@@ -36,10 +40,12 @@ def refactor(path, log, product_prefix, df_format):
 
     User guide: https://github.com/ploomber/soorgeon/blob/main/doc/guide.md
     """
-    export.from_path(path,
-                     log,
-                     product_prefix=product_prefix,
-                     df_format=df_format)
+    export.refactor(path,
+                    log,
+                    product_prefix=product_prefix,
+                    df_format=df_format,
+                    single_task=single_task)
+
     click.secho(f'Finished refactoring {path!r}, use Ploomber to continue.',
                 fg='green')
 
@@ -56,5 +62,7 @@ Execute pipeline:
 Plot pipeline (this requires pygraphviz, which isn't installed by default):
     $ ploomber plot
 
-Documentation: https://docs.ploomber.io
+* Documentation: https://docs.ploomber.io
+* Jupyter integration: https://ploomber.io/s/jupyter
+* Other editors: https://ploomber.io/s/editors
 """)

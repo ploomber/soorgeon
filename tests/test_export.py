@@ -8,8 +8,7 @@ import jupytext
 from ploomber.spec import DAGSpec
 import papermill as pm
 
-from soorgeon import assets
-from soorgeon import export
+from soorgeon import assets, export, exceptions
 
 
 def _read(nb_str):
@@ -452,7 +451,7 @@ if
 """
     nb = jupytext.reads(code, fmt='py:light')
 
-    with pytest.raises(SyntaxError):
+    with pytest.raises(exceptions.InputSyntaxError):
         export.NotebookExporter(nb)
 
 

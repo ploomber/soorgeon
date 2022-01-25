@@ -118,6 +118,7 @@ Step 8. Generate step.
 
 Finally, we generate the pipeline.yaml file.
 """
+import traceback
 import ast
 import pprint
 from collections import namedtuple
@@ -130,8 +131,9 @@ import click
 import parso
 import jupytext
 import yaml
+import nbformat
 
-from soorgeon import split, io, definitions, proto
+from soorgeon import split, io, definitions, proto, exceptions
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
@@ -382,8 +384,14 @@ FunctionNeedsFix = namedtuple('FunctionNeedsFix', ['name', 'pos', 'args'])
 def _check_syntax(code):
     try:
         ast.parse(code)
-    except SyntaxError as e:
-        raise SyntaxError('Error refactoring notebook: invalid syntax') from e
+    except SyntaxError:
+        error = traceback.format_exc()
+    else:
+        error = None
+
+    if error:
+        raise exceptions.InputSyntaxError(f'Could not refactor notebook due '
+                                          f'to invalid syntax\n\n {error}')
 
 
 def _check_no_star_imports(code):
@@ -445,12 +453,13 @@ def _check_functions_do_not_use_global_variables(code):
 
 
 def from_nb(nb, log=None, product_prefix=None, df_format=None):
-    """
+    """Refactor a notebook by passing a notebook object
 
     Parameters
     ----------
     product_prefix : str
         A prefix to add to all products. If None, it's set to 'output'
+
     """
     if log:
         logging.basicConfig(level=log.upper())
@@ -464,7 +473,73 @@ def from_nb(nb, log=None, product_prefix=None, df_format=None):
 
 
 def from_path(path, log=None, product_prefix=None, df_format=None):
+    """Refactor a notebook by passing a path to it
+
+    Parameters
+    ----------
+    allow_single_task : bool
+        If False, the function will fail if it cannot refactor the notebook
+        into a multi-stage pipeline. If True, it will first try to refactor
+        the notebook, and if it fails, it will generate a pipeline with
+        a single task
+    """
     from_nb(jupytext.read(path),
             log=log,
             product_prefix=product_prefix,
             df_format=df_format)
+
+
+def single_task_from_path(path, product_prefix):
+    """Refactor a notebook into a single task Ploomber pipeline
+    """
+    click.echo('Creating a pipeline with a single task...')
+
+    cell = nbformat.v4.new_code_cell(source='upstream = None',
+                                     metadata=dict(tags=['parameters']))
+
+    nb = jupytext.read(path)
+    nb.cells.insert(0, cell)
+
+    name = Path(path).stem
+    path_to_task = f'{name}.py'
+
+    jupytext.write(nb, path_to_task, fmt='py:percent')
+
+    spec = {
+        'tasks': [{
+            'source':
+            path_to_task,
+            'product':
+            str(Path(product_prefix or 'products', f'{name}-report.ipynb')),
+            # ploomber build may break if the notebook contains inline
+            # magics, we'll disable this once it's fixed
+            # https://github.com/ploomber/ploomber/issues/478
+            'static_analysis':
+            False,
+        }]
+    }
+
+    pipeline = 'pipeline.yaml'
+    click.echo(f'Done. Copied code to {path_to_task!r} and added it to '
+               f'{pipeline!r}. Original notebook {str(path)!r} '
+               'remains unchanged. ')
+
+    Path('pipeline.yaml').write_text(yaml.safe_dump(spec, sort_keys=False))
+
+
+def refactor(path, log, product_prefix, df_format, single_task):
+    if single_task:
+        single_task_from_path(path=path, product_prefix=product_prefix)
+    else:
+        try:
+            from_nb(jupytext.read(path),
+                    log=log,
+                    product_prefix=product_prefix,
+                    df_format=df_format)
+        except Exception as e:
+            cmd = f'soorgeon refactor {path} --single-task'
+            msg = ('An error occurred when refactoring '
+                   'notebook.\n\nTry refactoring '
+                   f'as a single task pipeline:\n\n$ {cmd}\n\n'
+                   'Error details:\n')
+            raise exceptions.InputError(msg) from e

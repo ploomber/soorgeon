@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+import jupytext
 import pytest
 from click.testing import CliRunner
 
@@ -190,6 +192,41 @@ def test_refactor_parquet_requirements(tmp_empty, nb, requirements):
     content = ('# Auto-generated file'
                f', may need manual editing\n{requirements}\n')
     assert Path('requirements.txt').read_text() == content
+
+
+def test_single_task(tmp_empty):
+    jupytext.write(jupytext.reads(simple, fmt='py:light'), 'nb.ipynb')
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, ['nb.ipynb', '--single-task'])
+
+    assert result.exit_code == 0
+
+    with Path('pipeline.yaml').open() as f:
+        spec = yaml.safe_load(f)
+
+    assert spec == {
+        'tasks': [{
+            'source': 'nb.py',
+            'product': 'products/nb-report.ipynb',
+            'static_analysis': False
+        }]
+    }
+
+
+def test_suggest_single_task_if_failed_to_refactor(tmp_empty):
+    Path('nb.py').write_text("""
+# ## header
+
+# this will break because magics are not supported
+! mkdir some_directory
+""")
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, ['nb.py'])
+
+    assert result.exit_code == 1
+    assert 'soorgeon refactor nb.py --single-task' in result.output
 
 
 # adds import if needed / and doesn't add import pickle
