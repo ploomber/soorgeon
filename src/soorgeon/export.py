@@ -428,10 +428,11 @@ def _check_functions_do_not_use_global_variables(code):
                 ))
 
     if needs_fix:
-        # FIXME: add a short guide and print url as part of the error message
         message = ('Looks like the following functions are using global '
                    'variables, this is unsupported. Please add all missing '
-                   'arguments.\n\n')
+                   'arguments. See this to learn more:\n'
+                   'https://github.com/ploomber/soorgeon/blob'
+                   '/main/doc/fn-global.md\n\n')
 
         def comma_separated(args):
             return ','.join(f"'{arg}'" for arg in args)
