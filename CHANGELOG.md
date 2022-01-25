@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.0.12dev
+
 ## 0.0.11 (2022-01-25)
 * Auto-generated `README.md` ([#2](https://github.com/ploomber/soorgeon/issues/2))
 * Printing guide on global variables ([#15](https://github.com/ploomber/soorgeon/issues/15))
