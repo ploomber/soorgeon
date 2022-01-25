@@ -52,7 +52,7 @@ def test_find_breaks_error_if_no_h2_headers(tmp_empty):
     with pytest.raises(exceptions.InputError) as excinfo:
         split.find_breaks(nb)
 
-    assert 'Expected to have at least one' in str(excinfo.value)
+    assert 'Expected notebook to have at least one' in str(excinfo.value)
 
 
 @pytest.mark.parametrize('md, expected', [

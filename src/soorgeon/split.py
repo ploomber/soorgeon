@@ -24,8 +24,10 @@ def find_breaks(nb):
             breaks.append(idx)
 
     if not breaks:
-        raise exceptions.InputError('Expected to have at least one markdown '
-                                    'with a level 2 header')
+        url = 'https://github.com/ploomber/soorgeon/blob/main/doc/guide.md'
+        raise exceptions.InputError('Expected notebook to have at least '
+                                    'one markdown H2 heading. '
+                                    f'Check out our guide: {url}')
 
     return breaks
 
