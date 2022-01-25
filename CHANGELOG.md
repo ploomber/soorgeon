@@ -2,6 +2,8 @@
 
 ## 0.0.11dev
 * Auto-generated `README.md` (#2)
+* Printing guide on global variables (#15)
+* Showing url in error message if nb doesnt have H2 headings
 
 ## 0.0.10 (2022-01-23)
 * Adds `--df-format/-d` option to customize data frame serialization ([#18](https://github.com/ploomber/soorgeon/issues/18))
