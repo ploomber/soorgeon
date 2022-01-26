@@ -1,7 +1,7 @@
 # CHANGELOG
 
-## 0.0.12dev
-* Adds `--single-task` option to refactor as a single task pipeline (#32)
+## 0.0.12 (2022-01-25)
+* Adds `--single-task` option to refactor as a single task pipeline ([#32](https://github.com/ploomber/soorgeon/issues/32))
 
 ## 0.0.11 (2022-01-25)
 * Auto-generated `README.md` ([#2](https://github.com/ploomber/soorgeon/issues/2))
