@@ -218,8 +218,9 @@ def test_suggest_single_task_if_failed_to_refactor(tmp_empty):
     Path('nb.py').write_text("""
 # ## header
 
-# this will break because magics are not supported
-! mkdir some_directory
+# this will break because of the missing : after the if keyword
+if something
+    pass
 """)
 
     runner = CliRunner()

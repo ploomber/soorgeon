@@ -8,7 +8,7 @@ import jupytext
 from ploomber.spec import DAGSpec
 import papermill as pm
 
-from soorgeon import assets, export, exceptions
+from soorgeon import assets, export, exceptions, io
 
 
 def _read(nb_str):
@@ -147,18 +147,74 @@ a_, b_ = range(10), range(10)
 things = {f'"{a}"': b for a, b in zip(a_, b_) if b > 3}
 """
 
+magics = """\
+# ## first
+
+# + language="bash"
+# ls
+
+# + language="html"
+# <br>hi
+# -
+
+# ## second
+
+# %timeit 1 + 1
+
+# %cd x
+
+# %%capture
+print('x')
+"""
+
+magics_structured = """\
+# ## first
+
+def do():
+    pass
+
+# + language="bash"
+# ls
+
+# + language="html"
+# <br>hi
+# -
+
+# ## second
+
+# %timeit do()
+
+# %timeit do()
+
+# +
+x = 1
+y = 2
+# -
+
+# ## third
+
+# %%capture
+print('something')
+
+z = x + y
+"""
+
 
 @pytest.mark.parametrize('nb_str, tasks', [
     [simple, ['cell-0', 'cell-2', 'cell-4']],
     [simple_branch, ['first', 'second', 'third-a', 'third-b']],
     [eda, ['load', 'clean', 'plot']],
     [complex, ['one', 'two', 'three']],
+    [magics, ['first', 'second']],
+    [magics_structured, ['first', 'second', 'third']],
 ],
                          ids=[
                              'simple',
                              'simple-branch',
                              'eda',
                              'complex',
+                             'magics',
+                             'magics-structured',
                          ])
 def test_from_nb(tmp_empty, nb_str, tasks):
     export.from_nb(_read(nb_str))
@@ -167,6 +223,44 @@ def test_from_nb(tmp_empty, nb_str, tasks):
 
     dag.build()
     assert list(dag) == tasks
+
+
+def test_from_nb_magics(tmp_empty):
+    export.from_nb(_read(magics))
+
+    first = jupytext.read(Path('tasks', 'first.py'))
+    second = jupytext.read(Path('tasks', 'second.py'))
+
+    assert [c['source'] for c in first.cells] == [
+        'upstream = None\nproduct = None',
+        '## first',
+        '%%bash\nls',
+        '%%html\n<br>hi',
+    ]
+
+    assert [c['source'] for c in second.cells] == [
+        'upstream = None\nproduct = None',
+        '## second',
+        '%timeit 1 + 1',
+        '%cd x',
+        "%%capture\nprint('x')",
+    ]
+
+
+def test_exporter_infers_structure_from_line_magics():
+    exporter = export.NotebookExporter(_read(magics_structured))
+
+    assert set(exporter.get_sources()) == {'first', 'second', 'third'}
+    assert io.find_upstream(exporter._snippets) == {
+        'first': [],
+        'second': [],
+        'third': ['second']
+    }
+    assert exporter.io == {
+        'first': (set(), set()),
+        'second': (set(), {'x', 'y'}),
+        'third': ({'x', 'y'}, set())
+    }
 
 
 def test_from_nb_with_star_imports(tmp_empty):
@@ -473,7 +567,7 @@ print('hello')
     assert exporter._get_code() == "print('hello')"
 
 
-def test_get_sources():
+def test_get_sources_add_import_if_needed():
     code = """\
 # ## first
 

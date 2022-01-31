@@ -133,7 +133,7 @@ import jupytext
 import yaml
 import nbformat
 
-from soorgeon import split, io, definitions, proto, exceptions
+from soorgeon import split, io, definitions, proto, exceptions, magics
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
@@ -148,6 +148,8 @@ class NotebookExporter:
             raise ValueError("df_format must be one of "
                              "None, 'parquet' or 'csv', "
                              f"got: {df_format!r}")
+
+        nb = magics.comment_magics(nb)
 
         self._nb = nb
         self._df_format = df_format
@@ -195,6 +197,8 @@ class NotebookExporter:
             path = Path(task_spec['source'])
             path.parent.mkdir(exist_ok=True, parents=True)
             path.write_text(sources[name])
+
+            # task_spec['static_analysis'] = False
 
         out = yaml.dump(dag_spec, sort_keys=False)
         # pyyaml doesn't have an easy way to control whitespace, but we want
@@ -251,14 +255,15 @@ class NotebookExporter:
         code_nb = self._get_code()
 
         return {
-            pt.name: pt.export(
-                upstream,
-                self.io,
-                self.providers,
-                code_nb,
-                self.definitions,
-                df_format=self._df_format,
-            )
+            pt.name: magics.uncomment_magics(
+                pt.export(
+                    upstream,
+                    self.io,
+                    self.providers,
+                    code_nb,
+                    self.definitions,
+                    df_format=self._df_format,
+                ))
             for pt in self._proto_tasks
         }
 
@@ -465,6 +470,7 @@ def from_nb(nb, log=None, product_prefix=None, df_format=None):
         logging.basicConfig(level=log.upper())
 
     exporter = NotebookExporter(nb, df_format=df_format)
+
     exporter.export(product_prefix=product_prefix)
 
     # TODO: instantiate dag since this may raise issues and we want to capture
