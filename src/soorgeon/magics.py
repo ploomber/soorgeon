@@ -97,17 +97,27 @@ def _comment_if_ipython_magic(source):
         else:
             line_magic = _is_ipython_line_magic(line)
 
+            # if line magic, comment line
             if line_magic:
                 # NOTE: switched _comment_ipython_line_magic(line, line_magic)
                 # for _comment
                 lines_out.append(_comment(line))
+
+            # if inline shell, comment line
             elif _is_inline_shell(line):
                 lines_out.append(_comment(line))
+
+            # if cell magic, comment line
             elif cell_magic in HAS_INLINE_PYTHON:
                 lines_out.append(_comment(line))
+
+            # if cell magic whose content *is not* Pytho, comment line and
+            # all the remaining lines in the cell
             elif cell_magic:
                 lines_out.append(_comment(line))
                 comment_rest = True
+
+            # otherwise, don't do anything
             else:
                 lines_out.append(line)
 
