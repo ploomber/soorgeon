@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.0.13dev
+* Initial support for IPython magics (`%thing` and `%%thing`) and inline shell `! command`
 
 ## 0.0.12 (2022-01-25)
 * Adds `--single-task` option to refactor as a single task pipeline ([#32](https://github.com/ploomber/soorgeon/issues/32))
