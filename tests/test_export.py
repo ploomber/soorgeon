@@ -147,6 +147,10 @@ a_, b_ = range(10), range(10)
 things = {f'"{a}"': b for a, b in zip(a_, b_) if b > 3}
 """
 
+# NOTE: since we turn magics into comments, we add an import in the middle
+# of the notebook to ensure that the magic above it won't turn into a comment
+# in the final import node (the import note will be moved to the top of
+# the notebook)
 magics = """\
 # ## first
 
@@ -156,6 +160,9 @@ magics = """\
 # + language="html"
 # <br>hi
 # -
+
+import math
+math.sqrt(1)
 
 # ## second
 
@@ -228,7 +235,11 @@ def test_from_nb(tmp_empty, nb_str, tasks):
 @pytest.mark.parametrize('py, ext', [
     [True, 'py'],
     [False, 'ipynb'],
-])
+],
+                         ids=[
+                             'py',
+                             'ipynb',
+                         ])
 def test_from_nb_works_with_magics(tmp_empty, py, ext):
     export.from_nb(_read(magics), py=py)
 
@@ -236,10 +247,12 @@ def test_from_nb_works_with_magics(tmp_empty, py, ext):
     second = jupytext.read(Path('tasks', f'second.{ext}'))
 
     assert [c['source'] for c in first.cells] == [
+        'import math',
         'upstream = None\nproduct = None',
         '## first',
         '%%bash\nls',
         '%%html\n<br>hi',
+        '\nmath.sqrt(1)',
     ]
 
     assert [c['source'] for c in second.cells] == [

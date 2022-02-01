@@ -41,6 +41,23 @@ def uncomment_magics(nb):
     return nb
 
 
+def _delete_magic(line):
+    """Returns an empty line if it starts with the # [magic] prefix
+    """
+    return '' if line.startswith(_PREFIX) else line
+
+
+def _delete_magics_cell(source):
+    """Reverts the comments applied to magics (cell level)
+    """
+    if not source:
+        return source
+
+    lines = source.splitlines()
+    lines_new = [_delete_magic(line) for line in lines]
+    return '\n'.join(lines_new).strip()
+
+
 def _uncomment_magic(line):
     """Reverts the comments applied to magics (line level)
     """

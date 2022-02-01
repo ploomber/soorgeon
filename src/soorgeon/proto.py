@@ -126,7 +126,15 @@ class ProtoTask:
                           df_format):
         # FIXME: instatiate this in the constructor so we only build it once
         ip = io.ImportsParser(code_nb)
-        source = ip.get_imports_cell_for_task(io.remove_imports(str(self)))
+
+        source_raw = ip.get_imports_cell_for_task(io.remove_imports(str(self)))
+
+        # since we analyze the code structure as a code string (and not a
+        # notebook) - if a magic (which is turned into a comment at this
+        # stage) is right above an import statement, parso will make it part
+        # of the import node, so we remove them here. Other comments are
+        # unchanged
+        source = magics._delete_magics_cell(source_raw)
 
         # FIXME: only add them if they're not already there
         if add_pathlib_and_pickle:
