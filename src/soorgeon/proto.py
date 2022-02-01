@@ -154,7 +154,6 @@ class ProtoTask:
         providers,
         code_nb,
         definitions,
-        df_format,
     ):
         """Export as a Python string
 
