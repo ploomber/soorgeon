@@ -739,8 +739,9 @@ class ProviderMapping:
         provider = providers.get(variable)
 
         if not provider:
-            raise KeyError('Could not find a task to '
-                           f'obtain the {variable!r} that {task_name!r} uses')
+            raise KeyError(f'Error parsing inputs for section {task_name!r} '
+                           'notebook: could not find an earlier section '
+                           f'declaring variable {variable!r}')
 
         return provider
 

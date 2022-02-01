@@ -116,10 +116,11 @@ def test_providermapping_error():
     with pytest.raises(KeyError) as excinfo:
         m.get('unknown_variable', 'clean')
 
-    expected = ("Could not find a task to obtain the "
-                "'unknown_variable' that 'clean' uses")
+    expected = ('"Error parsing inputs for section \'clean\' notebook: '
+                'could not find an earlier section declaring '
+                'variable \'unknown_variable\'"')
 
-    assert expected in str(excinfo.value)
+    assert expected == str(excinfo.value)
 
 
 @pytest.mark.parametrize('snippets, expected', [
