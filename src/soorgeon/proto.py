@@ -217,6 +217,16 @@ class ProtoTask:
         # remove magics
         nb_out = magics.uncomment_magics(nb)
 
+        # jupytext does not write metadata automatically when writing to
+        # ipnyb (but it does for py:percent), we save it here to ensure
+        # ipynb has the kernelspec info
+        if not self._py:
+            nb_out.metadata.kernelspec = {
+                "display_name": 'Python 3',
+                "language": 'python',
+                "name": 'python3',
+            }
+
         return jupytext.writes(nb_out,
                                fmt='py:percent' if self._py else 'ipynb')
 

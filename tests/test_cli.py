@@ -58,9 +58,12 @@ def test_refactor_file_format(tmp_empty, input_, out_ext, args):
     result = runner.invoke(cli.refactor, args)
 
     assert result.exit_code == 0
-    assert jupytext.read(Path('tasks', f'cell-0.{out_ext}'))
-    assert jupytext.read(Path('tasks', f'cell-2.{out_ext}'))
-    assert jupytext.read(Path('tasks', f'cell-4.{out_ext}'))
+
+    # test the output file has metadata, otherwise it may fail to execute
+    # if missing the kernelspec info
+    assert jupytext.read(Path('tasks', f'cell-0.{out_ext}')).metadata
+    assert jupytext.read(Path('tasks', f'cell-2.{out_ext}')).metadata
+    assert jupytext.read(Path('tasks', f'cell-4.{out_ext}')).metadata
 
 
 with_dfs = """\
@@ -239,8 +242,10 @@ def test_single_task(tmp_empty, input_, backup, file_format, source):
         }]
     }
 
-    assert jupytext.read(Path(source))
-    assert jupytext.read(Path(backup))
+    # test the output file has metadata, otherwise it may fail to execute
+    # if missing the kernelspec info
+    assert jupytext.read(Path(source)).metadata
+    assert jupytext.read(Path(backup)).metadata
 
 
 @pytest.mark.parametrize('code', [
