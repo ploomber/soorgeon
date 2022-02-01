@@ -54,10 +54,11 @@ class ProtoTask:
     """A group of cells that will be converted into a Ploomber task
     """
 
-    def __init__(self, name, cells, df_format):
+    def __init__(self, name, cells, df_format, py):
         self._name = name
         self._cells = cells
         self._df_format = df_format
+        self._py = py
 
     @property
     def name(self):
@@ -205,7 +206,7 @@ class ProtoTask:
 
         # TODO: H2 header should be the top cell
 
-        return jupytext.writes(nb, fmt='py:percent')
+        return jupytext.writes(nb, fmt='py:percent' if self._py else 'ipynb')
 
     def to_spec(self, io, product_prefix):
         """
@@ -228,8 +229,10 @@ class ProtoTask:
         # FIXME: check that there isn't an nb key already
         products['nb'] = str(Path(product_prefix, f'{self.name}.ipynb'))
 
+        ext = '.py' if self._py else '.ipynb'
+
         return {
-            'source': str(Path('tasks', self.name + '.py')),
+            'source': str(Path('tasks', self.name + ext)),
             'product': products
         }
 

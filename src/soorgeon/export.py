@@ -118,6 +118,7 @@ Step 8. Generate step.
 
 Finally, we generate the pipeline.yaml file.
 """
+import shutil
 import traceback
 import ast
 import pprint
@@ -144,7 +145,7 @@ class NotebookExporter:
     """Converts a notebook into a Ploomber pipeline
     """
 
-    def __init__(self, nb, verbose=True, df_format=None):
+    def __init__(self, nb, verbose=True, df_format=None, py=False):
         if df_format not in {None, 'parquet', 'csv'}:
             raise ValueError("df_format must be one of "
                              "None, 'parquet' or 'csv', "
@@ -163,7 +164,7 @@ class NotebookExporter:
 
         self._check()
 
-        self._proto_tasks = self._init_proto_tasks(nb)
+        self._proto_tasks = self._init_proto_tasks(nb, py)
 
         # snippets map names with the code the task will contain, we use
         # them to run static analysis
@@ -219,8 +220,8 @@ class NotebookExporter:
         _check_functions_do_not_use_global_variables(code)
         _check_no_star_imports(code)
 
-    def _init_proto_tasks(self, nb):
-        """Breask notebook into smaller sections
+    def _init_proto_tasks(self, nb, py):
+        """Break notebook into smaller sections
         """
         # use H2 headers to break notebook
         breaks = split.find_breaks(nb)
@@ -233,8 +234,12 @@ class NotebookExporter:
 
         # initialize proto tasks
         return [
-            proto.ProtoTask(name, cell_group, df_format=self._df_format)
-            for name, cell_group in zip(names, cells_split)
+            proto.ProtoTask(
+                name,
+                cell_group,
+                df_format=self._df_format,
+                py=py,
+            ) for name, cell_group in zip(names, cells_split)
         ]
 
     def get_task_specs(self, product_prefix=None):
@@ -412,9 +417,10 @@ def _check_no_star_imports(code):
                                   for import_ in star_imports)
         url = ('https://github.com/ploomber/soorgeon/blob/main/doc'
                '/star-imports.md')
-        raise ValueError('Star imports are not supported, please change '
-                         f'the following:\n\n{star_imports_}\n\n'
-                         f'For more details, see: {url}')
+        raise exceptions.InputError(
+            'Star imports are not supported, please change '
+            f'the following:\n\n{star_imports_}\n\n'
+            f'For more details, see: {url}')
 
 
 # see issue #12 on github
@@ -455,10 +461,10 @@ def _check_functions_do_not_use_global_variables(code):
             f'* Function {f.name!r} uses variables {comma_separated(f.args)}'
             for f in needs_fix)
 
-        raise ValueError(message)
+        raise exceptions.InputError(message)
 
 
-def from_nb(nb, log=None, product_prefix=None, df_format=None):
+def from_nb(nb, log=None, product_prefix=None, df_format=None, py=False):
     """Refactor a notebook by passing a notebook object
 
     Parameters
@@ -470,7 +476,7 @@ def from_nb(nb, log=None, product_prefix=None, df_format=None):
     if log:
         logging.basicConfig(level=log.upper())
 
-    exporter = NotebookExporter(nb, df_format=df_format)
+    exporter = NotebookExporter(nb, df_format=df_format, py=py)
 
     exporter.export(product_prefix=product_prefix)
 
@@ -479,7 +485,7 @@ def from_nb(nb, log=None, product_prefix=None, df_format=None):
     # the same text)
 
 
-def from_path(path, log=None, product_prefix=None, df_format=None):
+def from_path(path, log=None, product_prefix=None, df_format=None, py=False):
     """Refactor a notebook by passing a path to it
 
     Parameters
@@ -493,12 +499,15 @@ def from_path(path, log=None, product_prefix=None, df_format=None):
     from_nb(jupytext.read(path),
             log=log,
             product_prefix=product_prefix,
-            df_format=df_format)
+            df_format=df_format,
+            py=py)
 
 
-def single_task_from_path(path, product_prefix):
+def single_task_from_path(path, product_prefix, file_format):
     """Refactor a notebook into a single task Ploomber pipeline
     """
+    path = Path(path)
+
     click.echo('Creating a pipeline with a single task...')
 
     cell = nbformat.v4.new_code_cell(source='upstream = None',
@@ -507,42 +516,56 @@ def single_task_from_path(path, product_prefix):
     nb = jupytext.read(path)
     nb.cells.insert(0, cell)
 
-    name = Path(path).stem
-    path_to_task = f'{name}.py'
+    name = path.stem
+    path_backup = path.with_name(f'{name}-backup{path.suffix}')
 
-    jupytext.write(nb, path_to_task, fmt='py:percent')
+    # output
+    ext = path.suffix[1:] if file_format is None else file_format
+    path_to_task = f'{name}.{ext}'
+
+    # create backup
+    shutil.copy(path, path_backup)
+
+    jupytext.write(nb,
+                   path_to_task,
+                   fmt='py:percent' if ext == 'py' else 'ipynb')
 
     spec = {
         'tasks': [{
             'source':
             path_to_task,
             'product':
-            str(Path(product_prefix or 'products', f'{name}-report.ipynb')),
-            # ploomber build may break if the notebook contains inline
-            # magics, we'll disable this once it's fixed
-            # https://github.com/ploomber/ploomber/issues/478
-            'static_analysis':
-            False,
+            str(Path(product_prefix or 'products', f'{name}-report.ipynb'))
         }]
     }
 
     pipeline = 'pipeline.yaml'
     click.echo(f'Done. Copied code to {path_to_task!r} and added it to '
-               f'{pipeline!r}. Original notebook {str(path)!r} '
-               'remains unchanged. ')
+               f'{pipeline!r}. Created backup of original notebook '
+               f'at {str(path_backup)!r}.')
 
     Path('pipeline.yaml').write_text(yaml.safe_dump(spec, sort_keys=False))
 
 
-def refactor(path, log, product_prefix, df_format, single_task):
+def refactor(path, log, product_prefix, df_format, single_task, file_format):
+
     if single_task:
-        single_task_from_path(path=path, product_prefix=product_prefix)
+        single_task_from_path(path=path,
+                              product_prefix=product_prefix,
+                              file_format=file_format)
     else:
+        ext = Path(path).suffix[1:] if file_format is None else file_format
+
         try:
             from_nb(jupytext.read(path),
                     log=log,
                     product_prefix=product_prefix,
-                    df_format=df_format)
+                    df_format=df_format,
+                    py=ext == 'py')
+        # InputError means the user needs to change their code
+        except exceptions.InputError:
+            raise
+        # This implies an error on our end
         except Exception as e:
             cmd = f'soorgeon refactor {path} --single-task'
             msg = ('An error occurred when refactoring '

@@ -226,7 +226,7 @@ def test_from_nb(tmp_empty, nb_str, tasks):
 
 
 def test_from_nb_magics(tmp_empty):
-    export.from_nb(_read(magics))
+    export.from_nb(_read(magics), py=True)
 
     first = jupytext.read(Path('tasks', 'first.py'))
     second = jupytext.read(Path('tasks', 'second.py'))
@@ -274,7 +274,7 @@ from math import *
 from pathlib import *
 """
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(exceptions.InputError) as excinfo:
         export.from_nb(_read(nb_str))
 
     assert 'from math import *' in str(excinfo.value)
@@ -365,7 +365,7 @@ def test_from_nb_does_not_serialize_unused_products(tmp_empty):
 
 @pytest.fixture
 def eda_sources():
-    exporter = export.NotebookExporter(_read(eda))
+    exporter = export.NotebookExporter(_read(eda), py=True)
     sources = exporter.get_sources()
     return sources
 
@@ -513,7 +513,7 @@ fn()
 def test_raise_an_error_if_function_uses_global_variables():
     nb = _read(for_loop_with_output_in_body)
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(exceptions.InputError) as excinfo:
         export.NotebookExporter(nb)
 
     assert "Function 'fn' uses variables 'x'" in str(excinfo.value)
@@ -621,7 +621,7 @@ x = something.do()
 y = x + something.another()
 """
     nb = jupytext.reads(code, fmt='py:light')
-    exporter = export.NotebookExporter(nb)
+    exporter = export.NotebookExporter(nb, py=True)
     specs = exporter.get_task_specs(product_prefix='output')
 
     assert specs == {

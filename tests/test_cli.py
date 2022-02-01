@@ -1,3 +1,4 @@
+from unittest.mock import Mock
 from pathlib import Path
 
 import yaml
@@ -5,7 +6,7 @@ import jupytext
 import pytest
 from click.testing import CliRunner
 
-from soorgeon import cli
+from soorgeon import cli, export
 from ploomber.spec import DAGSpec
 
 simple = """# ## Cell 0
@@ -27,7 +28,7 @@ z = y + 1
     [['nb.py', '--product-prefix', 'another'], 'another'],
     [['nb.py', '-p', 'another'], 'another'],
 ])
-def test_refactor(tmp_empty, args, product_prefix):
+def test_refactor_product_prefix(tmp_empty, args, product_prefix):
     Path('nb.py').write_text(simple)
 
     runner = CliRunner()
@@ -42,6 +43,24 @@ def test_refactor(tmp_empty, args, product_prefix):
 
     assert result.exit_code == 0
     assert all([p.startswith(product_prefix) for p in paths])
+
+
+@pytest.mark.parametrize('input_, out_ext, args', [
+    ['nb.py', 'py', ['nb.py']],
+    ['nb.ipynb', 'ipynb', ['nb.ipynb']],
+    ['nb.py', 'ipynb', ['nb.py', '--file-format', 'ipynb']],
+    ['nb.ipynb', 'py', ['nb.ipynb', '--file-format', 'py']],
+])
+def test_refactor_file_format(tmp_empty, input_, out_ext, args):
+    jupytext.write(jupytext.reads(simple, fmt='py:light'), input_)
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, args)
+
+    assert result.exit_code == 0
+    assert jupytext.read(Path('tasks', f'cell-0.{out_ext}'))
+    assert jupytext.read(Path('tasks', f'cell-2.{out_ext}'))
+    assert jupytext.read(Path('tasks', f'cell-4.{out_ext}'))
 
 
 with_dfs = """\
@@ -195,11 +214,18 @@ def test_refactor_parquet_requirements(tmp_empty, nb, requirements):
     assert Path('requirements.txt').read_text() == content
 
 
-def test_single_task(tmp_empty):
-    jupytext.write(jupytext.reads(simple, fmt='py:light'), 'nb.ipynb')
+@pytest.mark.parametrize('input_, backup, file_format, source', [
+    ['nb.ipynb', 'nb-backup.ipynb', [], 'nb.ipynb'],
+    ['nb.py', 'nb-backup.py', [], 'nb.py'],
+    ['nb.ipynb', 'nb-backup.ipynb', ['--file-format', 'py'], 'nb.py'],
+    ['nb.py', 'nb-backup.py', ['--file-format', 'ipynb'], 'nb.ipynb'],
+])
+def test_single_task(tmp_empty, input_, backup, file_format, source):
+    jupytext.write(jupytext.reads(simple, fmt='py:light'), input_)
 
     runner = CliRunner()
-    result = runner.invoke(cli.refactor, ['nb.ipynb', '--single-task'])
+    result = runner.invoke(cli.refactor,
+                           [input_, '--single-task'] + file_format)
 
     assert result.exit_code == 0
 
@@ -208,21 +234,58 @@ def test_single_task(tmp_empty):
 
     assert spec == {
         'tasks': [{
-            'source': 'nb.py',
+            'source': source,
             'product': 'products/nb-report.ipynb',
-            'static_analysis': False
         }]
     }
 
+    assert jupytext.read(Path(source))
+    assert jupytext.read(Path(backup))
 
-def test_suggest_single_task_if_failed_to_refactor(tmp_empty):
-    Path('nb.py').write_text("""
+
+@pytest.mark.parametrize('code', [
+    """
 # ## header
 
-# this will break because of the missing : after the if keyword
 if something
     pass
-""")
+""", """
+# ## header
+
+y = x + 1
+""", """
+from math import *
+""", """
+y = 1
+
+def x():
+    return y
+""", """
+x = 1
+"""
+],
+                         ids=[
+                             'syntax-error',
+                             'undefined-name',
+                             'star-import',
+                             'fn-with-global-vars',
+                             'missing-h2-heading',
+                         ])
+def test_doesnt_suggest_single_task_if_user_error(tmp_empty, code):
+    Path('nb.py').write_text(code)
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, ['nb.py'])
+
+    assert result.exit_code == 1
+    assert 'soorgeon refactor nb.py --single-task' not in result.output
+
+
+def test_suggests_single_task_if_export_crashes(tmp_empty, monkeypatch):
+    monkeypatch.setattr(export.NotebookExporter, 'export',
+                        Mock(side_effect=KeyError))
+
+    Path('nb.py').write_text(simple)
 
     runner = CliRunner()
     result = runner.invoke(cli.refactor, ['nb.py'])

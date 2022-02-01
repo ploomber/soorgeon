@@ -22,7 +22,7 @@ def test_notebooks(tmp_empty, path):
     download_fn = index[name]['partial']
     download_fn()
 
-    export.from_path(Path(path, 'nb.py'))
+    export.from_path(Path(path, 'nb.py'), py=True)
 
     dag = DAGSpec('pipeline.yaml').to_dag()
     dag.build()

@@ -14,7 +14,7 @@ from pyflakes.messages import (UndefinedName, UndefinedLocal,
                                YieldOutsideFunction, ContinueOutsideLoop,
                                BreakOutsideLoop)
 
-from soorgeon.exceptions import InputError
+from soorgeon.exceptions import InputError, InputSyntaxError
 
 # messages: https://github.com/PyCQA/pyflakes/blob/master/pyflakes/messages.py
 _ERRORS = (
@@ -90,7 +90,7 @@ class MyReporter(Reporter):
         error_message = '\n'.join(self._stderr.readlines())
 
         if self._syntax:
-            raise SyntaxError(self._make_error_message(error_message))
+            raise InputSyntaxError(self._make_error_message(error_message))
         elif self._unexpected:
             warnings.warn('An unexpected error happened '
                           f'when analyzing code: {error_message.strip()!r}')

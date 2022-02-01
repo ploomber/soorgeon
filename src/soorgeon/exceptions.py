@@ -42,7 +42,7 @@ class InputError(BaseException):
     pass
 
 
-class InputSyntaxError(BaseException):
+class InputSyntaxError(InputError):
     """Raised if the notebook has invalid syntax
     """
     pass

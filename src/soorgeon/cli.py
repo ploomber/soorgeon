@@ -25,8 +25,15 @@ def cli():
 @click.option('--single-task',
               '-s',
               is_flag=True,
-              help=('Create a pipeline with a single task'))
-def refactor(path, log, product_prefix, df_format, single_task):
+              help='Create a pipeline with a single task')
+@click.option(
+    '--file-format',
+    '-f',
+    default=None,
+    type=click.Choice(('py', 'ipynb')),
+    help=('Format for pipeline tasks, if empty keeps the same format '
+          'as the input'))
+def refactor(path, log, product_prefix, df_format, single_task, file_format):
     """
     Refactor a monolithic notebook.
 
@@ -44,7 +51,8 @@ def refactor(path, log, product_prefix, df_format, single_task):
                     log,
                     product_prefix=product_prefix,
                     df_format=df_format,
-                    single_task=single_task)
+                    single_task=single_task,
+                    file_format=file_format)
 
     click.secho(f'Finished refactoring {path!r}, use Ploomber to continue.',
                 fg='green')

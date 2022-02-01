@@ -23,5 +23,5 @@ names = [get_name(nb) for nb in path_to_nbs]
 
 @pytest.mark.parametrize('path', path_to_nbs, ids=names)
 def test_notebooks(tmp_empty, path):
-    export.from_path(path)
+    export.from_path(path, py=True)
     DAGSpec('pipeline.yaml').to_dag().render()
