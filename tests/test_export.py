@@ -419,9 +419,11 @@ with_definitions_expected = (
     'def load(x):\n    return x\n\ndef plot(x):\n    return x\n\n'
     'class Cleaner:\n    pass')
 
-definition_with_import = """# ## load
+definition_with_import = """
+# ## load
 
 import matplotlib.pyplot as plt
+import load
 
 def plot(x):
     plt.plot()
@@ -438,7 +440,10 @@ definition_with_import_expected = ('import matplotlib.pyplot as plt'
     [with_definitions, with_definitions_expected],
     [definition_with_import, definition_with_import_expected],
 ],
-                         ids=['with_definitions', 'definition_with_import'])
+                         ids=[
+                             'with_definitions',
+                             'definition_with_import',
+                         ])
 def test_export_definitions(tmp_empty, code, expected):
     exporter = export.NotebookExporter(_read(code))
     exporter.export_definitions()
@@ -447,8 +452,8 @@ def test_export_definitions(tmp_empty, code, expected):
 
 
 @pytest.mark.parametrize('code, expected', [
-    [with_definitions, 'ploomber\n'],
-    [definition_with_import, 'matplotlib\nploomber\n'],
+    [with_definitions, 'ploomber>=0.14.7\n'],
+    [definition_with_import, 'load\nmatplotlib\nploomber>=0.14.7\n'],
 ],
                          ids=[
                              'with_definitions',
@@ -471,7 +476,7 @@ def test_export_requirements_doesnt_overwrite(tmp_empty):
     exporter.export_requirements()
 
     expected = ('soorgeon\n# Auto-generated file, may need manual '
-                'editing\nmatplotlib\nploomber\n')
+                'editing\nload\nmatplotlib\nploomber>=0.14.7\n')
     assert reqs.read_text() == expected
 
 
@@ -561,7 +566,7 @@ y = x + 1
         export.NotebookExporter(nb)
 
     expected = ('(ensure that your notebook executes from '
-                'top-to-bottom before refactoring)')
+                'top-to-bottom and try again)')
     assert expected in str(excinfo.value)
 
 

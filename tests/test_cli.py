@@ -69,9 +69,10 @@ df_2 = x + df + 1
 
 
 @pytest.mark.parametrize('args, ext, requirements', [
-    [['nb.py'], 'pkl', 'ploomber'],
-    [['nb.py', '--df-format', 'parquet'], 'parquet', 'ploomber\npyarrow'],
-    [['nb.py', '--df-format', 'csv'], 'csv', 'ploomber'],
+    [['nb.py'], 'pkl', 'ploomber>=0.14.7'],
+    [['nb.py', '--df-format', 'parquet'], 'parquet',
+     'ploomber>=0.14.7\npyarrow'],
+    [['nb.py', '--df-format', 'csv'], 'csv', 'ploomber>=0.14.7'],
 ],
                          ids=[
                              'none',
@@ -173,9 +174,9 @@ df_2 = df + 1
 
 
 @pytest.mark.parametrize('nb, requirements', [
-    [imports_pyarrow, 'ploomber\npyarrow'],
-    [imports_fastparquet, 'fastparquet\nploomber'],
-    [imports_nothing, 'ploomber\npyarrow'],
+    [imports_pyarrow, 'ploomber>=0.14.7\npyarrow'],
+    [imports_fastparquet, 'fastparquet\nploomber>=0.14.7'],
+    [imports_nothing, 'ploomber>=0.14.7\npyarrow'],
 ],
                          ids=[
                              'pyarrow',

@@ -199,8 +199,6 @@ class NotebookExporter:
             path.parent.mkdir(exist_ok=True, parents=True)
             path.write_text(sources[name])
 
-            # task_spec['static_analysis'] = False
-
         out = yaml.dump(dag_spec, sort_keys=False)
         # pyyaml doesn't have an easy way to control whitespace, but we want
         # tasks to have an empty line between them
@@ -264,7 +262,6 @@ class NotebookExporter:
                     self.providers,
                     code_nb,
                     self.definitions,
-                    df_format=self._df_format,
                 ))
             for pt in self._proto_tasks
         }
@@ -294,8 +291,10 @@ class NotebookExporter:
         """
         reqs = Path('requirements.txt')
 
-        # ploomber is added by default
-        pkgs = ['ploomber'] + definitions.packages_used(self.tree)
+        # ploomber is added by default (pinned to >=0.14.7 because earlier
+        # versions throw an error when using the inline bash IPython magic
+        # during the static_analysis stage)
+        pkgs = ['ploomber>=0.14.7'] + definitions.packages_used(self.tree)
 
         # add pyarrow to requirements if needed
         if (self._df_format == 'parquet' and 'pyarrow' not in pkgs
