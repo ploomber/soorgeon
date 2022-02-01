@@ -253,7 +253,24 @@ if something
 # ## header
 
 y = x + 1
-""", """
+"""
+],
+                         ids=[
+                             'syntax-error',
+                             'undefined-name',
+                         ])
+def test_doesnt_suggest_single_task_if_nb_cannot_run(tmp_empty, code):
+    Path('nb.py').write_text(code)
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, ['nb.py'])
+
+    assert result.exit_code == 1
+    assert 'soorgeon refactor nb.py --single-task' not in result.output
+
+
+@pytest.mark.parametrize('code', [
+    """
 from math import *
 """, """
 y = 1
@@ -265,20 +282,18 @@ x = 1
 """
 ],
                          ids=[
-                             'syntax-error',
-                             'undefined-name',
                              'star-import',
                              'fn-with-global-vars',
                              'missing-h2-heading',
                          ])
-def test_doesnt_suggest_single_task_if_user_error(tmp_empty, code):
+def test_doesnt_suggest_single_task_if_nb_can_run(tmp_empty, code):
     Path('nb.py').write_text(code)
 
     runner = CliRunner()
     result = runner.invoke(cli.refactor, ['nb.py'])
 
     assert result.exit_code == 1
-    assert 'soorgeon refactor nb.py --single-task' not in result.output
+    assert 'soorgeon refactor nb.py --single-task' in result.output
 
 
 def test_suggests_single_task_if_export_crashes(tmp_empty, monkeypatch):

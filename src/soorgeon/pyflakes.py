@@ -14,7 +14,7 @@ from pyflakes.messages import (UndefinedName, UndefinedLocal,
                                YieldOutsideFunction, ContinueOutsideLoop,
                                BreakOutsideLoop)
 
-from soorgeon.exceptions import InputError, InputSyntaxError
+from soorgeon.exceptions import InputWontRunError, InputSyntaxError
 
 # messages: https://github.com/PyCQA/pyflakes/blob/master/pyflakes/messages.py
 _ERRORS = (
@@ -101,7 +101,7 @@ class MyReporter(Reporter):
                 warnings.warn(warnings_)
 
             if errors:
-                raise InputError(self._make_error_message(errors))
+                raise InputWontRunError(self._make_error_message(errors))
 
 
 def check_notebook(nb):

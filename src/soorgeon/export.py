@@ -562,8 +562,8 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format):
                     product_prefix=product_prefix,
                     df_format=df_format,
                     py=ext == 'py')
-        # InputError means the user needs to change their code
-        except exceptions.InputError:
+        # InputError means the input is broken
+        except exceptions.InputWontRunError:
             raise
         # This implies an error on our end
         except Exception as e:

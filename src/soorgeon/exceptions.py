@@ -36,13 +36,19 @@ class BaseException(ClickException):
         echo(_("Error: {message}").format(message=message), file=file)
 
 
+class InputWontRunError(BaseException):
+    """Raised when there are errors that make running the input infeasible
+    """
+    pass
+
+
 class InputError(BaseException):
     """Raised when the input has issues and needs user's editing
     """
     pass
 
 
-class InputSyntaxError(InputError):
+class InputSyntaxError(InputWontRunError):
     """Raised if the notebook has invalid syntax
     """
     pass

@@ -9,7 +9,7 @@ soorgeon refactor path/to/nb.ipynb
 The output is a [Ploomber](https://github.com/ploomber/ploomber) pipeline comprised of three elements:
 
 1. `pipeline.yaml`: Pipeline specification (source code, inputs, outputs).
-2. `tasks/`: A task with `.py` files, one per task.
+2. `tasks/`: A folder with tasks generated from each section in the input notebook
 3. `exported.py`: Functions and classes exported from the original notebook, if any.
 
 ## Example
@@ -45,11 +45,18 @@ For example, say your notebook looks like this:
 
 Soorgeon will create a pipeline with three tasks from this notebook:
 
-1. `load.py`
-2. `clean.py`
-3. `plot.py`
+1. `load.ipynb`
+2. `clean.ipynb`
+3. `plot.ipynb`
 
 While Soorgeon automates the refactoring process, it's a good idea to edit your markdown headings, so the generated output pipeline has tasks of reasonable size: not too small as to be trivial but not too large to do many things at once.
+
+
+You may also tell Soorgeon to create tasks in `.py` format:
+
+```sh
+soorgeon refactor path/to/nb.ipynb --file-format py
+```
 
 *Note: while the outputs are `.py` files, you can still open them as notebooks thanks to the integration with Jupyter. On JupyterLab do `Right-click` -> `Open with` -> `Notebook`*.
 

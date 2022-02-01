@@ -51,6 +51,9 @@ soorgeon refactor nb.ipynb --df-format parquet
 
 # store task output in 'some-directory' (if missing, this defaults to 'output')
 soorgeon refactor nb.ipynb --product-prefix some-directory
+
+# generate tasks in .py format
+soorgeon refactor nb.ipynb --file-format py
 ```
 
 To learn more, check out our [guide](doc/guide.md).
