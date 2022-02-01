@@ -133,7 +133,8 @@ import jupytext
 import yaml
 import nbformat
 
-from soorgeon import split, io, definitions, proto, exceptions, magics
+from soorgeon import (split, io, definitions, proto, exceptions, magics,
+                      pyflakes)
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
@@ -216,6 +217,7 @@ class NotebookExporter:
         """
         code = self._get_code()
         _check_syntax(code)
+        pyflakes.check_notebook(self._nb)
         _check_functions_do_not_use_global_variables(code)
         _check_no_star_imports(code)
 

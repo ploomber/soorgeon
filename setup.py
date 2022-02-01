@@ -22,6 +22,8 @@ REQUIRES = [
     'pyyaml',
     'click',
     'isort',
+    # for checking code errors
+    'pyflakes',
 ]
 
 DEV = [

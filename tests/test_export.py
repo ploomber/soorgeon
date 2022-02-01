@@ -549,6 +549,22 @@ if
         export.NotebookExporter(nb)
 
 
+def test_exporter_init_with_undefined_name_error():
+    code = """\
+# ## first
+
+y = x + 1
+"""
+    nb = jupytext.reads(code, fmt='py:light')
+
+    with pytest.raises(exceptions.InputError) as excinfo:
+        export.NotebookExporter(nb)
+
+    expected = ('(ensure that your notebook executes from '
+                'top-to-bottom before refactoring)')
+    assert expected in str(excinfo.value)
+
+
 def test_get_code(tmp_empty):
     code = """\
 # ## first
