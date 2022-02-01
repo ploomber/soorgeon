@@ -562,7 +562,7 @@ y = x + 1
 """
     nb = jupytext.reads(code, fmt='py:light')
 
-    with pytest.raises(exceptions.InputError) as excinfo:
+    with pytest.raises(exceptions.InputWontRunError) as excinfo:
         export.NotebookExporter(nb)
 
     expected = ('(ensure that your notebook executes from '
