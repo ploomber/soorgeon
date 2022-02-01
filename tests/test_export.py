@@ -217,7 +217,7 @@ z = x + y
                              'magics-structured',
                          ])
 def test_from_nb(tmp_empty, nb_str, tasks):
-    export.from_nb(_read(nb_str))
+    export.from_nb(_read(nb_str), py=True)
 
     dag = DAGSpec('pipeline.yaml').to_dag()
 
@@ -225,11 +225,15 @@ def test_from_nb(tmp_empty, nb_str, tasks):
     assert list(dag) == tasks
 
 
-def test_from_nb_magics(tmp_empty):
-    export.from_nb(_read(magics), py=True)
+@pytest.mark.parametrize('py, ext', [
+    [True, 'py'],
+    [False, 'ipynb'],
+])
+def test_from_nb_works_with_magics(tmp_empty, py, ext):
+    export.from_nb(_read(magics), py=py)
 
-    first = jupytext.read(Path('tasks', 'first.py'))
-    second = jupytext.read(Path('tasks', 'second.py'))
+    first = jupytext.read(Path('tasks', f'first.{ext}'))
+    second = jupytext.read(Path('tasks', f'second.{ext}'))
 
     assert [c['source'] for c in first.cells] == [
         'upstream = None\nproduct = None',
@@ -275,7 +279,7 @@ from pathlib import *
 """
 
     with pytest.raises(exceptions.InputError) as excinfo:
-        export.from_nb(_read(nb_str))
+        export.from_nb(_read(nb_str), py=True)
 
     assert 'from math import *' in str(excinfo.value)
     assert 'from pathlib import *' in str(excinfo.value)

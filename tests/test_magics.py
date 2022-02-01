@@ -76,12 +76,31 @@ def test_is_commented_line_magic(line, expected):
     assert magics._is_commented_line_magic(line) == expected
 
 
-def test_uncomment_magics():
+def test_uncomment_magics_cell():
     nb = jupytext.reads(source, fmt='py:light')
 
     nb_new = magics.comment_magics(nb)
 
-    assert [magics.uncomment_magics(c['source']) for c in nb_new.cells] == [
+    assert [magics._uncomment_magics_cell(c['source'])
+            for c in nb_new.cells] == [
+                '## first',
+                '%%bash\nls',
+                '%%html\n<br>hi',
+                '## second',
+                '%timeit 1 + 1',
+                '%cd x',
+                "%%capture\nprint('x')",
+                '! echo hello',
+            ]
+
+
+def test_uncomment_magics():
+    nb = jupytext.reads(source, fmt='py:light')
+
+    nb_new = magics.comment_magics(nb)
+    nb_out = magics.uncomment_magics(nb_new)
+
+    assert [c['source'] for c in nb_out.cells] == [
         '## first',
         '%%bash\nls',
         '%%html\n<br>hi',

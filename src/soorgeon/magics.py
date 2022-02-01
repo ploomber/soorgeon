@@ -28,6 +28,19 @@ def comment_magics(nb):
     return nb
 
 
+def uncomment_magics(nb):
+    """
+    Iterates over cells, uncommenting the ones with magics
+    """
+    nb = copy.deepcopy(nb)
+
+    for cell in nb.cells:
+        if cell.cell_type == 'code':
+            cell['source'] = _uncomment_magics_cell(cell['source'])
+
+    return nb
+
+
 def _uncomment_magic(line):
     """Reverts the comments applied to magics (line level)
     """
@@ -43,7 +56,7 @@ def _uncomment_magic(line):
         return line
 
 
-def uncomment_magics(source):
+def _uncomment_magics_cell(source):
     """Reverts the comments applied to magics (cell level)
     """
     lines = source.splitlines()

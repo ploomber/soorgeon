@@ -8,7 +8,7 @@ import nbformat
 import jupytext
 from jinja2 import Template
 
-from soorgeon import io
+from soorgeon import io, magics
 
 _PICKLING_TEMPLATE = Template("""\
 {%- for product in products -%}
@@ -206,7 +206,11 @@ class ProtoTask:
 
         # TODO: H2 header should be the top cell
 
-        return jupytext.writes(nb, fmt='py:percent' if self._py else 'ipynb')
+        # remove magics
+        nb_out = magics.uncomment_magics(nb)
+
+        return jupytext.writes(nb_out,
+                               fmt='py:percent' if self._py else 'ipynb')
 
     def to_spec(self, io, product_prefix):
         """

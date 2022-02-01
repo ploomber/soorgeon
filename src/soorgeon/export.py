@@ -151,6 +151,8 @@ class NotebookExporter:
                              "None, 'parquet' or 'csv', "
                              f"got: {df_format!r}")
 
+        # NOTE: we're commenting magics here but removing them in ProtoTask,
+        # maybe we should comment magics also in ProtoTask?
         nb = magics.comment_magics(nb)
 
         self._nb = nb
@@ -252,7 +254,7 @@ class NotebookExporter:
 
     def get_sources(self):
         """
-        Generate the .py code strings (percent format) for each proto task
+        Generate the code strings (ipynb or percent format) for each proto task
         """
         # FIXME: this calls find_providers, we should only call it once
         upstream = io.find_upstream(self._snippets)
@@ -260,14 +262,13 @@ class NotebookExporter:
         code_nb = self._get_code()
 
         return {
-            pt.name: magics.uncomment_magics(
-                pt.export(
-                    upstream,
-                    self.io,
-                    self.providers,
-                    code_nb,
-                    self.definitions,
-                ))
+            pt.name: pt.export(
+                upstream,
+                self.io,
+                self.providers,
+                code_nb,
+                self.definitions,
+            )
             for pt in self._proto_tasks
         }
 
