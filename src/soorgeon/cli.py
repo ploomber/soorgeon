@@ -37,13 +37,13 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format):
     """
     Refactor a monolithic notebook.
 
+    $ soorgeon refactor nb.ipynb
+
     * Sections must be separated by markdown H2 headings
 
     * Star imports (from math import *) not supported
 
     * Functions should not use global variables
-
-    $ soorgeon refactor nb.ipynb
 
     User guide: https://github.com/ploomber/soorgeon/blob/main/doc/guide.md
     """
