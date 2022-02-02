@@ -1,11 +1,11 @@
 # CHANGELOG
 
-## 0.0.13dev
-* Initial support for IPython magics (`%thing` and `%%thing`) and inline shell `! command` (#28)
-* Output pipeline keeps the same format as input (#35)
-* Checking with `pyflakes` before refactoring (#27)
+## 0.0.13 (2022-02-01)
+* Initial support for IPython magics (`%thing` and `%%thing`) and inline shell `! command` ([#28](https://github.com/ploomber/soorgeon/issues/28))
+* Output pipeline keeps the same format as input ([#35](https://github.com/ploomber/soorgeon/issues/35))
+* Checking with `pyflakes` before refactoring ([#27](https://github.com/ploomber/soorgeon/issues/27))
 * Adds `--file-format/-f option`
-* Suggest `--single-task` under specific scenarios (#37)
+* Suggest `--single-task` under specific scenarios ([#37](https://github.com/ploomber/soorgeon/issues/37))
 
 ## 0.0.12 (2022-01-25)
 * Adds `--single-task` option to refactor as a single task pipeline ([#32](https://github.com/ploomber/soorgeon/issues/32))
