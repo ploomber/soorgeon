@@ -71,7 +71,7 @@ cd examples/exploratory
 soorgeon refactor nb.ipynb
 
 # to run the pipeline
-pip install ploomber
+pip install -r requirements.txt
 ploomber build
 ```
 
@@ -82,7 +82,7 @@ cd examples/machine-learning
 soorgeon refactor nb.ipynb
 
 # to run the pipeline
-pip install ploomber
+pip install -r requirements.txt
 ploomber build
 ```
 
