@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.0.14dev
+
 ## 0.0.13 (2022-02-01)
 * Initial support for IPython magics (`%thing` and `%%thing`) and inline shell `! command` ([#28](https://github.com/ploomber/soorgeon/issues/28))
 * Output pipeline keeps the same format as input ([#35](https://github.com/ploomber/soorgeon/issues/35))
