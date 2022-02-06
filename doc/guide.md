@@ -86,7 +86,7 @@ And the following unserialization cell at the top of `Clean`:
 # load df
 Path(product['df']).write_bytes(pickle.dumps(df))
 ```
-To learn more about Ploomber pipelines, check out our [introductory tutorial.](https://ploomber.readthedocs.io/en/latest/get-started/spec-api-python.html)
+To learn more about Ploomber pipelines, check out our [introductory tutorial.](https://docs.ploomber.io/en/latest/get-started/spec-api-python.html)
 
 **Important:** Since Soorgeon only analyses your code *statically*, that is, it doesn't execute it but only parses the source code, it doesn't know if a variable `df` is a data frame or something else. Hence it uses the `pickle` module, a flexible method for serializing a wide range of object types; however, we highly recommend you change the output format once you finish with the refactoring process (`.parquet` is an excellent format for data frames).
 
