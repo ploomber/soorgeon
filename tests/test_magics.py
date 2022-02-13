@@ -30,11 +30,15 @@ print('x')
 @pytest.mark.parametrize('source, expected', [
     ['%%html\na\nb', '# [magic] %%html\n# [magic] a\n# [magic] b'],
     ['%%capture\na\nb', '# [magic] %%capture\na\nb'],
+    ['%%timeit\na\nb', '# [magic] %%timeit\na\nb'],
+    ['%%time\na\nb', '# [magic] %%time\na\nb'],
     ['%time 1\n2\n%time 3', '# [magic] %time 1\n2\n# [magic] %time 3'],
 ],
                          ids=[
                              'another-language',
                              'inline-python',
+                             'inline-python-2',
+                             'inline-python-3',
                              'line-magics',
                          ])
 def test_comment_if_ipython_magic(source, expected):

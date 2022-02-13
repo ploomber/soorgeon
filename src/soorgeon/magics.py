@@ -12,7 +12,7 @@ _PREFIX_LEN = len(_PREFIX)
 
 # these are magics that can modify the dependency structure beacuse they
 # may declare new variables or use existing ones as inputs
-HAS_INLINE_PYTHON = {'%%capture', '%%timeit', '%time', '%timeit'}
+HAS_INLINE_PYTHON = {'%%capture', '%%timeit', '%%time', '%time', '%timeit'}
 
 
 def comment_magics(nb):
@@ -117,7 +117,8 @@ def _comment_if_ipython_magic(source):
     # NOTE: magics can take inputs but their outputs ARE NOT saved. e.g.,
     # %timeit x = y + 1
     # running such magic requires having y but after running it, x IS NOT
-    # declared
+    # declared. But this is magic dependent %time x = y + 1 will add x to the
+    # scope
 
     for line in source.splitlines():
         cell_magic = _is_ipython_cell_magic(line)
