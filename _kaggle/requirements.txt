@@ -1,5 +1,6 @@
 yellowbrick
 statsmodels==0.12
+scipy==1.7.3
 hvplot
 tensorflow
 plotly

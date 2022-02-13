@@ -57,7 +57,7 @@ jobs:
           pip install ".[dev]"
       - name: Install integration tests dependencies
         run: |
-          pip install -r _kaggle/requirements.txt
+          pip install -r _kaggle/requirements.lock.txt
       - name: Integration tests
         env:
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
