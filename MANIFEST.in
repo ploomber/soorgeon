@@ -1,4 +1,5 @@
 include CHANGELOG.md
 include README.md
 graft src/soorgeon/assets
-global-exclude *.pyc
+global-exclude __pycache__
+global-exclude *.py[co]
