@@ -144,7 +144,6 @@ pp = pprint.PrettyPrinter(indent=4)
 class NotebookExporter:
     """Converts a notebook into a Ploomber pipeline
     """
-
     def __init__(self, nb, verbose=True, df_format=None, py=False):
         if df_format not in {None, 'parquet', 'csv'}:
             raise ValueError("df_format must be one of "
@@ -568,6 +567,7 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format):
             raise
         # This implies an error on our end
         except Exception as e:
+            logger.exception('Error calling from_nb')
             cmd = f'soorgeon refactor {path} --single-task'
             msg = ('An error occurred when refactoring '
                    'notebook.\n\nTry refactoring '
