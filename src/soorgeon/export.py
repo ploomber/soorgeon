@@ -572,5 +572,6 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format):
             msg = ('An error occurred when refactoring '
                    'notebook.\n\nTry refactoring '
                    f'as a single task pipeline:\n\n$ {cmd}\n\n'
+                   'Need help? https://ploomber.io/community\n\n'
                    'Error details:\n')
             raise exceptions.InputError(msg) from e

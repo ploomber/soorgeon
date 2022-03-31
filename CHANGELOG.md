@@ -1,6 +1,8 @@
 # CHANGELOG
 
 ## 0.0.15dev
+* Logging exception when `from_nb` fails
+* Showing the community link when `from_nb` fails
 
 ## 0.0.14 (2022-02-13)
 * Improved support for cell magics
