@@ -1,5 +1,7 @@
 # CHANGELOG
 
+## 0.0.16dev
+
 ## 0.0.15 (2022-03-31)
 * Logging exception when `from_nb` fails
 * Showing the community link when `from_nb` fails
