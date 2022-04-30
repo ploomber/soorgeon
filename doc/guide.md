@@ -84,7 +84,7 @@ And the following unserialization cell at the top of `Clean`:
 
 ```python
 # load df
-Path(product['df']).write_bytes(pickle.dumps(df))
+df = pickle.loads(Path(product['df']).read_bytes())
 ```
 To learn more about Ploomber pipelines, check out our [introductory tutorial.](https://docs.ploomber.io/en/latest/get-started/spec-api-python.html)
 
