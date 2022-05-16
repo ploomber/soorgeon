@@ -67,7 +67,7 @@ git clone https://github.com/ploomber/soorgeon
 Exploratory daya analysis notebook:
 
 ```sh
-cd examples/exploratory
+cd soorgeon/examples/exploratory
 soorgeon refactor nb.ipynb
 
 # to run the pipeline
