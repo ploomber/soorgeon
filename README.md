@@ -78,7 +78,7 @@ ploomber build
 Machine learning notebook:
 
 ```sh
-cd examples/machine-learning
+cd soorgeon/examples/machine-learning
 soorgeon refactor nb.ipynb
 
 # to run the pipeline
