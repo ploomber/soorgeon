@@ -67,7 +67,7 @@ List tasks:
 Execute pipeline:
     $ ploomber build
 
-Plot pipeline (this requires pygraphviz, which isn't installed by default):
+Plot pipeline:
     $ ploomber plot
 
 * Documentation: https://docs.ploomber.io
