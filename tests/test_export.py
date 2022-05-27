@@ -231,6 +231,38 @@ def test_from_nb(tmp_empty, nb_str, tasks):
     dag.build()
     assert list(dag) == tasks
 
+eda = """# # Some analysis
+#
+# ## Load
+
+import seaborn as sns
+
+df = lambda x: list(range(x))
+
+# ## Clean
+
+df = df(10)
+
+# ## Plot
+
+sns.histplot(df)
+"""
+@pytest.mark.parametrize('nb_str, tasks', [
+    [eda, ['load', 'clean', 'plot']],
+],
+                         ids=[
+                             'eda'
+                         ])
+def test_from_nb_unpicklable(tmp_empty, nb_str, tasks):
+    export.from_nb(_read(nb_str), py=True)
+
+    dag = DAGSpec('pipeline.yaml').to_dag()
+
+    dag.build()
+    assert list(dag) == tasks
+
+
+
 
 @pytest.mark.parametrize('py, ext', [
     [True, 'py'],

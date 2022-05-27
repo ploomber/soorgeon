@@ -33,7 +33,13 @@ def cli():
     type=click.Choice(('py', 'ipynb')),
     help=('Format for pipeline tasks, if empty keeps the same format '
           'as the input'))
-def refactor(path, log, product_prefix, df_format, single_task, file_format):
+@click.option(
+    '--serializer',
+    '-z',
+    default=None,
+    type=click.Choice(('cloudpickle')),
+    help='Serializer for non-picklable data')
+def refactor(path, log, product_prefix, df_format, single_task, file_format, serializer):
     """
     Refactor a monolithic notebook.
 
@@ -47,12 +53,14 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format):
 
     User guide: https://github.com/ploomber/soorgeon/blob/main/doc/guide.md
     """
+    print("inside refactor")
     export.refactor(path,
                     log,
                     product_prefix=product_prefix,
                     df_format=df_format,
                     single_task=single_task,
-                    file_format=file_format)
+                    file_format=file_format,
+                    serializer=serializer)
 
     click.secho(f'Finished refactoring {path!r}, use Ploomber to continue.',
                 fg='green')

@@ -15,6 +15,10 @@ _PICKLING_TEMPLATE = Template("""\
 {%- if product.startswith('df') and df_format in ('parquet', 'csv') -%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 {{product}}.to_{{df_format}}(product['{{product}}'], index=False)
+{%- elif -%}
+{%- serializer == 'cloudpickle' -%}
+Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['{{product}}']).write_bytes(cloudpickle.dumps({{product}}))
 {%- else -%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
@@ -22,6 +26,7 @@ Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
 
 {% endfor -%}\
 """)
+
 
 _UNPICKLING_TEMPLATE = Template("""\
 {%- for up, key in up_and_in -%}
@@ -54,10 +59,11 @@ class ProtoTask:
     """A group of cells that will be converted into a Ploomber task
     """
 
-    def __init__(self, name, cells, df_format, py):
+    def __init__(self, name, cells, df_format, serializer, py):
         self._name = name
         self._cells = cells
         self._df_format = df_format
+        self._serializer = serializer
         self._py = py
 
     @property
@@ -123,7 +129,7 @@ class ProtoTask:
         return [parameters] + cells
 
     def _add_imports_cell(self, code_nb, add_pathlib_and_pickle, definitions,
-                          df_format):
+                          df_format, serializer):
         # FIXME: instatiate this in the constructor so we only build it once
         ip = io.ImportsParser(code_nb)
 
@@ -140,7 +146,10 @@ class ProtoTask:
         if add_pathlib_and_pickle:
             source = source or ''
             source += '\nfrom pathlib import Path'
-            source += '\nimport pickle'
+            if serializer == 'cloudpickle':
+                source += '\nimport cloudpickle'
+            else:
+                source += '\nimport pickle'
 
         # only add them if unserializing or serializing
         if df_format in {'parquet', 'csv'}:
@@ -206,7 +215,8 @@ class ProtoTask:
             code_nb,
             add_pathlib_and_pickle=cell_pickling or cell_unpickling,
             definitions=definitions,
-            df_format=self._df_format)
+            df_format=self._df_format,
+            serializer=self._serializer)
 
         pre = [cell_imports] if cell_imports else []
 

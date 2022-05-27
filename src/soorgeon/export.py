@@ -144,7 +144,7 @@ pp = pprint.PrettyPrinter(indent=4)
 class NotebookExporter:
     """Converts a notebook into a Ploomber pipeline
     """
-    def __init__(self, nb, verbose=True, df_format=None, py=False):
+    def __init__(self, nb, verbose=True, df_format=None, serializer=None, py=False):
         if df_format not in {None, 'parquet', 'csv'}:
             raise ValueError("df_format must be one of "
                              "None, 'parquet' or 'csv', "
@@ -156,6 +156,7 @@ class NotebookExporter:
 
         self._nb = nb
         self._df_format = df_format
+        self._serializer = serializer
         self._verbose = verbose
 
         self._io = None
@@ -239,6 +240,7 @@ class NotebookExporter:
                 name,
                 cell_group,
                 df_format=self._df_format,
+                serializer=self._serializer,
                 py=py,
             ) for name, cell_group in zip(names, cells_split)
         ]
@@ -464,7 +466,7 @@ def _check_functions_do_not_use_global_variables(code):
         raise exceptions.InputError(message)
 
 
-def from_nb(nb, log=None, product_prefix=None, df_format=None, py=False):
+def from_nb(nb, log=None, product_prefix=None, df_format=None, serializer=None, py=False):
     """Refactor a notebook by passing a notebook object
 
     Parameters
@@ -476,7 +478,7 @@ def from_nb(nb, log=None, product_prefix=None, df_format=None, py=False):
     if log:
         logging.basicConfig(level=log.upper())
 
-    exporter = NotebookExporter(nb, df_format=df_format, py=py)
+    exporter = NotebookExporter(nb, df_format=df_format, serializer=serializer, py=py)
 
     exporter.export(product_prefix=product_prefix)
 
@@ -547,7 +549,9 @@ def single_task_from_path(path, product_prefix, file_format):
     Path('pipeline.yaml').write_text(yaml.safe_dump(spec, sort_keys=False))
 
 
-def refactor(path, log, product_prefix, df_format, single_task, file_format):
+def refactor(path, log, product_prefix, df_format, single_task, file_format, serializer):
+
+    print('Refactoring code')
 
     if single_task:
         single_task_from_path(path=path,
@@ -561,6 +565,7 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format):
                     log=log,
                     product_prefix=product_prefix,
                     df_format=df_format,
+                    serializer=serializer,
                     py=ext == 'py')
         # InputError means the input is broken
         except exceptions.InputWontRunError:
