@@ -84,7 +84,7 @@ def clean(task_name, deep):
     """
     Clean a refactored notebook task.
 
-    $ soorgeon clean model-training
+    $ soorgeon clean <task-name>
 
     """
     task_dir = "tasks"

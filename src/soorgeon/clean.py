@@ -6,7 +6,8 @@ import jupytext
 
 
 def basic_clean(task_file):
-    """Run basic clean, directly called by cli.clean
+    """
+    Run basic clean (directly called by cli.clean())
     Generate intermediate files for ipynb
     """
     if task_file.lower().endswith(".ipynb"):
@@ -23,7 +24,10 @@ def basic_clean(task_file):
 
 
 def basic_clean_py(task_file_py):
-    """Run basic clean for py files (core part)"""
+    """
+    Run basic clean for py files
+    (util method only called by basic_clean())
+    """
     # commands to execute, which follow <exectutable> <filename> format
     commands = ["black"]
     for command in commands:
