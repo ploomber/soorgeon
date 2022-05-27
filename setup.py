@@ -24,6 +24,7 @@ REQUIRES = [
     'isort',
     # for checking code errors
     'pyflakes',
+    "black"
 ]
 
 DEV = [
@@ -43,7 +44,7 @@ DEV = [
     'seaborn',
     'papermill',
     'pkgmt',
-    'twine',
+    'twine'
 ]
 
 DESCRIPTION = ('Convert monolithic Jupyter notebooks'

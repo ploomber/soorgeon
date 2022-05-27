@@ -1,6 +1,7 @@
 import click
-
+from os.path import exists
 from soorgeon import __version__, export
+from soorgeon.clean import basic_clean
 
 
 @click.group()
@@ -74,3 +75,28 @@ Plot pipeline:
 * Jupyter integration: https://ploomber.io/s/jupyter
 * Other editors: https://ploomber.io/s/editors
 """)
+
+
+@cli.command()
+@click.argument("task-name")
+@click.option("--deep", "-d", default=None)
+def clean(task_name, deep):
+    """
+    Clean a refactored notebook task.
+
+    $ soorgeon clean model-training
+
+    """
+    task_dir = "tasks"
+    task_files = [
+        f"{task_dir}/{task_name}.py", f"{task_dir}/{task_name}.ipynb"
+    ]
+    if not exists(f"{task_dir}"):
+        click.echo("tasks directory not found, please refactor first!")
+    elif not any(exists(task_file) for task_file in task_files):
+        click.echo(f"task {task_name} not found!")
+    else:
+        for taskfile in [f for f in task_files if exists(f)]:
+            basic_clean(taskfile)
+            if deep:
+                pass  # TODO issue #49
