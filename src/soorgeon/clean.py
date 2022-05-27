@@ -27,7 +27,9 @@ def basic_clean_py(task_file_py):
     # commands to execute, which follow <exectutable> <filename> format
     commands = ["black"]
     for command in commands:
-        result = subprocess.run([command, task_file_py], text=True)
+        result = subprocess.run([command, task_file_py],
+                                text=True,
+                                capture_output=True)
         click.echo(result)
 
     isort.file(task_file_py)

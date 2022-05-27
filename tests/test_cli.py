@@ -315,3 +315,56 @@ def test_suggests_single_task_if_export_crashes(tmp_empty, monkeypatch):
 
 
 # adds import if needed / and doesn't add import pickle
+
+
+def test_clean_py():
+    Path('nb.py').write_text(simple)
+
+    runner = CliRunner()
+    runner.invoke(cli.refactor, ['nb.py'])
+    result = runner.invoke(cli.clean, ['cell-2'])
+    assert result.exit_code == 0
+    # black
+    assert "1 file reformatted." in result.output
+    # isort
+    assert "Fixing" in result.output
+    # end of basic_clean()
+    assert "Finished cleaning tasks/cell-2.py" in result.output
+
+
+def test_clean_ipynb():
+    nb_ = jupytext.reads(simple, fmt='py:light')
+    jupytext.write(nb_, 'nb.ipynb')
+
+    runner = CliRunner()
+    runner.invoke(cli.refactor, ['nb.ipynb'])
+    result = runner.invoke(cli.clean, ['cell-2'])
+
+    assert result.exit_code == 0
+    assert "Generating intermadiate py files" in result.output
+    # black
+    assert "1 file reformatted." in result.output
+    # isort
+    assert "Fixing" in result.output
+    # end of basic_clean()
+    assert "Finished cleaning tasks/cell-2.py" in result.output
+
+
+def test_clean_no_tasks_directory():
+    runner = CliRunner()
+    result = runner.invoke(cli.clean, ['cell-9'])
+
+    assert result.exit_code == 1
+    assert "tasks directory not found, please refactor first!" in result.output
+
+
+def test_clean_no_task():
+    nb_ = jupytext.reads(simple, fmt='py:light')
+    jupytext.write(nb_, 'nb.ipynb')
+
+    runner = CliRunner()
+    runner.invoke(cli.refactor, ['nb.ipynb'])
+    result = runner.invoke(cli.clean, ['cell-9'])
+
+    assert result.exit_code == 1
+    assert "task cell-9 not found!" in result.output
