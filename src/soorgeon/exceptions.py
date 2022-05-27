@@ -52,3 +52,15 @@ class InputSyntaxError(InputWontRunError):
     """Raised if the notebook has invalid syntax
     """
     pass
+
+
+class TasksDirectoryNotFoundError(BaseException):
+    """Raised when the tasks directory does not exist
+    """
+    pass
+
+
+class TaskNotFoundError(BaseException):
+    """Raised when the task does not exist
+    """
+    pass

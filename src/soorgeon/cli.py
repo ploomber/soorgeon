@@ -1,6 +1,6 @@
 import click
 from os.path import exists
-from soorgeon import __version__, export
+from soorgeon import __version__, export, exceptions
 from soorgeon.clean import basic_clean
 
 
@@ -92,10 +92,11 @@ def clean(task_name, deep):
         f"{task_dir}/{task_name}.py", f"{task_dir}/{task_name}.ipynb"
     ]
     if not exists(f"{task_dir}"):
-        click.echo("tasks directory not found, please refactor first!",
-                   err=True)
+        msg = "tasks directory not found, please refactor first!"
+        raise exceptions.TasksDirectoryNotFoundError(msg)
     elif not any(exists(task_file) for task_file in task_files):
-        click.echo(f"task {task_name} not found!", err=True)
+        msg = f"task {task_name} not found!"
+        raise exceptions.TaskNotFoundError(msg)
     else:
         for taskfile in [f for f in task_files if exists(f)]:
             basic_clean(taskfile)

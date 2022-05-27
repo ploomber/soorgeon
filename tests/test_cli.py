@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 import jupytext
 import pytest
+import shutil
 from click.testing import CliRunner
 
 from soorgeon import cli, export
@@ -352,7 +353,8 @@ def test_clean_ipynb():
 
 def test_clean_no_tasks_directory():
     runner = CliRunner()
-    result = runner.invoke(cli.clean, ['cell-9'])
+    shutil.rmtree('tasks', ignore_errors=True)
+    result = runner.invoke(cli.clean, ['cell-2'])
 
     assert result.exit_code == 1
     assert "tasks directory not found, please refactor first!" in result.output
