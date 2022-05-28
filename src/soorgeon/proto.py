@@ -15,15 +15,13 @@ _PICKLING_TEMPLATE = Template("""\
 {%- if product.startswith('df') and df_format in ('parquet', 'csv') -%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 {{product}}.to_{{df_format}}(product['{{product}}'], index=False)
-{%- elif -%}
-{%- serializer == 'cloudpickle' -%}
+{%- elif serializer == 'cloudpickle'-%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(cloudpickle.dumps({{product}}))
 {%- else -%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
 {%- endif %}
-
 {% endfor -%}\
 """)
 
@@ -39,10 +37,11 @@ _UNPICKLING_TEMPLATE = Template("""\
 """)
 
 
-def _new_pickling_cell(outputs, df_format):
+def _new_pickling_cell(outputs, df_format, serializer):
     df_format = df_format or ''
     source = _PICKLING_TEMPLATE.render(products=sorted(outputs),
-                                       df_format=df_format).strip()
+                                       df_format=df_format,
+                                       serializer=serializer).strip()
     return nbformat.v4.new_code_cell(source=source)
 
 
@@ -86,7 +85,7 @@ class ProtoTask:
         _, outputs = io[self.name]
 
         if outputs:
-            pickling = _new_pickling_cell(outputs, self._df_format)
+            pickling = _new_pickling_cell(outputs, self._df_format, self._serializer)
             pickling.metadata['tags'] = ['soorgeon-pickle']
 
             return pickling
@@ -147,6 +146,7 @@ class ProtoTask:
             source = source or ''
             source += '\nfrom pathlib import Path'
             if serializer == 'cloudpickle':
+                source += '\nimport pickle'
                 source += '\nimport cloudpickle'
             else:
                 source += '\nimport pickle'

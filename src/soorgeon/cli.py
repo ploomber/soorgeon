@@ -37,7 +37,7 @@ def cli():
     '--serializer',
     '-z',
     default=None,
-    type=click.Choice(('cloudpickle')),
+    type=click.Choice(('cloudpickle', 'dill')),
     help='Serializer for non-picklable data')
 def refactor(path, log, product_prefix, df_format, single_task, file_format, serializer):
     """
@@ -53,7 +53,7 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format, ser
 
     User guide: https://github.com/ploomber/soorgeon/blob/main/doc/guide.md
     """
-    print("inside refactor")
+
     export.refactor(path,
                     log,
                     product_prefix=product_prefix,
@@ -62,7 +62,7 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format, ser
                     file_format=file_format,
                     serializer=serializer)
 
-    click.secho(f'Finished refactoring {path!r}, use Ploomber to continue.',
+    click.secho(f'Finished new refactoring {path!r}, use Ploomber to continue.',
                 fg='green')
 
     click.echo("""

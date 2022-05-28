@@ -308,6 +308,14 @@ class NotebookExporter:
                 and 'fastparquet' not in pkgs):
             pkgs = ['pyarrow'] + pkgs
 
+        # add cloudpickle/dill to requirements if needed
+        if (self._serializer == 'cloudpickle' and 'cloudpickle'
+                not in pkgs):
+            pkgs = ['cloudpickle'] + pkgs
+        elif (self._serializer == 'dill' and 'dill'
+                not in pkgs):
+            pkgs = ['dill'] + pkgs
+
         pkgs_txt = '\n'.join(sorted(pkgs))
 
         out = f"""\
