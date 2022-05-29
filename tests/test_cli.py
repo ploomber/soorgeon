@@ -170,15 +170,12 @@ df_2 = df + 1
 
 
 @pytest.mark.parametrize('args, requirements', [
-    [['nb.py', '--serializer', 'cloudpickle'], 'cloudpickle\nploomber>=0.14.7'],
+    [['nb.py', '--serializer', 'cloudpickle'], 'cloudpickle\nploomber>=0.14.7'
+     ],
     [['nb.py', '--serializer', 'dill'], 'dill\nploomber>=0.14.7'],
 ],
-                         ids=[
-                             'cloudpickle',
-                             'dill'
-                         ])
+                         ids=['cloudpickle', 'dill'])
 @pytest.mark.parametrize('nb, products_expected', [
-
     [
         with_dfs,
         [
@@ -187,15 +184,12 @@ df_2 = df + 1
             'output/second.ipynb',
         ]
     ],
-
 ],
                          ids=[
-
                              'with-dfs',
-
                          ])
 def test_refactor_serializer(tmp_empty, args, nb, products_expected,
-                            requirements):
+                             requirements):
     Path('nb.py').write_text(nb)
 
     runner = CliRunner()

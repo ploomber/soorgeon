@@ -231,6 +231,7 @@ def test_from_nb(tmp_empty, nb_str, tasks):
     dag.build()
     assert list(dag) == tasks
 
+
 eda = """# # Some analysis
 #
 # ## Load
@@ -247,12 +248,12 @@ df = df(10)
 
 sns.histplot(df)
 """
+
+
 @pytest.mark.parametrize('nb_str, tasks', [
     [eda, ['load', 'clean', 'plot']],
 ],
-                         ids=[
-                             'eda'
-                         ])
+                         ids=['eda'])
 def test_from_nb_unpicklable(tmp_empty, nb_str, tasks):
     export.from_nb(_read(nb_str), py=True)
 
@@ -260,8 +261,6 @@ def test_from_nb_unpicklable(tmp_empty, nb_str, tasks):
 
     dag.build()
     assert list(dag) == tasks
-
-
 
 
 @pytest.mark.parametrize('py, ext', [
@@ -806,15 +805,14 @@ dill_unpickling = """\
 x = dill.loads(Path(upstream[\'first\'][\'x\']).read_bytes())\
 """
 
-@pytest.mark.parametrize('serializer, pickling, unpickling', [
-    ['cloudpickle', cloudpickle_pickling, cloudpickle_unpickling],
-    ['dill', dill_pickling, dill_unpickling]
-],
-                         ids=[
-                             'cloudpickle',
-                             'dill'
-                         ])
-def test_prototask_un_pickling_cells_with_serializer(serializer, pickling, unpickling):
+
+@pytest.mark.parametrize(
+    'serializer, pickling, unpickling',
+    [['cloudpickle', cloudpickle_pickling, cloudpickle_unpickling],
+     ['dill', dill_pickling, dill_unpickling]],
+    ids=['cloudpickle', 'dill'])
+def test_prototask_un_pickling_cells_with_serializer(serializer, pickling,
+                                                     unpickling):
     code = """\
 # ## first
 
@@ -831,7 +829,7 @@ x = x + 2
     one, two = exporter._proto_tasks
 
     assert one._pickling_cell(exporter.io)['source'] == pickling
-    assert two._pickling_cell(exporter.io) ['source'] == pickling
+    assert two._pickling_cell(exporter.io)['source'] == pickling
 
     assert one._unpickling_cell(exporter.io, exporter.providers) is None
     assert two._unpickling_cell(exporter.io,
@@ -844,11 +842,13 @@ def test_validates_df_format():
 
     assert 'df_format must be one of ' in str(excinfo.value)
 
+
 def test_validates_serializer():
     with pytest.raises(ValueError) as excinfo:
         export.NotebookExporter(_read(''), serializer='something')
 
     assert 'serializer must be one of ' in str(excinfo.value)
+
 
 def test_creates_readme(tmp_empty):
     exporter = export.NotebookExporter(_read(simple))
@@ -865,4 +865,3 @@ def test_appends_to_readme(tmp_empty):
 
     expected = '# Some stuff\n' + resources.read_text(assets, 'README.md')
     assert Path('README.md').read_text() == expected
-

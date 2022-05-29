@@ -28,7 +28,6 @@ Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
 {% endfor -%}\
 """)
 
-
 _UNPICKLING_TEMPLATE = Template("""\
 {%- for up, key in up_and_in -%}
 {%- if key.startswith('df') and df_format in ('parquet', 'csv') -%}
@@ -93,7 +92,8 @@ class ProtoTask:
         _, outputs = io[self.name]
 
         if outputs:
-            pickling = _new_pickling_cell(outputs, self._df_format, self._serializer)
+            pickling = _new_pickling_cell(outputs, self._df_format,
+                                          self._serializer)
             pickling.metadata['tags'] = ['soorgeon-pickle']
 
             return pickling
@@ -109,7 +109,8 @@ class ProtoTask:
             up_and_in = [(providers.get(input_, self.name), input_)
                          for input_ in inputs]
 
-            unpickling = _new_unpickling_cell(up_and_in, self._df_format, self._serializer)
+            unpickling = _new_unpickling_cell(up_and_in, self._df_format,
+                                              self._serializer)
             unpickling.metadata['tags'] = ['soorgeon-unpickle']
 
             return unpickling
