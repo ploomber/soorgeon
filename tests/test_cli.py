@@ -168,6 +168,17 @@ df_2 = df + 1
 
 """
 
+with_lambda = """\
+# ## first
+
+num_square = lambda n: n**2
+
+# ## second
+
+num_square = num_square(2)
+
+"""
+
 
 @pytest.mark.parametrize('args, requirements', [
     [['nb.py', '--serializer', 'cloudpickle'], 'cloudpickle\nploomber>=0.14.7'
@@ -184,10 +195,15 @@ df_2 = df + 1
             'output/second.ipynb',
         ]
     ],
+    [
+        with_lambda,
+        [
+            'output/first-num_square.pkl', 'output/first.ipynb',
+            'output/second.ipynb', 'output/second-num_square.pkl'
+        ]
+    ],
 ],
-                         ids=[
-                             'with-dfs',
-                         ])
+                         ids=['with-dfs', 'with-lambda'])
 def test_refactor_serializer(tmp_empty, args, nb, products_expected,
                              requirements):
     Path('nb.py').write_text(nb)
