@@ -150,6 +150,11 @@ class NotebookExporter:
                              "None, 'parquet' or 'csv', "
                              f"got: {df_format!r}")
 
+        if serializer not in {None, 'cloudpickle', 'dill'}:
+            raise ValueError("serializer must be one of "
+                             "None, 'cloudpickle' or 'dill', "
+                             f"got: {serializer!r}")
+
         # NOTE: we're commenting magics here but removing them in ProtoTask,
         # maybe we should comment magics also in ProtoTask?
         nb = magics.comment_magics(nb)

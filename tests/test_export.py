@@ -788,12 +788,67 @@ df_2 = x + df + 1
                                 exporter.providers)['source'] == unpickling
 
 
+cloudpickle_pickling = """\
+Path(product[\'x\']).parent.mkdir(exist_ok=True, parents=True)
+Path(product[\'x\']).write_bytes(cloudpickle.dumps(x))\
+"""
+
+cloudpickle_unpickling = """\
+x = cloudpickle.loads(Path(upstream[\'first\'][\'x\']).read_bytes())\
+"""
+
+dill_pickling = """\
+Path(product[\'x\']).parent.mkdir(exist_ok=True, parents=True)
+Path(product[\'x\']).write_bytes(dill.dumps(x))\
+"""
+
+dill_unpickling = """\
+x = dill.loads(Path(upstream[\'first\'][\'x\']).read_bytes())\
+"""
+
+@pytest.mark.parametrize('serializer, pickling, unpickling', [
+    ['cloudpickle', cloudpickle_pickling, cloudpickle_unpickling],
+    ['dill', dill_pickling, dill_unpickling]
+],
+                         ids=[
+                             'cloudpickle',
+                             'dill'
+                         ])
+def test_prototask_un_pickling_cells_with_serializer(serializer, pickling, unpickling):
+    code = """\
+# ## first
+
+import something
+
+x = lambda n : n ** 2
+
+# ## second
+
+x = x(10)
+x = x + 2
+"""
+    exporter = export.NotebookExporter(_read(code), serializer=serializer)
+    one, two = exporter._proto_tasks
+
+    assert one._pickling_cell(exporter.io)['source'] == pickling
+    assert two._pickling_cell(exporter.io) ['source'] == pickling
+
+    assert one._unpickling_cell(exporter.io, exporter.providers) is None
+    assert two._unpickling_cell(exporter.io,
+                                exporter.providers)['source'] == unpickling
+
+
 def test_validates_df_format():
     with pytest.raises(ValueError) as excinfo:
         export.NotebookExporter(_read(''), df_format='something')
 
     assert 'df_format must be one of ' in str(excinfo.value)
 
+def test_validates_serializer():
+    with pytest.raises(ValueError) as excinfo:
+        export.NotebookExporter(_read(''), serializer='something')
+
+    assert 'serializer must be one of ' in str(excinfo.value)
 
 def test_creates_readme(tmp_empty):
     exporter = export.NotebookExporter(_read(simple))
@@ -810,3 +865,4 @@ def test_appends_to_readme(tmp_empty):
 
     expected = '# Some stuff\n' + resources.read_text(assets, 'README.md')
     assert Path('README.md').read_text() == expected
+

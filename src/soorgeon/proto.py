@@ -52,12 +52,13 @@ def _new_pickling_cell(outputs, df_format, serializer):
     return nbformat.v4.new_code_cell(source=source)
 
 
-def _new_unpickling_cell(up_and_in, df_format):
+def _new_unpickling_cell(up_and_in, df_format, serializer):
     df_format = df_format or ''
     source = _UNPICKLING_TEMPLATE.render(up_and_in=sorted(up_and_in,
                                                           key=lambda t:
                                                           (t[0], t[1])),
-                                         df_format=df_format).strip()
+                                         df_format=df_format,
+                                         serializer=serializer).strip()
     return nbformat.v4.new_code_cell(source=source)
 
 
@@ -108,7 +109,7 @@ class ProtoTask:
             up_and_in = [(providers.get(input_, self.name), input_)
                          for input_ in inputs]
 
-            unpickling = _new_unpickling_cell(up_and_in, self._df_format)
+            unpickling = _new_unpickling_cell(up_and_in, self._df_format, self._serializer)
             unpickling.metadata['tags'] = ['soorgeon-unpickle']
 
             return unpickling
