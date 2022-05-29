@@ -18,6 +18,9 @@ Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 {%- elif serializer == 'cloudpickle'-%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(cloudpickle.dumps({{product}}))
+{%- elif serializer == 'dill'-%}
+Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['{{product}}']).write_bytes(dill.dumps({{product}}))
 {%- else -%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
@@ -30,6 +33,10 @@ _UNPICKLING_TEMPLATE = Template("""\
 {%- for up, key in up_and_in -%}
 {%- if key.startswith('df') and df_format in ('parquet', 'csv') -%}
 {{key}} = pd.read_{{df_format}}(upstream['{{up}}']['{{key}}'])
+{%- elif serializer == 'cloudpickle'-%}
+{{key}} = cloudpickle.loads(Path(upstream['{{up}}']['{{key}}']).read_bytes())
+{%- elif serializer == 'dill'-%}
+{{key}} = dill.loads(Path(upstream['{{up}}']['{{key}}']).read_bytes())
 {%- else -%}
 {{key}} = pickle.loads(Path(upstream['{{up}}']['{{key}}']).read_bytes())
 {%- endif %}
@@ -146,8 +153,9 @@ class ProtoTask:
             source = source or ''
             source += '\nfrom pathlib import Path'
             if serializer == 'cloudpickle':
-                source += '\nimport pickle'
                 source += '\nimport cloudpickle'
+            elif serializer == 'dill':
+                source += '\nimport dill'
             else:
                 source += '\nimport pickle'
 
