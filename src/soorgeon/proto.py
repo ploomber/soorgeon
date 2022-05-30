@@ -25,6 +25,7 @@ Path(product['{{product}}']).write_bytes(dill.dumps({{product}}))
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
 {%- endif %}
+
 {% endfor -%}\
 """)
 

@@ -757,21 +757,21 @@ df_2 = x + df + 1
 
 
 cloudpickle_pickling = """\
-Path(product[\'x\']).parent.mkdir(exist_ok=True, parents=True)
-Path(product[\'x\']).write_bytes(cloudpickle.dumps(x))\
+Path(product['x']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['x']).write_bytes(cloudpickle.dumps(x))\
 """
 
 cloudpickle_unpickling = """\
-x = cloudpickle.loads(Path(upstream[\'first\'][\'x\']).read_bytes())\
+x = cloudpickle.loads(Path(upstream['first']['x']).read_bytes())\
 """
 
 dill_pickling = """\
-Path(product[\'x\']).parent.mkdir(exist_ok=True, parents=True)
-Path(product[\'x\']).write_bytes(dill.dumps(x))\
+Path(product['x']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['x']).write_bytes(dill.dumps(x))\
 """
 
 dill_unpickling = """\
-x = dill.loads(Path(upstream[\'first\'][\'x\']).read_bytes())\
+x = dill.loads(Path(upstream['first']['x']).read_bytes())\
 """
 
 
