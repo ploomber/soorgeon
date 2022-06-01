@@ -1,6 +1,5 @@
 import click
-from os.path import exists
-from soorgeon import __version__, export, exceptions
+from soorgeon import __version__, export
 from soorgeon.clean import basic_clean
 
 
@@ -78,27 +77,18 @@ Plot pipeline:
 
 
 @cli.command()
-@click.argument("task-name")
+@click.argument("filename", type=click.Path(exists=True))
 @click.option("--deep", "-d", default=None)
-def clean(task_name, deep):
+def clean(filename, deep):
     """
     Clean a refactored notebook task.
 
-    $ soorgeon clean <task-name>
+    $ soorgeon clean path/to/script.py
+    or
+    $ soorgeon clean path/to/notebook.ipynb
 
     """
-    task_dir = "tasks"
-    task_files = [
-        f"{task_dir}/{task_name}.py", f"{task_dir}/{task_name}.ipynb"
-    ]
-    if not exists(f"{task_dir}"):
-        msg = "tasks directory not found, please refactor first!"
-        raise exceptions.TasksDirectoryNotFoundError(msg)
-    elif not any(exists(task_file) for task_file in task_files):
-        msg = f"task {task_name} not found!"
-        raise exceptions.TaskNotFoundError(msg)
-    else:
-        for taskfile in [f for f in task_files if exists(f)]:
-            basic_clean(taskfile)
-            if deep:
-                pass  # TODO issue #49
+    basic_clean(filename)
+    if deep:
+        # TODO issue #49
+        pass

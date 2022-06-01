@@ -4,7 +4,6 @@ from pathlib import Path
 import yaml
 import jupytext
 import pytest
-import shutil
 from click.testing import CliRunner
 
 from soorgeon import cli, export
@@ -323,7 +322,7 @@ def test_clean_py():
 
     runner = CliRunner()
     runner.invoke(cli.refactor, ['nb.py'])
-    result = runner.invoke(cli.clean, ['cell-2'])
+    result = runner.invoke(cli.clean, ['tasks/cell-2.py'])
     assert result.exit_code == 0
     # black
     assert "1 file reformatted." in result.output
@@ -339,7 +338,7 @@ def test_clean_ipynb():
 
     runner = CliRunner()
     runner.invoke(cli.refactor, ['nb.ipynb'])
-    result = runner.invoke(cli.clean, ['cell-2'])
+    result = runner.invoke(cli.clean, ['tasks/cell-2.ipynb'])
 
     assert result.exit_code == 0
     assert "Generating intermadiate py files" in result.output
@@ -348,16 +347,7 @@ def test_clean_ipynb():
     # isort
     assert "Fixing" in result.output
     # end of basic_clean()
-    assert "Finished cleaning tasks/cell-2.py" in result.output
-
-
-def test_clean_no_tasks_directory():
-    runner = CliRunner()
-    shutil.rmtree('tasks', ignore_errors=True)
-    result = runner.invoke(cli.clean, ['cell-2'])
-
-    assert result.exit_code == 1
-    assert "tasks directory not found, please refactor first!" in result.output
+    assert "Finished cleaning tasks/cell-2.ipynb" in result.output
 
 
 def test_clean_no_task():
@@ -366,7 +356,7 @@ def test_clean_no_task():
 
     runner = CliRunner()
     runner.invoke(cli.refactor, ['nb.ipynb'])
-    result = runner.invoke(cli.clean, ['cell-9'])
+    result = runner.invoke(cli.clean, ['tasks/cell-9.ipynb'])
 
-    assert result.exit_code == 1
-    assert "task cell-9 not found!" in result.output
+    assert result.exit_code == 2
+    assert "Error: Invalid value for 'FILENAME'" in result.output
