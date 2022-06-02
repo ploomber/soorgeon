@@ -317,7 +317,7 @@ def test_suggests_single_task_if_export_crashes(tmp_empty, monkeypatch):
 # adds import if needed / and doesn't add import pickle
 
 
-def test_clean_py():
+def test_clean_py(tmp_empty):
     Path('nb.py').write_text(simple)
 
     runner = CliRunner()
@@ -332,7 +332,7 @@ def test_clean_py():
     assert "Finished cleaning tasks/cell-2.py" in result.output
 
 
-def test_clean_ipynb():
+def test_clean_ipynb(tmp_empty):
     nb_ = jupytext.reads(simple, fmt='py:light')
     jupytext.write(nb_, 'nb.ipynb')
 
@@ -350,7 +350,7 @@ def test_clean_ipynb():
     assert "Finished cleaning tasks/cell-2.ipynb" in result.output
 
 
-def test_clean_no_task():
+def test_clean_no_task(tmp_empty):
     nb_ = jupytext.reads(simple, fmt='py:light')
     jupytext.write(nb_, 'nb.ipynb')
 

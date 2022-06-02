@@ -78,10 +78,9 @@ Plot pipeline:
 
 @cli.command()
 @click.argument("filename", type=click.Path(exists=True))
-@click.option("--deep", "-d", default=None)
-def clean(filename, deep):
+def clean(filename):
     """
-    Clean a refactored notebook task.
+    Clean a .py or .ipynb file (applies black and isort).
 
     $ soorgeon clean path/to/script.py
     or
@@ -89,6 +88,3 @@ def clean(filename, deep):
 
     """
     basic_clean(filename)
-    if deep:
-        # TODO issue #49
-        pass

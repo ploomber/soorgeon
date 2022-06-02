@@ -3,6 +3,8 @@ import isort
 import click
 import tempfile
 import jupytext
+import shutil
+from soorgeon.exceptions import BaseException
 
 
 def basic_clean(task_file):
@@ -28,12 +30,13 @@ def basic_clean_py(task_file_py):
     Run basic clean for py files
     (util method only called by basic_clean())
     """
-    # commands to execute, which follow <exectutable> <filename> format
-    commands = ["black"]
-    for command in commands:
-        result = subprocess.run([command, task_file_py],
-                                text=True,
-                                capture_output=True)
-        click.echo(result)
-
+    if shutil.which('black') is None:
+        raise BaseException('black is missing, please install it with:\n'
+                            'pip install black\nand try again')
+    # black
+    result = subprocess.run(["black", task_file_py],
+                            text=True,
+                            capture_output=True)
+    click.echo(result.stderr)
+    # isort
     isort.file(task_file_py)
