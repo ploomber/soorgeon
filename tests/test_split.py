@@ -42,6 +42,28 @@ h1_next_to_h2 = """# # H1
 2 + 2
 """
 
+only_one_h2 = """# ## Cell 0
+
+1 + 1 # Cell 1
+
+# # Cell 2
+
+2 + 2 # Cell 3
+
+# # Cell 4
+"""
+
+only_one_h2_diff = """# # Cell 0
+
+1 + 1 # Cell 1
+
+# ## Cell 2
+
+2 + 2 # Cell 3
+
+# # Cell 4
+"""
+
 # case with where cell only has H2 and H2 + more stuff
 # edge case: H1, then H2 with no code in between, we should ignore that break
 
@@ -53,6 +75,20 @@ def test_find_breaks_error_if_no_h2_headers(tmp_empty):
         split.find_breaks(nb)
 
     assert 'Expected notebook to have at least one' in str(excinfo.value)
+
+
+def test_find_breaks_warning_if_only_one_h2_header(tmp_empty, capsys):
+    nb = _read(only_one_h2)
+    nb2 = _read(only_one_h2_diff)
+    split.find_breaks(nb)
+    captured = capsys.readouterr()
+    assert 'Warning: refactoring successful '
+    'but only one H2 heading detected,' in captured.out
+
+    split.find_breaks(nb2)
+    captured = capsys.readouterr()
+    assert 'Warning: refactoring successful '
+    'but only one H2 heading detected,' in captured.out
 
 
 @pytest.mark.parametrize('md, expected', [
