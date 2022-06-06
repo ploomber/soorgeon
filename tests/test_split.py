@@ -4,9 +4,16 @@ from soorgeon import split, exceptions
 
 from testutils import exploratory, mixed, _read
 
-no_h2_headers = """# # Cell 0
+no_h1_and_h2_headers = """# ### Cell 0
 
-1 + 1 # Cell 1
+1 + 1 # ### Cell 1
+
+# ### Cell 2
+"""
+
+no_h2_but_h1_headers = """# # Cell 0
+
+1 + 1 # # Cell 1
 
 # # Cell 2
 """
@@ -20,6 +27,17 @@ all_h2 = """# ## Cell 0
 2 + 2 # Cell 3
 
 # ## Cell 4
+"""
+
+all_h1 = """# # Cell 0
+
+1 + 1 # Cell 1
+
+# # Cell 2
+
+2 + 2 # Cell 3
+
+# # Cell 4
 """
 
 long_md = """# ## H2
@@ -64,12 +82,21 @@ only_one_h2_diff = """# # Cell 0
 # # Cell 4
 """
 
+
 # case with where cell only has H2 and H2 + more stuff
 # edge case: H1, then H2 with no code in between, we should ignore that break
+def test_find_breaks_error_if_no_h2_but_h1_headers(tmp_empty):
+    nb = _read(no_h2_but_h1_headers)
+
+    with pytest.raises(exceptions.InputError) as excinfo:
+        split.find_breaks(nb)
+
+    assert 'Only H1 headings are found.'
+    'only H2 headings are supported at this time.' in str(excinfo.value)
 
 
-def test_find_breaks_error_if_no_h2_headers(tmp_empty):
-    nb = _read(no_h2_headers)
+def test_find_breaks_error_if_no_h1_and_h2_headers(tmp_empty):
+    nb = _read(no_h1_and_h2_headers)
 
     with pytest.raises(exceptions.InputError) as excinfo:
         split.find_breaks(nb)
@@ -95,11 +122,24 @@ def test_find_breaks_warning_if_only_one_h2_header(tmp_empty, capsys):
     ['## Header', 'header'],
     ['# H1\n## H2', 'h2'],
     ['  ##   H2', 'h2'],
+    ['  ###   H3', None],
     ['something', None],
     ['## Something\nignore me', 'something'],
 ])
 def test_get_h2_header(md, expected):
     assert split._get_h2_header(md) == expected
+
+
+@pytest.mark.parametrize('md, expected', [
+    ['# Header', 'header'],
+    ['# H1\n## H2', 'h1'],
+    [' \t #   H1', 'h1'],
+    ['  ##   H2', None],
+    ['something', None],
+    ['# Something\nignore me', 'something'],
+])
+def test_get_h1_header(md, expected):
+    assert split._get_h1_header(md) == expected
 
 
 @pytest.mark.parametrize('nb_str, expected', [

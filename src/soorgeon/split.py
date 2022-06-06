@@ -18,18 +18,27 @@ def find_breaks(nb):
     isn't in the first cell
     """
     breaks = []
+    found_h1_header = False
 
     # TODO: this should return named tuples with index and extracted names
     for idx, cell in enumerate(nb.cells):
         # TODO: more robust H2 detector
         if cell.cell_type == 'markdown' and _get_h2_header(cell.source):
             breaks.append(idx)
+        if cell.cell_type == 'markdown' and _get_h1_header(cell.source):
+            found_h1_header = True
 
     if not breaks:
         url = 'https://github.com/ploomber/soorgeon/blob/main/doc/guide.md'
-        raise exceptions.InputError('Expected notebook to have at least '
-                                    'one markdown H2 heading. '
-                                    f'Check out our guide: {url}')
+        if found_h1_header:
+            raise exceptions.InputError('Only H1 headings are found. '
+                                        'At this time, only H2 headings '
+                                        'are supported. '
+                                        f'Check out our guide: {url}')
+        else:
+            raise exceptions.InputError('Expected notebook to have at least '
+                                        'one markdown H2 heading. '
+                                        f'Check out our guide: {url}')
 
     if len(breaks) == 1:
         click.secho('Warning: refactoring successful '
@@ -87,7 +96,23 @@ def _get_h2_header(md):
     found = None
 
     for line in lines:
-        match = re.search(r'\s*##\s+(.+)', line)
+        match = re.search(r'^\s*##\s+(.+)', line)
+
+        if match:
+            found = _sanitize_name(match.group(1))
+
+            break
+
+    return found
+
+
+def _get_h1_header(md):
+    lines = md.splitlines()
+
+    found = None
+
+    for line in lines:
+        match = re.search(r'^\s*#\s+(.+)', line)
 
         if match:
             found = _sanitize_name(match.group(1))
