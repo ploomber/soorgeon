@@ -29,17 +29,6 @@ all_h2 = """# ## Cell 0
 # ## Cell 4
 """
 
-all_h1 = """# # Cell 0
-
-1 + 1 # Cell 1
-
-# # Cell 2
-
-2 + 2 # Cell 3
-
-# # Cell 4
-"""
-
 long_md = """# ## H2
 # with more text here
 
