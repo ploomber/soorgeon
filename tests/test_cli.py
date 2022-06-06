@@ -341,7 +341,6 @@ def test_clean_ipynb(tmp_empty):
     result = runner.invoke(cli.clean, ['tasks/cell-2.ipynb'])
 
     assert result.exit_code == 0
-    assert "Generating intermadiate py files" in result.output
     # black
     assert "1 file reformatted." in result.output
     # isort
