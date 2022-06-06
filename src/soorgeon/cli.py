@@ -1,6 +1,6 @@
 import click
-
 from soorgeon import __version__, export
+from soorgeon.clean import basic_clean
 
 
 @click.group()
@@ -74,3 +74,17 @@ Plot pipeline:
 * Jupyter integration: https://ploomber.io/s/jupyter
 * Other editors: https://ploomber.io/s/editors
 """)
+
+
+@cli.command()
+@click.argument("filename", type=click.Path(exists=True))
+def clean(filename):
+    """
+    Clean a .py or .ipynb file (applies black and isort).
+
+    $ soorgeon clean path/to/script.py
+    or
+    $ soorgeon clean path/to/notebook.ipynb
+
+    """
+    basic_clean(filename)
