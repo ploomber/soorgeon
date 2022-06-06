@@ -13,7 +13,6 @@ def basic_clean(task_file):
     Generate intermediate files for ipynb
     """
     if task_file.lower().endswith(".ipynb"):
-        click.echo("Generating intermadiate py files for notebook cleaning")
         nb = jupytext.read(task_file)
         temp_path = tempfile.NamedTemporaryFile(suffix=".py",
                                                 delete=False).name
