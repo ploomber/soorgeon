@@ -90,33 +90,27 @@ def _sanitize_name(name):
     return sanitized
 
 
-def _get_h2_header(md):
-    lines = md.splitlines()
+def _get_header_factory(regex):
+    def _get_header(md):
+        # pass regex to re.search
+        lines = md.splitlines()
 
-    found = None
+        found = None
 
-    for line in lines:
-        match = re.search(r'^\s*##\s+(.+)', line)
+        for line in lines:
+            match = re.search(regex, line)
 
-        if match:
-            found = _sanitize_name(match.group(1))
+            if match:
+                found = _sanitize_name(match.group(1))
 
-            break
+                break
 
-    return found
+        return found
+
+    return _get_header
 
 
-def _get_h1_header(md):
-    lines = md.splitlines()
+_get_h1_header = _get_header_factory(r'^\s*#\s+(.+)')
 
-    found = None
 
-    for line in lines:
-        match = re.search(r'^\s*#\s+(.+)', line)
-
-        if match:
-            found = _sanitize_name(match.group(1))
-
-            break
-
-    return found
+_get_h2_header = _get_header_factory(r'^\s*##\s+(.+)')
