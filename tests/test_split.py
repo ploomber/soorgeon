@@ -4,6 +4,21 @@ from soorgeon import split, exceptions
 
 from testutils import exploratory, mixed, _read
 
+
+no_markdown_but_plain_text = """Cell 0: 0
+
+Cell 1: 1
+
+Cell 2: 2
+"""
+
+no_markdown_but_json = """{
+    "Cell 0": "",
+    "Cell 1": "",
+    "Cell 2": ""
+}
+"""
+
 no_h1_and_h2_headers = """# ### Cell 0
 
 1 + 1 # ### Cell 1
@@ -70,6 +85,24 @@ only_one_h2_diff = """# # Cell 0
 
 # # Cell 4
 """
+
+
+def test_find_breaks_error_if_no_markdown_but_plain_text(tmp_empty):
+    nb = _read(no_markdown_but_plain_text)
+
+    with pytest.raises(exceptions.InputError) as excinfo:
+        split.find_breaks(nb)
+
+    assert 'Expected notebook to have at least one' in str(excinfo.value)
+
+
+def test_find_breaks_error_if_no_markdown_but_json(tmp_empty):
+    nb = _read(no_markdown_but_json)
+
+    with pytest.raises(exceptions.InputError) as excinfo:
+        split.find_breaks(nb)
+
+    assert 'Expected notebook to have at least one' in str(excinfo.value)
 
 
 # case with where cell only has H2 and H2 + more stuff
