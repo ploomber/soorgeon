@@ -15,6 +15,12 @@ _PICKLING_TEMPLATE = Template("""\
 {%- if product.startswith('df') and df_format in ('parquet', 'csv') -%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 {{product}}.to_{{df_format}}(product['{{product}}'], index=False)
+{%- elif serializer == 'cloudpickle'-%}
+Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['{{product}}']).write_bytes(cloudpickle.dumps({{product}}))
+{%- elif serializer == 'dill'-%}
+Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
+Path(product['{{product}}']).write_bytes(dill.dumps({{product}}))
 {%- else -%}
 Path(product['{{product}}']).parent.mkdir(exist_ok=True, parents=True)
 Path(product['{{product}}']).write_bytes(pickle.dumps({{product}}))
@@ -27,6 +33,10 @@ _UNPICKLING_TEMPLATE = Template("""\
 {%- for up, key in up_and_in -%}
 {%- if key.startswith('df') and df_format in ('parquet', 'csv') -%}
 {{key}} = pd.read_{{df_format}}(upstream['{{up}}']['{{key}}'])
+{%- elif serializer == 'cloudpickle'-%}
+{{key}} = cloudpickle.loads(Path(upstream['{{up}}']['{{key}}']).read_bytes())
+{%- elif serializer == 'dill'-%}
+{{key}} = dill.loads(Path(upstream['{{up}}']['{{key}}']).read_bytes())
 {%- else -%}
 {{key}} = pickle.loads(Path(upstream['{{up}}']['{{key}}']).read_bytes())
 {%- endif %}
@@ -34,19 +44,21 @@ _UNPICKLING_TEMPLATE = Template("""\
 """)
 
 
-def _new_pickling_cell(outputs, df_format):
+def _new_pickling_cell(outputs, df_format, serializer):
     df_format = df_format or ''
     source = _PICKLING_TEMPLATE.render(products=sorted(outputs),
-                                       df_format=df_format).strip()
+                                       df_format=df_format,
+                                       serializer=serializer).strip()
     return nbformat.v4.new_code_cell(source=source)
 
 
-def _new_unpickling_cell(up_and_in, df_format):
+def _new_unpickling_cell(up_and_in, df_format, serializer):
     df_format = df_format or ''
     source = _UNPICKLING_TEMPLATE.render(up_and_in=sorted(up_and_in,
                                                           key=lambda t:
                                                           (t[0], t[1])),
-                                         df_format=df_format).strip()
+                                         df_format=df_format,
+                                         serializer=serializer).strip()
     return nbformat.v4.new_code_cell(source=source)
 
 
@@ -54,10 +66,11 @@ class ProtoTask:
     """A group of cells that will be converted into a Ploomber task
     """
 
-    def __init__(self, name, cells, df_format, py):
+    def __init__(self, name, cells, df_format, serializer, py):
         self._name = name
         self._cells = cells
         self._df_format = df_format
+        self._serializer = serializer
         self._py = py
 
     @property
@@ -80,7 +93,8 @@ class ProtoTask:
         _, outputs = io[self.name]
 
         if outputs:
-            pickling = _new_pickling_cell(outputs, self._df_format)
+            pickling = _new_pickling_cell(outputs, self._df_format,
+                                          self._serializer)
             pickling.metadata['tags'] = ['soorgeon-pickle']
 
             return pickling
@@ -96,7 +110,8 @@ class ProtoTask:
             up_and_in = [(providers.get(input_, self.name), input_)
                          for input_ in inputs]
 
-            unpickling = _new_unpickling_cell(up_and_in, self._df_format)
+            unpickling = _new_unpickling_cell(up_and_in, self._df_format,
+                                              self._serializer)
             unpickling.metadata['tags'] = ['soorgeon-unpickle']
 
             return unpickling
@@ -123,7 +138,7 @@ class ProtoTask:
         return [parameters] + cells
 
     def _add_imports_cell(self, code_nb, add_pathlib_and_pickle, definitions,
-                          df_format):
+                          df_format, serializer):
         # FIXME: instatiate this in the constructor so we only build it once
         ip = io.ImportsParser(code_nb)
 
@@ -140,7 +155,12 @@ class ProtoTask:
         if add_pathlib_and_pickle:
             source = source or ''
             source += '\nfrom pathlib import Path'
-            source += '\nimport pickle'
+            if serializer == 'cloudpickle':
+                source += '\nimport cloudpickle'
+            elif serializer == 'dill':
+                source += '\nimport dill'
+            else:
+                source += '\nimport pickle'
 
         # only add them if unserializing or serializing
         if df_format in {'parquet', 'csv'}:
@@ -206,7 +226,8 @@ class ProtoTask:
             code_nb,
             add_pathlib_and_pickle=cell_pickling or cell_unpickling,
             definitions=definitions,
-            df_format=self._df_format)
+            df_format=self._df_format,
+            serializer=self._serializer)
 
         pre = [cell_imports] if cell_imports else []
 
