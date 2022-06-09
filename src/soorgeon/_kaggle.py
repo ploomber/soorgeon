@@ -5,6 +5,8 @@ from functools import partial
 import zipfile
 import shutil
 from pathlib import PurePosixPath, Path
+import backoff
+import kaggle
 
 import click
 import jupytext
@@ -34,10 +36,13 @@ def _add_partial(d):
     return {**d, **dict(partial=partial(fn, **kwargs))}
 
 
+@backoff.on_exception(backoff.expo,
+                      kaggle.rest.ApiException,
+                      max_tries=3,
+                      jitter=None)
 def download_from_competition(name, files=None):
     # FIXME: add support for more than one file
     api.competition_download_cli(name, file_name=files)
-
     if not files:
         with zipfile.ZipFile(f'{name}.zip', 'r') as file:
             file.extractall('input')
@@ -46,6 +51,10 @@ def download_from_competition(name, files=None):
         shutil.move(files, Path('input', files))
 
 
+@backoff.on_exception(backoff.expo,
+                      kaggle.rest.ApiException,
+                      max_tries=3,
+                      jitter=None)
 def download_from_dataset(name):
     api.dataset_download_cli(name, unzip=True, path='input')
 
