@@ -87,24 +87,6 @@ only_one_h2_diff = """# # Cell 0
 """
 
 
-def test_find_breaks_error_if_no_markdown_but_plain_text(tmp_empty):
-    nb = _read(no_markdown_but_plain_text)
-
-    with pytest.raises(exceptions.InputError) as excinfo:
-        split.find_breaks(nb)
-
-    assert 'Expected notebook to have at least one' in str(excinfo.value)
-
-
-def test_find_breaks_error_if_no_markdown_but_json(tmp_empty):
-    nb = _read(no_markdown_but_json)
-
-    with pytest.raises(exceptions.InputError) as excinfo:
-        split.find_breaks(nb)
-
-    assert 'Expected notebook to have at least one' in str(excinfo.value)
-
-
 # case with where cell only has H2 and H2 + more stuff
 # edge case: H1, then H2 with no code in between, we should ignore that break
 def test_find_breaks_error_if_no_h2_but_h1_headers(tmp_empty):
@@ -117,8 +99,13 @@ def test_find_breaks_error_if_no_h2_but_h1_headers(tmp_empty):
     'only H2 headings are supported at this time.' in str(excinfo.value)
 
 
-def test_find_breaks_error_if_no_h1_and_h2_headers(tmp_empty):
-    nb = _read(no_h1_and_h2_headers)
+@pytest.mark.parametrize('md', [
+    no_markdown_but_json,
+    no_markdown_but_plain_text,
+    no_h1_and_h2_headers,
+])
+def test_find_breaks_error_if_no_h1_and_h2_headers(md, tmp_empty):
+    nb = _read(md)
 
     with pytest.raises(exceptions.InputError) as excinfo:
         split.find_breaks(nb)
