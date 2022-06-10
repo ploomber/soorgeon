@@ -4,6 +4,21 @@ from soorgeon import split, exceptions
 
 from testutils import exploratory, mixed, _read
 
+
+no_markdown_but_plain_text = """Cell 0: 0
+
+Cell 1: 1
+
+Cell 2: 2
+"""
+
+no_markdown_but_json = """{
+    "Cell 0": "",
+    "Cell 1": "",
+    "Cell 2": ""
+}
+"""
+
 no_h1_and_h2_headers = """# ### Cell 0
 
 1 + 1 # ### Cell 1
@@ -71,40 +86,42 @@ only_one_h2_diff = """# # Cell 0
 # # Cell 4
 """
 
+no_h2_but_h1_headers_error = 'Only H1 headings are found. ' \
+                             'At this time, only H2 headings are supported'
+
+no_h1_and_h2_headers_error = 'Expected notebook to have at least one'
+
+only_one_h2_header_warning = 'Warning: refactoring successful ' \
+                             'but only one H2 heading detected,'
+
 
 # case with where cell only has H2 and H2 + more stuff
 # edge case: H1, then H2 with no code in between, we should ignore that break
-def test_find_breaks_error_if_no_h2_but_h1_headers(tmp_empty):
-    nb = _read(no_h2_but_h1_headers)
+@pytest.mark.parametrize('md, expected_msg', [
+    [only_one_h2, only_one_h2_header_warning],
+    [only_one_h2_diff, only_one_h2_header_warning],
 
-    with pytest.raises(exceptions.InputError) as excinfo:
-        split.find_breaks(nb)
-
-    assert 'Only H1 headings are found.'
-    'only H2 headings are supported at this time.' in str(excinfo.value)
-
-
-def test_find_breaks_error_if_no_h1_and_h2_headers(tmp_empty):
-    nb = _read(no_h1_and_h2_headers)
-
-    with pytest.raises(exceptions.InputError) as excinfo:
-        split.find_breaks(nb)
-
-    assert 'Expected notebook to have at least one' in str(excinfo.value)
-
-
-def test_find_breaks_warning_if_only_one_h2_header(tmp_empty, capsys):
-    nb = _read(only_one_h2)
-    nb2 = _read(only_one_h2_diff)
+])
+def test_find_breaks_warnings(md, expected_msg, tmp_empty, capsys):
+    nb = _read(md)
     split.find_breaks(nb)
     captured = capsys.readouterr()
-    assert 'Warning: refactoring successful '
-    'but only one H2 heading detected,' in captured.out
+    assert expected_msg in captured.out
 
-    split.find_breaks(nb2)
-    captured = capsys.readouterr()
-    assert 'Warning: refactoring successful '
-    'but only one H2 heading detected,' in captured.out
+
+@pytest.mark.parametrize('md, expected_msg', [
+    [no_h2_but_h1_headers, no_h2_but_h1_headers_error],
+    [no_markdown_but_json, no_h1_and_h2_headers_error],
+    [no_markdown_but_plain_text, no_h1_and_h2_headers_error],
+    [no_h1_and_h2_headers, no_h1_and_h2_headers_error],
+])
+def test_find_breaks_errors(md, expected_msg, tmp_empty, capsys):
+    nb = _read(md)
+
+    with pytest.raises(exceptions.InputError) as excinfo:
+        split.find_breaks(nb)
+
+    assert expected_msg in str(excinfo.value)
 
 
 @pytest.mark.parametrize('md, expected', [
