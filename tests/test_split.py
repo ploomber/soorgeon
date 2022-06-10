@@ -113,15 +113,13 @@ def test_find_breaks_error_if_no_h1_and_h2_headers(md, tmp_empty):
     assert 'Expected notebook to have at least one' in str(excinfo.value)
 
 
-def test_find_breaks_warning_if_only_one_h2_header(tmp_empty, capsys):
-    nb = _read(only_one_h2)
-    nb2 = _read(only_one_h2_diff)
+@pytest.mark.parametrize('md', [
+    only_one_h2,
+    only_one_h2_diff
+])
+def test_find_breaks_warning_if_only_one_h2_header(md, tmp_empty, capsys):
+    nb = _read(md)
     split.find_breaks(nb)
-    captured = capsys.readouterr()
-    assert 'Warning: refactoring successful '
-    'but only one H2 heading detected,' in captured.out
-
-    split.find_breaks(nb2)
     captured = capsys.readouterr()
     assert 'Warning: refactoring successful '
     'but only one H2 heading detected,' in captured.out
