@@ -1,4 +1,6 @@
 from pathlib import Path
+import backoff
+import kaggle
 
 import yaml
 import pytest
@@ -15,7 +17,10 @@ index_raw = yaml.safe_load(path_to_index.read_text())
 index = process_index(index_raw)
 path_to_nbs = [_kaggle / name for name in index]
 
-
+@backoff.on_exception(backoff.expo,
+                      kaggle.rest.ApiException,
+                      max_tries=3,
+                      jitter=backoff.random_jitter)
 @pytest.mark.parametrize('path', path_to_nbs, ids=list(index))
 def test_notebooks(tmp_empty, path):
     name = Path(path).name
