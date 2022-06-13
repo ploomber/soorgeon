@@ -38,6 +38,8 @@ DEV = [
     'ploomber',
     # to download data for running _kaggle notebooks
     'kaggle',
+    # to fetch from github repo
+    'pygithub',
     # to run some of the examples
     'pandas',
     'scikit-learn',

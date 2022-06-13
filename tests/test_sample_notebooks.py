@@ -1,27 +1,26 @@
+import os
 from pathlib import Path
 
-import yaml
+
 import pytest
 from ploomber.spec import DAGSpec
-from conftest import PATH_TO_TESTS
 
 from soorgeon import export
-from soorgeon._kaggle import process_index
-
-_kaggle = Path(PATH_TO_TESTS, '..', '_kaggle')
-path_to_index = _kaggle / 'index.yaml'
-index_raw = yaml.safe_load(path_to_index.read_text())
-
-index = process_index(index_raw)
-path_to_nbs = [_kaggle / name for name in index]
+from soorgeon._pygithub import download_directory
 
 
-@pytest.mark.parametrize('path', path_to_nbs, ids=list(index))
-def test_notebooks(tmp_empty, path):
-    name = Path(path).name
-    download_fn = index[name]['partial']
-    download_fn()
+dir_names = ['titanic-logistic-regression-with-python',
+             'customer-segmentation-clustering',
+             'intro-to-time-series-forecasting',
+             'feature-selection-and-data-visualization',
+             'linear-regression-house-price-prediction',
+             'look-at-this-note-feature-engineering-is-easy']
 
+
+@pytest.mark.parametrize('dir', dir_names, ids=list(dir_names))
+def test_notebooks(tmp_empty, dir):
+    download_directory(dir)
+    path = os.getcwd()
     export.from_path(Path(path, 'nb.py'), py=True)
 
     dag = DAGSpec('pipeline.yaml').to_dag()
