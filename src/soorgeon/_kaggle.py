@@ -39,7 +39,7 @@ def _add_partial(d):
 @backoff.on_exception(backoff.expo,
                       kaggle.rest.ApiException,
                       max_tries=3,
-                      jitter=None)
+                      jitter=backoff.random_jitter)
 def download_from_competition(name, files=None):
     # FIXME: add support for more than one file
     api.competition_download_cli(name, file_name=files)
@@ -54,7 +54,7 @@ def download_from_competition(name, files=None):
 @backoff.on_exception(backoff.expo,
                       kaggle.rest.ApiException,
                       max_tries=3,
-                      jitter=None)
+                      jitter=backoff.random_jitter)
 def download_from_dataset(name):
     api.dataset_download_cli(name, unzip=True, path='input')
 
