@@ -1,7 +1,6 @@
 """
 CLI for downloading Kaggle notebooks for integration testing
 """
-from functools import partial
 import zipfile
 import shutil
 from pathlib import PurePosixPath, Path
@@ -10,28 +9,6 @@ import click
 import jupytext
 import papermill as pm
 from kaggle import api
-
-
-def process_index(index):
-    return {PurePosixPath(i['url']).name: _add_partial(i) for i in index}
-
-
-def _add_partial(d):
-    url_data = PurePosixPath(d['data'])
-    is_competition = 'c' in url_data.parts
-    fn = download_from_competition if is_competition else download_from_dataset
-
-    if is_competition:
-        name = url_data.name
-    else:
-        name = str(PurePosixPath(*url_data.parts[-2:]))
-
-    kwargs = dict(name=name)
-
-    if d.get('files'):
-        kwargs['files'] = d['files']
-
-    return {**d, **dict(partial=partial(fn, **kwargs))}
 
 
 def download_from_competition(name, files=None):
