@@ -80,7 +80,7 @@ soorgeon clean path/to/script.ipynb
 git clone https://github.com/ploomber/soorgeon
 ```
 
-Exploratory daya analysis notebook:
+Exploratory data analysis notebook:
 
 ```sh
 cd soorgeon/examples/exploratory
