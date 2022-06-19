@@ -383,3 +383,47 @@ def test_suggests_single_task_if_export_crashes(tmp_empty, monkeypatch):
 
 
 # adds import if needed / and doesn't add import pickle
+
+
+def test_clean_py(tmp_empty):
+    Path('nb.py').write_text(simple)
+
+    runner = CliRunner()
+    runner.invoke(cli.refactor, ['nb.py'])
+    result = runner.invoke(cli.clean, ['tasks/cell-2.py'])
+    assert result.exit_code == 0
+    # black
+    assert "1 file reformatted." in result.output
+    # isort
+    assert "Fixing" in result.output
+    # end of basic_clean()
+    assert "Finished cleaning tasks/cell-2.py" in result.output
+
+
+def test_clean_ipynb(tmp_empty):
+    nb_ = jupytext.reads(simple, fmt='py:light')
+    jupytext.write(nb_, 'nb.ipynb')
+
+    runner = CliRunner()
+    runner.invoke(cli.refactor, ['nb.ipynb'])
+    result = runner.invoke(cli.clean, ['tasks/cell-2.ipynb'])
+
+    assert result.exit_code == 0
+    # black
+    assert "1 file reformatted." in result.output
+    # isort
+    assert "Fixing" in result.output
+    # end of basic_clean()
+    assert "Finished cleaning tasks/cell-2.ipynb" in result.output
+
+
+def test_clean_no_task(tmp_empty):
+    nb_ = jupytext.reads(simple, fmt='py:light')
+    jupytext.write(nb_, 'nb.ipynb')
+
+    runner = CliRunner()
+    runner.invoke(cli.refactor, ['nb.ipynb'])
+    result = runner.invoke(cli.clean, ['tasks/cell-9.ipynb'])
+
+    assert result.exit_code == 2
+    assert "Error: Invalid value for 'FILENAME'" in result.output

@@ -4,6 +4,8 @@ Functions for splitting a notebook file into smaller parts
 import string
 import re
 
+import click
+
 from soorgeon import exceptions
 
 
@@ -16,19 +18,38 @@ def find_breaks(nb):
     isn't in the first cell
     """
     breaks = []
+    found_h1_header = False
 
     # TODO: this should return named tuples with index and extracted names
     for idx, cell in enumerate(nb.cells):
         # TODO: more robust H2 detector
         if cell.cell_type == 'markdown' and _get_h2_header(cell.source):
             breaks.append(idx)
+        if cell.cell_type == 'markdown' and _get_h1_header(cell.source):
+            found_h1_header = True
 
     if not breaks:
         url = 'https://github.com/ploomber/soorgeon/blob/main/doc/guide.md'
-        raise exceptions.InputError('Expected notebook to have at least '
-                                    'one markdown H2 heading. '
-                                    f'Check out our guide: {url}')
+        if found_h1_header:
+            raise exceptions.InputError('Only H1 headings are found. '
+                                        'At this time, only H2 headings '
+                                        'are supported. '
+                                        f'Check out our guide: {url}')
+        else:
+            raise exceptions.InputError('Expected notebook to have at least '
+                                        'one markdown H2 heading. '
+                                        f'Check out our guide: {url}')
 
+    if len(breaks) == 1:
+        click.secho('Warning: refactoring successful '
+                    'but only one H2 heading detected, '
+                    'output pipeline has a single task. '
+                    "It's recommended to break down "
+                    'the analysis into multiple small notebooks. '
+                    'Consider adding more H2 headings. \n'
+                    'Learn more: https://github.com/'
+                    'ploomber/soorgeon/blob/main/doc/guide.md\n',
+                    fg='yellow')
     return breaks
 
 
@@ -69,17 +90,27 @@ def _sanitize_name(name):
     return sanitized
 
 
-def _get_h2_header(md):
-    lines = md.splitlines()
+def _get_header_factory(regex):
+    def _get_header(md):
+        # pass regex to re.search
+        lines = md.splitlines()
 
-    found = None
+        found = None
 
-    for line in lines:
-        match = re.search(r'\s*##\s+(.+)', line)
+        for line in lines:
+            match = re.search(regex, line)
 
-        if match:
-            found = _sanitize_name(match.group(1))
+            if match:
+                found = _sanitize_name(match.group(1))
 
-            break
+                break
 
-    return found
+        return found
+
+    return _get_header
+
+
+_get_h1_header = _get_header_factory(r'^\s*#\s+(.+)')
+
+
+_get_h2_header = _get_header_factory(r'^\s*##\s+(.+)')

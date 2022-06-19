@@ -1,10 +1,57 @@
 # Contributing to Soorgeon
 
+
 Hi! Thanks for considering a contribution to Soorgeon. We're building Soorgeon to help data scientists convert their monolithic notebooks into maintainable pipelines. Our command-line interface takes a notebook as an input and generates a [Ploomber pipeline](https://github.com/ploomber/ploomber) as output ([see demo here](https://www.youtube.com/watch?v=EJecqsZBr3Q)), and we need your help to ensure our tool is robust to real-world code (which is messy!).
 
 We're downloading publicly available notebooks from Kaggle and testing if our tools can successfully refactor them.
 
 This guide explains what the process looks like: from finding a candidate notebook to merging your changes. Hence, whenever we publish a new Soorgeon version, we'll test with all the contributed notebooks.
+
+## Setup development environment with conda
+
+
+To contribute to soorgeon code base and make it better, you need to set up the development environment. The process is similar to how you would contribute to ploomber. [Here is a more detailed instructions](https://github.com/ploomber/ploomber/blob/master/CONTRIBUTING.md) 
+
+The easiest way to setup the development environment is via the setup command; you must have miniconda installed. 
+
+[Click here for miniconda installation details](https://docs.conda.io/en/latest/miniconda.html).
+
+Make sure conda has conda-forge as channel, running the following:
+
+```sh
+conda config --add channels conda-forge
+```
+
+Once you have conda ready:
+
+```sh
+# get the code
+# and we recommand your fork our repo and work on it
+git clone https://github.com/{your_github_username}/soorgeon
+
+# invoke is a library we use to manage one-off commands
+pip install invoke
+
+# move into soorgeon directory
+cd soorgeon
+
+# setup development environment
+invoke setup
+```
+
+Then activate the environment:
+
+```sh
+conda activate soorgeon
+```
+
+And BAM! You are ready to go! 
+
+
+## Testing and submitting code 
+
+Please refer [here](https://github.com/ploomber/ploomber/blob/master/CONTRIBUTING.md) for more detailed explanation.
+
 
 ## Adding new test notebooks
 

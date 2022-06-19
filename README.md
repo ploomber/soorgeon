@@ -40,6 +40,8 @@ pip install soorgeon
 
 ## Usage
 
+### Refactoring
+
 ```sh
 # refactor notebook
 soorgeon refactor nb.ipynb
@@ -63,13 +65,27 @@ soorgeon refactor nb.ipynb --serializer dill
 
 To learn more, check out our [guide](doc/guide.md).
 
+### Cleaning
+
+Soorgeon has a `clean` command that can apply [black](https://github.com/psf/black) and [isort](https://github.com/PyCQA/isort) for `.ipynb` and `.py` files:
+
+```
+soorgeon clean path/to/notebook.ipynb
+```
+
+or
+
+```
+soorgeon clean path/to/script.ipynb
+```
+
 ## Examples
 
 ```sh
 git clone https://github.com/ploomber/soorgeon
 ```
 
-Exploratory daya analysis notebook:
+Exploratory data analysis notebook:
 
 ```sh
 cd soorgeon/examples/exploratory

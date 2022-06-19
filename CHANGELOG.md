@@ -1,6 +1,9 @@
 # CHANGELOG
 
-## 0.0.16dev
+## 0.0.17dev
+
+## 0.0.16 (2022-06-06)
+* Adds `soorgeon clean` command
 
 ## 0.0.15 (2022-03-31)
 * Logging exception when `from_nb` fails
