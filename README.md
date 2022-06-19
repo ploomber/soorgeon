@@ -54,6 +54,11 @@ soorgeon refactor nb.ipynb --product-prefix some-directory
 
 # generate tasks in .py format
 soorgeon refactor nb.ipynb --file-format py
+
+# use alternative serializer (cloudpickle or dill) if notebook 
+# contains variables that cannot be serialized using pickle 
+soorgeon refactor nb.ipynb --serializer cloudpickle
+soorgeon refactor nb.ipynb --serializer dill
 ```
 
 To learn more, check out our [guide](doc/guide.md).
