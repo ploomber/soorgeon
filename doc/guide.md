@@ -104,6 +104,11 @@ soorgeon refactor nb.ipynb --df-format parquet
 
 Any variable that *do not* have the `df` prefix are serialized with `pickle`.
 
+You can pass the `--serializer` option to specify serializer to be used if variable cannot be serialized by `pickle`. Currently two serializers are supported : `cloudpickle` and `dill`.
+soorgeon refactor nb.ipynb --serializer dill
+soorgeon refactor nb.ipynb --serializer cloudpickle
+
+
 ### Exporting functions and classes
 
 Finally, any function or class definitions:
