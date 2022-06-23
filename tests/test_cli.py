@@ -427,3 +427,77 @@ def test_clean_no_task(tmp_empty):
 
     assert result.exit_code == 2
     assert "Error: Invalid value for 'FILENAME'" in result.output
+
+
+output_test = """\
+# ## first
+
+import fastparquet
+from pathlib import Path
+import pandas as pd
+
+j = open('file.txt', 'w')
+j.close()
+
+df = pd.DataFrame()
+df.to_csv('file_csv.csv')
+df.to_parquet('my.parquet')
+Path('write_text').write_text("stf")
+Path('write_byte').write_bytes('stf')
+
+
+"""
+
+
+output_with_comment_test = """\
+# ## second
+
+import fastparquet
+from pathlib import Path
+import pandas as pd
+
+# j = open('file.txt', 'w')
+# j.close()
+
+df = pd.DataFrame()
+df.to_csv('file_csv.csv')
+Path('write_text').write_text("stf")
+
+f = open('tmp.txt')
+k = open('tmp.txt', 'r')
+
+'''
+Path('write_byte').write_bytes('stf')
+df.to_parquet('my.parquet')
+'''
+"""
+
+
+def test_refactor_product_should_warning_if_notebook_output_file(tmp_empty):
+    Path('nb.py').write_text(output_test)
+    args = 'nb.py'
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, args)
+
+    assert result.exit_code == 0
+    assert 'open' in result.output
+    assert 'to_csv' in result.output
+    assert 'to_parquet' in result.output
+    assert 'write_text' in result.output
+    assert 'write_bytes' in result.output
+
+
+def test_refactor_product_should_not_warning_if_comment(tmp_empty):
+    Path('nb.py').write_text(output_with_comment_test)
+    args = 'nb.py'
+
+    runner = CliRunner()
+    result = runner.invoke(cli.refactor, args)
+
+    assert result.exit_code == 0
+    assert 'open' not in result.output
+    assert 'to_csv' in result.output
+    assert 'to_parquet' not in result.output
+    assert 'write_text' in result.output
+    assert 'write_bytes' not in result.output

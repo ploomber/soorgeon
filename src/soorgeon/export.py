@@ -133,6 +133,7 @@ import parso
 import jupytext
 import yaml
 import nbformat
+import re
 
 from soorgeon import (split, io, definitions, proto, exceptions, magics,
                       pyflakes)
@@ -176,6 +177,7 @@ class NotebookExporter:
         self._providers = None
 
         self._check()
+        self._check_output_files()
 
         self._proto_tasks = self._init_proto_tasks(nb, py)
 
@@ -232,6 +234,28 @@ class NotebookExporter:
         pyflakes.check_notebook(self._nb)
         _check_functions_do_not_use_global_variables(code)
         _check_no_star_imports(code)
+
+    def _check_output_files(self):
+        """
+        Check before refactoring. If the notebook itself
+        is supposed to generate some files, print a warning
+        telling the user to register them in the output section.
+        """
+        code = self._get_code()
+        tree = parso.parse(code)
+        output_lines = []
+        for i in tree.children:
+            if _find_output_file_events(i.get_code()):
+                output_lines.append(i.get_code())
+
+        if len(output_lines) != 0:
+            click.secho('Looks like the following lines are storing files:\n')
+            for line in output_lines:
+                click.secho(line)
+            url = 'https://docs.ploomber.io/en/latest/' \
+                  'get-started/basic-concepts.html'
+            click.secho(f'Please see the guide on '
+                        f'how to add them as products: \n{url}\n')
 
     def _init_proto_tasks(self, nb, py):
         """Break notebook into smaller sections
@@ -440,6 +464,27 @@ def _check_no_star_imports(code):
             'Star imports are not supported, please change '
             f'the following:\n\n{star_imports_}\n\n'
             f'For more details, see: {url}')
+
+
+def _find_output_file_events(s):
+    is_output = ['.write_text(', '.write_bytes(',
+                 '.to_csv(', '.to_parquet(']
+
+    if s.startswith('#'):
+        return False
+    if "'''" in s:
+        return False
+
+    if 'open(' in s:
+        if not (re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'r'\)[^\n]*", s) or
+                re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'rb'\)[^\n]*", s) or
+                re.match(r"[^\n]*open\('[^,]+'\)[^\n]*", s)):
+            return True
+
+    if any(cmd in s for cmd in is_output):
+        return True
+
+    return False
 
 
 # see issue #12 on github
