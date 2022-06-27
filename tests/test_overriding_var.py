@@ -1,15 +1,8 @@
 from pathlib import Path
-from importlib import resources
-
-import yaml
-import parso
 import pytest
-import jupytext
 import json
-import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
-
-from soorgeon import assets, export, exceptions, io
+from test_export import _read
+from soorgeon import export
 
 overridingVarNb1 = """# ## Load df
 
@@ -26,7 +19,7 @@ assert df_2 == 6
 
 """
 
-overridingVarNb2 = """# 
+overridingVarNb2 = """#
 from sklearn.datasets import load_iris, load_digits
 
 # ## Load df
@@ -46,15 +39,13 @@ assert df_2.equals(compare_df) == True
 
 """
 
-
-def _read(nb_str):
-    return jupytext.reads(nb_str, fmt='py:light')
-
 # 1. generate a notebook file
 # 2. Call soorgeon refactor
 # 3. Run all the scripts in the task folder
 # 4. df_2 should be 6 not 2; assert df_2 == 6
-@pytest.mark.parametrize("nb", [overridingVarNb2, overridingVarNb1])
+
+
+@pytest.mark.parametrize("nb", [overridingVarNb1, overridingVarNb2])
 def test_overriding_vars(nb):
     # from_nb refactors a jupyter notebook
     export.from_nb(_read(nb))
@@ -71,12 +62,14 @@ def test_overriding_vars(nb):
             for line in cell['source']:
                 if not line.startswith('#'):
                     source1 += ''.join(line)
-                    #hardcoded the product cells
+                    # hardcoded the product cells
                     if (line.find("product = None") != -1):
-                        source1 += "product = { \"df\": \"output/load-df-df.pkl\", \"nb\": \"output/load-df.ipynb\",}"
+                        source1 += """product = {
+                                \"df\": \"output/load-df-df.pkl\",
+                                \"nb\": \"output/load-df.ipynb\",
+                            }"""
             source1 += "\n"
-
-    print(source1)
+    # print(source1)
     exec(source1)
 
     path = Path('tasks', 'load-df-again.ipynb')
@@ -90,12 +83,13 @@ def test_overriding_vars(nb):
                 if not line.startswith('#'):
                     source2 += ''.join(line)
                     if (line.find("product = None") != -1):
-                        source2 += "product = { \"df\": \"output/load-df-again-df.pkl\",\"nb\": \"output/load-df-again.ipynb\",}"
+                        source2 += """product = {
+                                \"df\": \"output/load-df-again-df.pkl\",
+                                \"nb\": \"output/load-df-again.ipynb\",
+                            }"""
             source2 += "\n"
-
-    print(source2)
+    # print(source2)
     exec(source2)
-
 
     path = Path('tasks', 'load-df-2.ipynb')
     nb = path.read_text()
@@ -108,8 +102,15 @@ def test_overriding_vars(nb):
                 if not line.startswith('#'):
                     source3 += ''.join(line)
                     if (line.find("product = None") != -1):
-                        source3 += "\nupstream = {\"load-df-again\": {\"df\": \"output/load-df-again-df.pkl\",\"nb\": \"output/load-df-again.ipynb\",}}\nproduct = {\"nb\": \"/Users/elaine/ploomber/repos/soorgeon/output/load-df-2.ipynb\"}"
+                        source3 += """\nupstream = {
+                                \"load-df-again\": {
+                                    \"df\": \"output/load-df-again-df.pkl\",
+                                    \"nb\": \"output/load-df-again.ipynb\",
+                                }
+                            }
+                            \nproduct = {
+                                \"nb\": \"output/load-df-2.ipynb\"
+                            }"""
             source3 += "\n"
-
-    print(source3)
+    # print(source3)
     exec(source3)
