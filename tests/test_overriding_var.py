@@ -3,6 +3,7 @@ import pytest
 import json
 from test_export import _read
 from soorgeon import export
+from ploomber.spec import DAGSpec
 
 overridingVarNb1 = """# ## Load df
 
@@ -19,7 +20,7 @@ assert df_2 == 6
 
 """
 
-overridingVarNb2 = """#
+overridingVarNb2 = """
 from sklearn.datasets import load_iris, load_digits
 
 # ## Load df
@@ -43,8 +44,6 @@ assert df_2.equals(compare_df) == True
 # 2. Call soorgeon refactor
 # 3. Run all the scripts in the task folder
 # 4. df_2 should be 6 not 2; assert df_2 == 6
-
-
 @pytest.mark.parametrize("nb", [overridingVarNb1, overridingVarNb2])
 def test_overriding_vars(nb):
     # from_nb refactors a jupyter notebook
@@ -69,7 +68,6 @@ def test_overriding_vars(nb):
                                 \"nb\": \"output/load-df.ipynb\",
                             }"""
             source1 += "\n"
-    # print(source1)
     exec(source1)
 
     path = Path('tasks', 'load-df-again.ipynb')
@@ -88,7 +86,6 @@ def test_overriding_vars(nb):
                                 \"nb\": \"output/load-df-again.ipynb\",
                             }"""
             source2 += "\n"
-    # print(source2)
     exec(source2)
 
     path = Path('tasks', 'load-df-2.ipynb')
@@ -112,5 +109,25 @@ def test_overriding_vars(nb):
                                 \"nb\": \"output/load-df-2.ipynb\"
                             }"""
             source3 += "\n"
-    # print(source3)
     exec(source3)
+
+dependency_nb = """ 
+from sklearn.datasets import load_iris, load_digits
+
+# ## Loading df
+
+df = load_digits(as_frame=True)['data']
+
+# ## reload df and load df_2
+
+df = load_iris(as_frame=True)['data']
+df_2 = df + 1
+
+"""
+@pytest.mark.parametrize("nb", [dependency_nb])
+def test_dependency(nb):
+    export.from_nb(_read(nb))
+
+    spec = DAGSpec('pipeline.yaml').to_dag()
+    expected = "upstream = None\nproduct = None"
+    assert(spec["reload-df-and-load-df-2"].source._get_parameters_cell()) == expected
