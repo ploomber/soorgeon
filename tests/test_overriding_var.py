@@ -1,6 +1,4 @@
-from pathlib import Path
 import pytest
-import json
 from test_export import _read
 from soorgeon import export
 from ploomber.spec import DAGSpec
@@ -36,7 +34,7 @@ df_2 = df + 1
 
 """
 
-same_cell_nb1 = """ 
+same_cell_nb1 = """
 from sklearn.datasets import load_iris, load_digits
 
 # ## Loading df
@@ -49,6 +47,8 @@ df = load_iris(as_frame=True)['data']
 df_2 = df + 1
 
 """
+
+
 @pytest.mark.parametrize("nb", [same_cell_nb1])
 def test_overriding_same_cell(nb):
     export.from_nb(_read(nb))
@@ -56,6 +56,7 @@ def test_overriding_same_cell(nb):
     dag = DAGSpec('pipeline.yaml').to_dag().render()
     assert set(dag['loading-df'].upstream) == set()
     assert set(dag["reload-df-and-load-df-2"].upstream) == set()
+
 
 @pytest.mark.parametrize("nb", [diff_cell_nb1, diff_cell_nb2])
 def test_overriding_diff_cell(nb):
