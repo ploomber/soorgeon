@@ -34,6 +34,8 @@ Try the interactive demo:
 
 ## Install
 
+*Compatible with Python 3.7 and higher.*
+
 ```sh
 pip install soorgeon
 ```
