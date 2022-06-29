@@ -1,4 +1,7 @@
 import click
+import tempfile
+import jupytext
+from os.path import abspath, dirname
 from soorgeon import __version__, export
 from soorgeon.clean import basic_clean
 
@@ -96,3 +99,46 @@ def clean(filename):
 
     """
     basic_clean(filename)
+
+
+@cli.command()
+@click.argument("filename", type=click.Path(exists=True))
+def test(filename):
+    """
+    check if a .py or .ipynb file runs.
+
+    $ soorgeon run path/to/script.py
+    or
+    $ soorgeon run path/to/notebook.ipynb
+
+    """
+    if filename.lower().endswith(".ipynb"):
+        nb = jupytext.read(filename)
+        # convert ipynb to py and create a temp file in current directory
+        directory = dirname(abspath(filename))
+        temp_path = tempfile.NamedTemporaryFile(suffix=".py",
+                                                delete=True,
+                                                dir=directory).name
+        jupytext.write(nb, temp_path)
+        _test(temp_path)
+    else:
+        _test(filename)
+    click.echo(f"Finished executing {filename}, no error encountered")
+
+
+def _test(filename):
+    try:
+        exec(open(filename).read())
+    except (ModuleNotFoundError, AttributeError, SyntaxError) as err:
+        error_suggestion_dict = {
+            "ModuleNotFoundError": "create a virtualenv, and"
+            " adding a requirements.txt with the package",
+            "AttributeError": "downgrade some libraries",
+            "SyntaxError": "check syntax",
+        }
+        error_type = type(err).__name__
+        click.echo(f"""
+        {error_type} encountered while executing the notebook: {err}
+
+        It is recommended to {error_suggestion_dict[error_type]}
+        """)
