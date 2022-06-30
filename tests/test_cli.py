@@ -427,3 +427,43 @@ def test_clean_no_task(tmp_empty):
 
     assert result.exit_code == 2
     assert "Error: Invalid value for 'FILENAME'" in result.output
+
+
+ModuleNotFoundError_sample = """
+# ## header
+
+import nomodule
+# ## header
+
+"""
+
+AttributeError_sample = """
+# ## header
+
+import math
+print(math.logg(1))
+# ## header
+"""
+
+SyntaxError_sample = """
+# ## header
+
+impor math
+print(math.log(1))
+# ## header
+"""
+
+
+@pytest.mark.parametrize('code, output', [
+    [simple, "no error encountered"],
+    [ModuleNotFoundError_sample, "create a virtualenv"],
+    [AttributeError_sample, "downgrade some libraries"],
+    [SyntaxError_sample, "check syntax"]
+])
+def test_test_notebook_runs(tmp_empty, code, output):
+    nb_ = jupytext.reads(code, fmt='py:light')
+    for filename in ['nb.ipynb', 'nb.py']:
+        jupytext.write(nb_, filename)
+        runner = CliRunner()
+        result = runner.invoke(cli.test, filename)
+        assert output in result.output

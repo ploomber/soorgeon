@@ -123,12 +123,12 @@ def test(filename):
         _test(temp_path)
     else:
         _test(filename)
-    click.echo(f"Finished executing {filename}, no error encountered")
 
 
 def _test(filename):
     try:
         exec(open(filename).read())
+        click.echo(f"Finished executing {filename}, no error encountered")
     except (ModuleNotFoundError, AttributeError, SyntaxError) as err:
         error_suggestion_dict = {
             "ModuleNotFoundError": "create a virtualenv, and"
