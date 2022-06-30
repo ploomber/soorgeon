@@ -107,9 +107,9 @@ def test(filename):
     """
     check if a .py or .ipynb file runs.
 
-    $ soorgeon run path/to/script.py
+    $ soorgeon test path/to/script.py
     or
-    $ soorgeon run path/to/notebook.ipynb
+    $ soorgeon test path/to/notebook.ipynb
 
     """
     if filename.lower().endswith(".ipynb"):
