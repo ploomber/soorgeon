@@ -453,12 +453,21 @@ print(math.log(1))
 # ## header
 """
 
+OtherError_sample = """
+# ## header
+
+import math
+print(math.log(-5))
+# ## header
+"""
+
 
 @pytest.mark.parametrize('code, output', [
     [simple, "no error encountered"],
-    [ModuleNotFoundError_sample, "create a virtualenv"],
-    [AttributeError_sample, "downgrade some libraries"],
-    [SyntaxError_sample, "check syntax"]
+    [ModuleNotFoundError_sample, "It is recommended to create a virtualenv"],
+    [AttributeError_sample, "It is recommended to downgrade some libraries"],
+    [SyntaxError_sample, "It is recommended to check syntax"],
+    [OtherError_sample, "Checkout how to debug notebooks"]
 ])
 def test_test_notebook_runs(tmp_empty, code, output):
     nb_ = jupytext.reads(code, fmt='py:light')
