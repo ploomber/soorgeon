@@ -116,11 +116,11 @@ def test(filename):
         nb = jupytext.read(filename)
         # convert ipynb to py and create a temp file in current directory
         directory = dirname(abspath(filename))
-        temp_path = tempfile.NamedTemporaryFile(suffix=".py",
+        with tempfile.NamedTemporaryFile(suffix=".py",
                                                 delete=True,
-                                                dir=directory).name
-        jupytext.write(nb, temp_path)
-        _test(temp_path)
+                                                dir=directory) as temp_file:
+            jupytext.write(nb, temp_file.name)
+            _test(temp_file.name)
     else:
         _test(filename)
 
@@ -141,4 +141,12 @@ def _test(filename):
         {error_type} encountered while executing the notebook: {err}
 
         It is recommended to {error_suggestion_dict[error_type]}
+        """)
+    except Exception as err:
+        error_type = type(err).__name__
+        click.echo(f"""
+        {error_type} encountered while executing the notebook: {err}
+
+        Checkout how to debug notebooks:
+        https://docs.ploomber.io/en/latest/user-guide/debugging.html
         """)
