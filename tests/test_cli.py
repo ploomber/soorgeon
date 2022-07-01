@@ -501,3 +501,52 @@ def test_refactor_product_should_not_warning_if_comment(tmp_empty):
     assert 'to_parquet' not in result.output
     assert 'write_text' in result.output
     assert 'write_bytes' not in result.output
+
+
+ModuleNotFoundError_sample = """
+# ## header
+
+import nomodule
+# ## header
+
+"""
+
+AttributeError_sample = """
+# ## header
+
+import math
+print(math.logg(1))
+# ## header
+"""
+
+SyntaxError_sample = """
+# ## header
+
+impor math
+print(math.log(1))
+# ## header
+"""
+
+OtherError_sample = """
+# ## header
+
+import math
+print(math.log(-5))
+# ## header
+"""
+
+
+@pytest.mark.parametrize('code, output', [
+    [simple, "no error encountered"],
+    [ModuleNotFoundError_sample, "It is recommended to create a virtualenv"],
+    [AttributeError_sample, "It is recommended to downgrade some libraries"],
+    [SyntaxError_sample, "It is recommended to check syntax"],
+    [OtherError_sample, "Checkout how to debug notebooks"]
+])
+def test_test_notebook_runs(tmp_empty, code, output):
+    nb_ = jupytext.reads(code, fmt='py:light')
+    for filename in ['nb.ipynb', 'nb.py']:
+        jupytext.write(nb_, filename)
+        runner = CliRunner()
+        result = runner.invoke(cli.test, filename)
+        assert output in result.output

@@ -42,6 +42,20 @@ pip install soorgeon
 
 ## Usage
 
+### Testing if the notebook runs (Optional)
+
+Before refactoring, you can optionally test if the original notebook or script runs without exceptions:
+
+```
+soorgeon test path/to/notebook.ipynb
+```
+
+or
+
+```
+soorgeon test path/to/script.py
+```
+
 ### Refactoring
 
 ```sh
@@ -78,7 +92,7 @@ soorgeon clean path/to/notebook.ipynb
 or
 
 ```
-soorgeon clean path/to/script.ipynb
+soorgeon clean path/to/script.py
 ```
 
 ## Examples

@@ -1,4 +1,7 @@
 import click
+import tempfile
+import jupytext
+from os.path import abspath, dirname
 from soorgeon import __version__, export
 from soorgeon.clean import basic_clean
 
@@ -96,3 +99,54 @@ def clean(filename):
 
     """
     basic_clean(filename)
+
+
+@cli.command()
+@click.argument("filename", type=click.Path(exists=True))
+def test(filename):
+    """
+    check if a .py or .ipynb file runs.
+
+    $ soorgeon test path/to/script.py
+    or
+    $ soorgeon test path/to/notebook.ipynb
+
+    """
+    if filename.lower().endswith(".ipynb"):
+        nb = jupytext.read(filename)
+        # convert ipynb to py and create a temp file in current directory
+        directory = dirname(abspath(filename))
+        with tempfile.NamedTemporaryFile(suffix=".py",
+                                                delete=True,
+                                                dir=directory) as temp_file:
+            jupytext.write(nb, temp_file.name)
+            _test(temp_file.name)
+    else:
+        _test(filename)
+
+
+def _test(filename):
+    try:
+        exec(open(filename).read())
+        click.echo(f"Finished executing {filename}, no error encountered")
+    except (ModuleNotFoundError, AttributeError, SyntaxError) as err:
+        error_suggestion_dict = {
+            "ModuleNotFoundError": "create a virtualenv, and"
+            " adding a requirements.txt with the package",
+            "AttributeError": "downgrade some libraries",
+            "SyntaxError": "check syntax",
+        }
+        error_type = type(err).__name__
+        click.echo(f"""
+        {error_type} encountered while executing the notebook: {err}
+
+        It is recommended to {error_suggestion_dict[error_type]}
+        """)
+    except Exception as err:
+        error_type = type(err).__name__
+        click.echo(f"""
+        {error_type} encountered while executing the notebook: {err}
+
+        Checkout how to debug notebooks:
+        https://docs.ploomber.io/en/latest/user-guide/debugging.html
+        """)
