@@ -834,3 +834,25 @@ def test_appends_to_readme(tmp_empty):
 
     expected = '# Some stuff\n' + resources.read_text(assets, 'README.md')
     assert Path('README.md').read_text() == expected
+
+
+@pytest.mark.parametrize('code, expect', [
+    ("f = open('text.txt')", False),
+    ("f = open('read.txt' , 'r')", False),
+    ("f = open('txt', 'r')", False),
+    ("f = open('text.txt',  'rb') ", False),
+    ("f = open('text.txt'  ,   'ab')", True),
+    ("with open('text.txt',   'w')", True),
+    ("with open('txt' ,  'w+')", True),
+    ("''' with open('txt' ,  'w+') '''", False),
+    ("f = Path().write_text()", True),
+    ("f = path().write_bytes()", True),
+    ("df.to_csv()", True),
+    ("df.to_parquet()", True),
+    ("write_text = 6", False),
+    ("header = 'call to_csv function'", False),
+    ("# Path.write_text('txt')", False)
+])
+def test_find_output_file_events(code, expect):
+    actual = export._find_output_file_events(code)
+    assert actual == expect
