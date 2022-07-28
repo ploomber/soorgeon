@@ -119,6 +119,7 @@ def test(filename, output_filename):
     """
     name, extension = splitext(filename)
     directory = dirname(abspath(filename))
+    # save to {name}-soorgeon-test.ipynb by default
     if not output_filename:
         output_filename = join(directory, f"{name}-soorgeon-test.ipynb")
     else:

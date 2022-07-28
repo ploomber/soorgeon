@@ -45,15 +45,16 @@ pip install soorgeon
 ### Testing if the notebook runs (Optional)
 
 Before refactoring, you can optionally test if the original notebook or script runs without exceptions:
+The first argument is the path of the original notebook, while the second argument is optional for setting the output path of the executed notebook (By default, the path is `{name}-soorgeon-test.ipynb`)
 
 ```
-soorgeon test path/to/notebook.ipynb
+soorgeon test path/to/notebook.ipynb [path/to/notebook-soorgeon-test.ipynb]
 ```
 
 or
 
 ```
-soorgeon test path/to/script.py
+soorgeon test path/to/script.py [path/to/script-soorgeon-test.ipynb]
 ```
 
 ### Refactoring
