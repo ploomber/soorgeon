@@ -109,7 +109,6 @@ def clean(filename):
                 type=click.Path(exists=False),
                 required=False)
 def test(filename, output_filename):
-    print(filename, output_filename)
     """
     check if a .py or .ipynb file runs.
 
@@ -164,7 +163,7 @@ def _test(filename, output_filename):
                 It is recommended to {suggestion}
 
                 Check the executed notebook: {output_filename}
-                """, err=True)
+                """)
                 return
         # if never return
         click.echo(f"""
@@ -174,7 +173,7 @@ def _test(filename, output_filename):
         https://docs.ploomber.io/en/latest/user-guide/debugging.html
 
         Check the executed notebook: {output_filename}
-        """, err=True)
+        """)
     except Exception as err:
         # handling errors other than PapermillExecutionError
         error_type = type(err).__name__
@@ -185,4 +184,4 @@ def _test(filename, output_filename):
         https://docs.ploomber.io/en/latest/user-guide/debugging.html
 
         Check the executed notebook: {output_filename}
-        """, err=True)
+        """)
