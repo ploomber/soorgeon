@@ -1,7 +1,9 @@
 import click
 import tempfile
 import jupytext
-from os.path import abspath, dirname
+import papermill as pm
+from papermill.exceptions import PapermillExecutionError
+from os.path import abspath, dirname, splitext, join
 from soorgeon import __version__, export
 from soorgeon.clean import basic_clean
 
@@ -103,7 +105,9 @@ def clean(filename):
 
 @cli.command()
 @click.argument("filename", type=click.Path(exists=True))
-def test(filename):
+@click.argument("output_filename", type=click.Path(exists=False), required=False)
+def test(filename, output_filename):
+    print(filename, output_filename)
     """
     check if a .py or .ipynb file runs.
 
@@ -112,41 +116,71 @@ def test(filename):
     $ soorgeon test path/to/notebook.ipynb
 
     """
-    if filename.lower().endswith(".ipynb"):
+    name, extension = splitext(filename)
+    directory = dirname(abspath(filename))
+    if not output_filename:
+        output_filename = join(directory, f"{name}-soorgeon-test.ipynb")
+    else:
+        output_filename = join(directory, output_filename)
+    if extension.lower() == '.py':
         nb = jupytext.read(filename)
         # convert ipynb to py and create a temp file in current directory
-        directory = dirname(abspath(filename))
-        with tempfile.NamedTemporaryFile(suffix=".py",
+        with tempfile.NamedTemporaryFile(suffix=".ipynb",
                                                 delete=True,
                                                 dir=directory) as temp_file:
             jupytext.write(nb, temp_file.name)
-            _test(temp_file.name)
+            _test(temp_file.name, output_filename)
     else:
-        _test(filename)
+        _test(filename, output_filename)
 
 
-def _test(filename):
+def _test(filename, output_filename):
     try:
-        exec(open(filename).read())
-        click.echo(f"Finished executing {filename}, no error encountered")
-    except (ModuleNotFoundError, AttributeError, SyntaxError) as err:
+        pm.execute_notebook(
+            filename,
+            output_filename,
+            kernel_name='python3'
+        )
+        click.echo(f'''
+        Finished executing {filename}, no error encountered.
+
+        Check the executed notebook: {output_filename}
+        ''')
+    except PapermillExecutionError as err:
+        error_traceback = err.traceback
         error_suggestion_dict = {
             "ModuleNotFoundError": "create a virtualenv, and"
             " adding a requirements.txt with the package",
             "AttributeError": "downgrade some libraries",
             "SyntaxError": "check syntax",
         }
-        error_type = type(err).__name__
-        click.echo(f"""
-        {error_type} encountered while executing the notebook: {err}
+        for error, suggestion in error_suggestion_dict.items():
+            if any(error in error_line for error_line in error_traceback):
+                click.echo(f"""
+                {error} encountered while executing the notebook: {err}
 
-        It is recommended to {error_suggestion_dict[error_type]}
-        """)
+                It is recommended to {suggestion}
+
+                Check the executed notebook: {output_filename}
+                """, err=True)
+                return
+        # if never return
+        click.echo(f"""
+        Error encountered while executing the notebook: {err}
+        
+        Checkout how to debug notebooks:
+        https://docs.ploomber.io/en/latest/user-guide/debugging.html
+
+        Check the executed notebook: {output_filename}
+        """, err=True)
     except Exception as err:
+        # handling errors other than PapermillExecutionError
         error_type = type(err).__name__
         click.echo(f"""
         {error_type} encountered while executing the notebook: {err}
 
         Checkout how to debug notebooks:
         https://docs.ploomber.io/en/latest/user-guide/debugging.html
-        """)
+
+        Check the executed notebook: {output_filename}
+        """, err=True)
