@@ -105,7 +105,9 @@ def clean(filename):
 
 @cli.command()
 @click.argument("filename", type=click.Path(exists=True))
-@click.argument("output_filename", type=click.Path(exists=False), required=False)
+@click.argument("output_filename",
+                type=click.Path(exists=False),
+                required=False)
 def test(filename, output_filename):
     print(filename, output_filename)
     """
@@ -167,7 +169,7 @@ def _test(filename, output_filename):
         # if never return
         click.echo(f"""
         Error encountered while executing the notebook: {err}
-        
+
         Checkout how to debug notebooks:
         https://docs.ploomber.io/en/latest/user-guide/debugging.html
 
