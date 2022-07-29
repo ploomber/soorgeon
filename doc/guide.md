@@ -6,6 +6,7 @@ Soorgen has a single command:
 soorgeon refactor path/to/nb.ipynb
 ```
 
+
 The output is a [Ploomber](https://github.com/ploomber/ploomber) pipeline comprised of three elements:
 
 1. `pipeline.yaml`: Pipeline specification (source code, inputs, outputs).
