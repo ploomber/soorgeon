@@ -2,7 +2,7 @@ import click
 import tempfile
 import jupytext
 import papermill as pm
-from click import ClickException
+from click.exceptions import ClickException
 from papermill.exceptions import PapermillExecutionError
 from os.path import abspath, dirname, splitext, join
 from soorgeon import __version__, export
@@ -144,7 +144,7 @@ def test(filename, output_filename):
 
 
 def _test(filename, output_filename):
-    CONTACT_MESSAGE = "An error happened when executing the notebook," \
+    CONTACT_MESSAGE = "An error happened when executing the notebook, " \
                       "contact us for help: https://ploomber.io/community"
     try:
         pm.execute_notebook(filename, output_filename, kernel_name='python3')
@@ -165,14 +165,14 @@ def _test(filename, output_filename):
                 click.secho(f"""\
 {error} encountered while executing the notebook: {err}
 {suggestion}
-Output notebook: {output_filename}""",
+Output notebook: {output_filename}\n""",
                             fg='red')
                 raise ClickException(CONTACT_MESSAGE)
 
         click.secho(f"""\
 Error encountered while executing the notebook: {err}
 
-Output notebook: {output_filename}""",
+Output notebook: {output_filename}\n""",
                     fg='red')
         raise ClickException(CONTACT_MESSAGE)
     except Exception as err:
@@ -186,5 +186,5 @@ Output notebook: {output_filename}""")
     else:
         click.secho(f"""\
 Finished executing {filename}, no error encountered.
-Output notebook: {output_filename}""",
+Output notebook: {output_filename}\n""",
                     fg='green')
