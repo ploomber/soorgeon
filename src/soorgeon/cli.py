@@ -128,8 +128,8 @@ def test(filename, output_filename):
         nb = jupytext.read(filename)
         # convert ipynb to py and create a temp file in current directory
         with tempfile.NamedTemporaryFile(suffix=".ipynb",
-                                                delete=True,
-                                                dir=directory) as temp_file:
+                                         delete=True,
+                                         dir=directory) as temp_file:
             jupytext.write(nb, temp_file.name)
             _test(temp_file.name, output_filename)
     else:
@@ -138,51 +138,48 @@ def test(filename, output_filename):
 
 def _test(filename, output_filename):
     try:
-        pm.execute_notebook(
-            filename,
-            output_filename,
-            kernel_name='python3'
-        )
-        click.echo(f'''
-        Finished executing {filename}, no error encountered.
-
-        Check the executed notebook: {output_filename}
-        ''')
+        pm.execute_notebook(filename, output_filename, kernel_name='python3')
+        click.secho(f"""\
+Finished executing {filename}, no error encountered.
+Output notebook: {output_filename}""",
+                    fg='green')
     except PapermillExecutionError as err:
         error_traceback = err.traceback
         error_suggestion_dict = {
-            "ModuleNotFoundError": "create a virtualenv, and"
-            " adding a requirements.txt with the package",
-            "AttributeError": "downgrade some libraries",
-            "SyntaxError": "check syntax",
+            "ModuleNotFoundError":
+            "Some packages are missing, please install them "
+            "with 'pip install {package-name}'\n"
+            "\nContact us for help: https://ploomber.io/community",
+            "AttributeError":
+            "AttributeErros might be due to changes in the libraries "
+            "you're using. "
+            "\nContact us for help: https://ploomber.io/community",
+            "SyntaxError":
+            "There are syntax errors in the notebook. "
+            "\nContact us for help: https://ploomber.io/community",
         }
         for error, suggestion in error_suggestion_dict.items():
             if any(error in error_line for error_line in error_traceback):
-                click.echo(f"""
-                {error} encountered while executing the notebook: {err}
-
-                It is recommended to {suggestion}
-
-                Check the executed notebook: {output_filename}
-                """)
+                click.secho(f"""\
+{error} encountered while executing the notebook: {err}
+{suggestion}
+Output notebook: {output_filename}""",
+                            fg='red')
                 return
-        # if never return
-        click.echo(f"""
-        Error encountered while executing the notebook: {err}
 
-        Checkout how to debug notebooks:
-        https://docs.ploomber.io/en/latest/user-guide/debugging.html
+        click.secho(f"""\
+Error encountered while executing the notebook: {err}
 
-        Check the executed notebook: {output_filename}
-        """)
+Contact us for help: https://ploomber.io/community
+
+Output notebook: {output_filename}""",
+                    fg='red')
     except Exception as err:
         # handling errors other than PapermillExecutionError
         error_type = type(err).__name__
-        click.echo(f"""
-        {error_type} encountered while executing the notebook: {err}
+        click.echo(f"""\
+{error_type} encountered while executing the notebook: {err}
 
-        Checkout how to debug notebooks:
-        https://docs.ploomber.io/en/latest/user-guide/debugging.html
+Contact us for help: https://ploomber.io/community
 
-        Check the executed notebook: {output_filename}
-        """)
+Output notebook: {output_filename}""")
