@@ -117,6 +117,12 @@ def test(filename, output_filename):
     or
     $ soorgeon test path/to/notebook.ipynb
 
+    Optionally, set the path to the output notebook:
+
+    $ soorgeon test path/to/notebook.ipynb path/to/output.ipynb
+    or
+    $ soorgeon test path/to/notebook.py path/to/output.ipynb
+
     """
     name, extension = splitext(filename)
     directory = dirname(abspath(filename))
