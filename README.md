@@ -42,22 +42,29 @@ pip install soorgeon
 
 ## Usage
 
-### Testing if the notebook runs (Optional)
+### [Optional] Testing if the notebook runs
 
 Before refactoring, you can optionally test if the original notebook or script runs without exceptions:
-The first argument is the path of the original notebook, while the second argument is optional for setting the output path of the executed notebook (By default, the path is `{name}-soorgeon-test.ipynb`)
 
-```
-soorgeon test path/to/notebook.ipynb [path/to/notebook-soorgeon-test.ipynb]
+```sh
+# works with ipynb files
+soorgeon test path/to/notebook.ipynb
+
+# and notebooks in percent format
+soorgeon test path/to/notebook.py
 ```
 
-or
+Optionally, set the path to the output notebook:
 
-```
-soorgeon test path/to/script.py [path/to/script-soorgeon-test.ipynb]
+```sh
+soorgeon test path/to/notebook.ipynb path/to/output.ipynb
+
+soorgeon test path/to/notebook.py path/to/output.ipynb
 ```
 
 ### Refactoring
+
+To refactor your notebook:
 
 ```sh
 # refactor notebook
@@ -84,7 +91,9 @@ To learn more, check out our [guide](doc/guide.md).
 
 ### Cleaning
 
-Soorgeon has a `clean` command that can apply [black](https://github.com/psf/black) and [isort](https://github.com/PyCQA/isort) for `.ipynb` and `.py` files:
+Soorgeon has a `clean` command that applies
+[black](https://github.com/psf/black) and
+[isort](https://github.com/PyCQA/isort) for `.ipynb` and `.py` files:
 
 ```
 soorgeon clean path/to/notebook.ipynb
