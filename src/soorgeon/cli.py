@@ -144,7 +144,8 @@ def test(filename, output_filename):
 
 
 def _test(filename, output_filename):
-    CONTACT_MESSAGE = "Contact us for help: https://ploomber.io/community"
+    CONTACT_MESSAGE = "An error happened when executing the notebook," \
+                      "contact us for help: https://ploomber.io/community"
     try:
         pm.execute_notebook(filename, output_filename, kernel_name='python3')
     except PapermillExecutionError as err:
