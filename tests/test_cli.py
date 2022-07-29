@@ -539,10 +539,10 @@ print(math.log(-5))
 
 @pytest.mark.parametrize('code, output', [
     [simple, "no error encountered"],
-    [ModuleNotFoundError_sample, "It is recommended to create a virtualenv"],
-    [AttributeError_sample, "It is recommended to downgrade some libraries"],
-    [SyntaxError_sample, "It is recommended to check syntax"],
-    [OtherError_sample, "Checkout how to debug notebooks"]
+    [ModuleNotFoundError_sample, "packages are missing, please install them"],
+    [AttributeError_sample, "might be due to changes in the libraries"],
+    [SyntaxError_sample, "There are syntax errors in the notebook"],
+    # [OtherError_sample, "Checkout how to debug notebooks"]
 ])
 def test_test_notebook_runs(tmp_empty, code, output):
     nb_ = jupytext.reads(code, fmt='py:light')
@@ -559,5 +559,9 @@ def test_test_notebook_runs(tmp_empty, code, output):
             else:
                 expected_output_path = 'nb-soorgeon-test.ipynb'
                 result = runner.invoke(cli.test, [filename])
+            if output == "no error encountered":
+                assert result.exit_code == 0
+            else:
+                assert result.exit_code == 1
             assert output in result.output
             assert Path(expected_output_path).exists()

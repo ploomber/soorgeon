@@ -2,6 +2,7 @@ import click
 import tempfile
 import jupytext
 import papermill as pm
+from click import ClickException
 from papermill.exceptions import PapermillExecutionError
 from os.path import abspath, dirname, splitext, join
 from soorgeon import __version__, export
@@ -137,26 +138,20 @@ def test(filename, output_filename):
 
 
 def _test(filename, output_filename):
+    CONTACT_MESSAGE = "Contact us for help: https://ploomber.io/community"
     try:
         pm.execute_notebook(filename, output_filename, kernel_name='python3')
-        click.secho(f"""\
-Finished executing {filename}, no error encountered.
-Output notebook: {output_filename}""",
-                    fg='green')
     except PapermillExecutionError as err:
         error_traceback = err.traceback
         error_suggestion_dict = {
             "ModuleNotFoundError":
             "Some packages are missing, please install them "
-            "with 'pip install {package-name}'\n"
-            "\nContact us for help: https://ploomber.io/community",
+            "with 'pip install {package-name}'\n",
             "AttributeError":
-            "AttributeErros might be due to changes in the libraries "
-            "you're using. "
-            "\nContact us for help: https://ploomber.io/community",
+            "AttributeErrors might be due to changes in the libraries "
+            "you're using.\n",
             "SyntaxError":
-            "There are syntax errors in the notebook. "
-            "\nContact us for help: https://ploomber.io/community",
+            "There are syntax errors in the notebook.\n",
         }
         for error, suggestion in error_suggestion_dict.items():
             if any(error in error_line for error_line in error_traceback):
@@ -165,21 +160,24 @@ Output notebook: {output_filename}""",
 {suggestion}
 Output notebook: {output_filename}""",
                             fg='red')
-                return
+                raise ClickException(CONTACT_MESSAGE)
 
         click.secho(f"""\
 Error encountered while executing the notebook: {err}
 
-Contact us for help: https://ploomber.io/community
-
 Output notebook: {output_filename}""",
                     fg='red')
+        raise ClickException(CONTACT_MESSAGE)
     except Exception as err:
         # handling errors other than PapermillExecutionError
         error_type = type(err).__name__
         click.echo(f"""\
 {error_type} encountered while executing the notebook: {err}
 
-Contact us for help: https://ploomber.io/community
-
 Output notebook: {output_filename}""")
+        raise ClickException(CONTACT_MESSAGE)
+    else:
+        click.secho(f"""\
+Finished executing {filename}, no error encountered.
+Output notebook: {output_filename}""",
+                    fg='green')
