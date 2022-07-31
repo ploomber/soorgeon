@@ -3,7 +3,7 @@ import tempfile
 import jupytext
 from os.path import abspath, dirname
 from soorgeon import __version__, export
-from soorgeon.clean import basic_clean
+from soorgeon import clean as clean_module
 
 
 @click.group()
@@ -94,11 +94,27 @@ def clean(filename):
     Clean a .py or .ipynb file (applies black and isort).
 
     $ soorgeon clean path/to/script.py
-    or
-    $ soorgeon clean path/to/notebook.ipynb
 
+    or
+
+    $ soorgeon clean path/to/notebook.ipynb
     """
-    basic_clean(filename)
+    clean_module.basic_clean(filename)
+
+
+@cli.command()
+@click.argument("filename", type=click.Path(exists=True))
+def lint(filename):
+    """
+    Lint a .py or .ipynb file using flake8
+
+    $ soorgeon lint path/to/script.py
+
+    or
+
+    $ soorgeon lint path/to/notebook.ipynb
+    """
+    clean_module.lint(filename)
 
 
 @cli.command()
@@ -108,17 +124,18 @@ def test(filename):
     check if a .py or .ipynb file runs.
 
     $ soorgeon test path/to/script.py
-    or
-    $ soorgeon test path/to/notebook.ipynb
 
+    or
+
+    $ soorgeon test path/to/notebook.ipynb
     """
     if filename.lower().endswith(".ipynb"):
         nb = jupytext.read(filename)
         # convert ipynb to py and create a temp file in current directory
         directory = dirname(abspath(filename))
         with tempfile.NamedTemporaryFile(suffix=".py",
-                                                delete=True,
-                                                dir=directory) as temp_file:
+                                         delete=True,
+                                         dir=directory) as temp_file:
             jupytext.write(nb, temp_file.name)
             _test(temp_file.name)
     else:

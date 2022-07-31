@@ -3,6 +3,7 @@ from pathlib import Path
 
 import yaml
 import jupytext
+import jupytext.formats
 import pytest
 from click.testing import CliRunner
 
@@ -417,6 +418,85 @@ def test_clean_ipynb(tmp_empty):
     assert "Finished cleaning tasks/cell-2.ipynb" in result.output
 
 
+@pytest.mark.parametrize('content, fmt', [
+    [
+        """
+```python
+import soorgeon
+import atexit
+
+s = 'something'
+```
+""",
+        'markdown',
+    ],
+    [
+        """\
+---
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+---
+
+```{code-cell}
+import soorgeon
+import atexit
+
+s = 'something'
+```
+""",
+        'myst',
+    ],
+],
+                         ids=[
+                             'md',
+                             'myst',
+                         ])
+def test_clean_markdown(tmp_empty, content, fmt):
+    Path('file.md').write_text(content)
+
+    runner = CliRunner()
+    result = runner.invoke(cli.clean, ['file.md'])
+
+    assert result.exit_code == 0
+    # black
+    assert "1 file reformatted." in result.output
+    # isort
+    assert "Fixing" in result.output
+    # end of basic_clean()
+    assert "Finished cleaning file.md" in result.output
+
+    metadata = jupytext.formats.read_metadata(
+        Path('file.md').read_text(), 'md')
+
+    if metadata:
+        fmt_read = metadata['jupytext']['text_representation']['format_name']
+        assert fmt_read == fmt
+
+
+@pytest.mark.parametrize('name, content', [
+    ['file.py', 'import math'],
+    ['file.md', """
+```python
+import math
+```
+"""],
+],
+                         ids=[
+                             'py',
+                             'md',
+                         ])
+def test_lint(tmp_empty, name, content):
+    Path(name).write_text(content)
+
+    runner = CliRunner()
+    result = runner.invoke(cli.lint, [name])
+    assert result.exit_code == 0
+    assert name in result.output
+    assert "F401 'math' imported" in result.output
+
+
 def test_clean_no_task(tmp_empty):
     nb_ = jupytext.reads(simple, fmt='py:light')
     jupytext.write(nb_, 'nb.ipynb')
@@ -447,7 +527,6 @@ Path('write_byte').write_bytes('stf')
 
 
 """
-
 
 output_with_comment_test = """\
 # ## second
@@ -536,13 +615,13 @@ print(math.log(-5))
 """
 
 
-@pytest.mark.parametrize('code, output', [
-    [simple, "no error encountered"],
-    [ModuleNotFoundError_sample, "It is recommended to create a virtualenv"],
-    [AttributeError_sample, "It is recommended to downgrade some libraries"],
-    [SyntaxError_sample, "It is recommended to check syntax"],
-    [OtherError_sample, "Checkout how to debug notebooks"]
-])
+@pytest.mark.parametrize(
+    'code, output',
+    [[simple, "no error encountered"],
+     [ModuleNotFoundError_sample, "It is recommended to create a virtualenv"],
+     [AttributeError_sample, "It is recommended to downgrade some libraries"],
+     [SyntaxError_sample, "It is recommended to check syntax"],
+     [OtherError_sample, "Checkout how to debug notebooks"]])
 def test_test_notebook_runs(tmp_empty, code, output):
     nb_ = jupytext.reads(code, fmt='py:light')
     for filename in ['nb.ipynb', 'nb.py']:
