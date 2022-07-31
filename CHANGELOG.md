@@ -1,6 +1,7 @@
 # CHANGELOG
 
-## 0.0.17dev
+## 0.0.17 (2022-07-31)
+* Adds `soorgeon lint` command
 
 ## 0.0.16 (2022-06-06)
 * Adds `soorgeon clean` command
