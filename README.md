@@ -95,6 +95,20 @@ or
 soorgeon clean path/to/script.py
 ```
 
+## Linting
+
+Soorgeon has a `clean` command that can apply [flake8]:
+
+```
+soorgeon lint path/to/notebook.ipynb
+```
+
+or
+
+```
+soorgeon lint path/to/script.py
+```
+
 ## Examples
 
 ```sh
