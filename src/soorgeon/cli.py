@@ -6,7 +6,7 @@ from click.exceptions import ClickException
 from papermill.exceptions import PapermillExecutionError
 from os.path import abspath, dirname, splitext, join
 from soorgeon import __version__, export
-from soorgeon.clean import basic_clean
+from soorgeon import clean as clean_module
 
 
 @click.group()
@@ -97,11 +97,27 @@ def clean(filename):
     Clean a .py or .ipynb file (applies black and isort).
 
     $ soorgeon clean path/to/script.py
-    or
-    $ soorgeon clean path/to/notebook.ipynb
 
+    or
+
+    $ soorgeon clean path/to/notebook.ipynb
     """
-    basic_clean(filename)
+    clean_module.basic_clean(filename)
+
+
+@cli.command()
+@click.argument("filename", type=click.Path(exists=True))
+def lint(filename):
+    """
+    Lint a .py or .ipynb file using flake8
+
+    $ soorgeon lint path/to/script.py
+
+    or
+
+    $ soorgeon lint path/to/notebook.ipynb
+    """
+    clean_module.lint(filename)
 
 
 @cli.command()
@@ -114,8 +130,6 @@ def test(filename, output_filename):
     check if a .py or .ipynb file runs.
 
     $ soorgeon test path/to/script.py
-    or
-    $ soorgeon test path/to/notebook.ipynb
 
     Optionally, set the path to the output notebook:
 
