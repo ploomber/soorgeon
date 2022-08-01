@@ -5,6 +5,7 @@ import yaml
 import jupytext
 import jupytext.formats
 import pytest
+import shutil
 from click.testing import CliRunner
 
 from soorgeon import cli, export
@@ -618,14 +619,27 @@ print(math.log(-5))
 @pytest.mark.parametrize(
     'code, output',
     [[simple, "no error encountered"],
-     [ModuleNotFoundError_sample, "It is recommended to create a virtualenv"],
-     [AttributeError_sample, "It is recommended to downgrade some libraries"],
-     [SyntaxError_sample, "It is recommended to check syntax"],
-     [OtherError_sample, "Checkout how to debug notebooks"]])
+     [ModuleNotFoundError_sample, "packages are missing, please install them"],
+     [AttributeError_sample, "might be due to changes in the libraries"],
+     [SyntaxError_sample, "There are syntax errors in the notebook"]])
 def test_test_notebook_runs(tmp_empty, code, output):
     nb_ = jupytext.reads(code, fmt='py:light')
-    for filename in ['nb.ipynb', 'nb.py']:
-        jupytext.write(nb_, filename)
-        runner = CliRunner()
-        result = runner.invoke(cli.test, filename)
-        assert output in result.output
+    filenames = ['nb.ipynb', 'nb.py']
+    output_paths = ["nb-output.ipynb", None]
+    for filename in filenames:
+        for output_path in output_paths:
+            shutil.rmtree(str(output_path), ignore_errors=True)
+            jupytext.write(nb_, filename)
+            runner = CliRunner()
+            if output_path:
+                expected_output_path = output_path
+                result = runner.invoke(cli.test, [filename, output_path])
+            else:
+                expected_output_path = 'nb-soorgeon-test.ipynb'
+                result = runner.invoke(cli.test, [filename])
+            if output == "no error encountered":
+                assert result.exit_code == 0
+            else:
+                assert result.exit_code == 1
+            assert output in result.output
+            assert Path(expected_output_path).exists()

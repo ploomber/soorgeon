@@ -1,7 +1,10 @@
 import click
 import tempfile
 import jupytext
-from os.path import abspath, dirname
+import papermill as pm
+from click.exceptions import ClickException
+from papermill.exceptions import PapermillExecutionError
+from os.path import abspath, dirname, splitext, join
 from soorgeon import __version__, export
 from soorgeon import clean as clean_module
 
@@ -119,51 +122,83 @@ def lint(filename):
 
 @cli.command()
 @click.argument("filename", type=click.Path(exists=True))
-def test(filename):
+@click.argument("output_filename",
+                type=click.Path(exists=False),
+                required=False)
+def test(filename, output_filename):
     """
     check if a .py or .ipynb file runs.
 
     $ soorgeon test path/to/script.py
 
-    or
+    Optionally, set the path to the output notebook:
 
-    $ soorgeon test path/to/notebook.ipynb
+    $ soorgeon test path/to/notebook.ipynb path/to/output.ipynb
+    or
+    $ soorgeon test path/to/notebook.py path/to/output.ipynb
+
     """
-    if filename.lower().endswith(".ipynb"):
+    name, extension = splitext(filename)
+    directory = dirname(abspath(filename))
+    # save to {name}-soorgeon-test.ipynb by default
+    if not output_filename:
+        output_filename = join(directory, f"{name}-soorgeon-test.ipynb")
+    else:
+        output_filename = join(directory, output_filename)
+    if extension.lower() == '.py':
         nb = jupytext.read(filename)
         # convert ipynb to py and create a temp file in current directory
-        directory = dirname(abspath(filename))
-        with tempfile.NamedTemporaryFile(suffix=".py",
+        with tempfile.NamedTemporaryFile(suffix=".ipynb",
                                          delete=True,
                                          dir=directory) as temp_file:
             jupytext.write(nb, temp_file.name)
-            _test(temp_file.name)
+            _test(temp_file.name, output_filename)
     else:
-        _test(filename)
+        _test(filename, output_filename)
 
 
-def _test(filename):
+def _test(filename, output_filename):
+    CONTACT_MESSAGE = "An error happened when executing the notebook, " \
+                      "contact us for help: https://ploomber.io/community"
     try:
-        exec(open(filename).read())
-        click.echo(f"Finished executing {filename}, no error encountered")
-    except (ModuleNotFoundError, AttributeError, SyntaxError) as err:
+        pm.execute_notebook(filename, output_filename, kernel_name='python3')
+    except PapermillExecutionError as err:
+        error_traceback = err.traceback
         error_suggestion_dict = {
-            "ModuleNotFoundError": "create a virtualenv, and"
-            " adding a requirements.txt with the package",
-            "AttributeError": "downgrade some libraries",
-            "SyntaxError": "check syntax",
+            "ModuleNotFoundError":
+            "Some packages are missing, please install them "
+            "with 'pip install {package-name}'\n",
+            "AttributeError":
+            "AttributeErrors might be due to changes in the libraries "
+            "you're using.\n",
+            "SyntaxError":
+            "There are syntax errors in the notebook.\n",
         }
-        error_type = type(err).__name__
-        click.echo(f"""
-        {error_type} encountered while executing the notebook: {err}
+        for error, suggestion in error_suggestion_dict.items():
+            if any(error in error_line for error_line in error_traceback):
+                click.secho(f"""\
+{error} encountered while executing the notebook: {err}
+{suggestion}
+Output notebook: {output_filename}\n""",
+                            fg='red')
+                raise ClickException(CONTACT_MESSAGE)
 
-        It is recommended to {error_suggestion_dict[error_type]}
-        """)
+        click.secho(f"""\
+Error encountered while executing the notebook: {err}
+
+Output notebook: {output_filename}\n""",
+                    fg='red')
+        raise ClickException(CONTACT_MESSAGE)
     except Exception as err:
+        # handling errors other than PapermillExecutionError
         error_type = type(err).__name__
-        click.echo(f"""
-        {error_type} encountered while executing the notebook: {err}
+        click.echo(f"""\
+{error_type} encountered while executing the notebook: {err}
 
-        Checkout how to debug notebooks:
-        https://docs.ploomber.io/en/latest/user-guide/debugging.html
-        """)
+Output notebook: {output_filename}""")
+        raise ClickException(CONTACT_MESSAGE)
+    else:
+        click.secho(f"""\
+Finished executing {filename}, no error encountered.
+Output notebook: {output_filename}\n""",
+                    fg='green')
