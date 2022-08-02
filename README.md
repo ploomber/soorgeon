@@ -155,3 +155,12 @@ To learn more, check out our [guide](doc/guide.md).
 * [Newsletter](https://www.getrevue.co/profile/ploomber)
 * [YouTube](https://www.youtube.com/channel/UCaIS5BMlmeNQE4-Gn0xTDXQ)
 * [Contact the development team](mailto:contact@ploomber.io)
+
+
+## About Ploomber
+
+Ploomber is a big community of data enthusiasts pushing the boundaries of Data Science and Machine Learning tooling.
+
+Whatever your skillset is, you can contribute to our mission. So whether you're a beginner or an experienced professional, you're welcome to join us on this journey!
+
+[Click here to know how you can contribute to Ploomber.](https://github.com/ploomber/contributing/blob/main/README.md)
