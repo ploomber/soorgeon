@@ -135,6 +135,8 @@ import yaml
 import nbformat
 import re
 
+from soorgeon.telemetry import telemetry
+
 from soorgeon import (split, io, definitions, proto, exceptions, magics,
                       pyflakes)
 
@@ -467,8 +469,7 @@ def _check_no_star_imports(code):
 
 
 def _find_output_file_events(s):
-    is_output = ['.write_text(', '.write_bytes(',
-                 '.to_csv(', '.to_parquet(']
+    is_output = ['.write_text(', '.write_bytes(', '.to_csv(', '.to_parquet(']
 
     if s.startswith('#'):
         return False
@@ -476,9 +477,9 @@ def _find_output_file_events(s):
         return False
 
     if 'open(' in s:
-        if not (re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'r'\)[^\n]*", s) or
-                re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'rb'\)[^\n]*", s) or
-                re.match(r"[^\n]*open\('[^,]+'\)[^\n]*", s)):
+        if not (re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'r'\)[^\n]*", s)
+                or re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'rb'\)[^\n]*", s)
+                or re.match(r"[^\n]*open\('[^,]+'\)[^\n]*", s)):
             return True
 
     if any(cmd in s for cmd in is_output):
@@ -619,6 +620,7 @@ def single_task_from_path(path, product_prefix, file_format):
     Path('pipeline.yaml').write_text(yaml.safe_dump(spec, sort_keys=False))
 
 
+@telemetry.log_call('refactor')
 def refactor(path, log, product_prefix, df_format, single_task, file_format,
              serializer):
 

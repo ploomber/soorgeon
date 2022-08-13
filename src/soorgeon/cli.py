@@ -5,6 +5,7 @@ import papermill as pm
 from click.exceptions import ClickException
 from papermill.exceptions import PapermillExecutionError
 from os.path import abspath, dirname, splitext, join
+from soorgeon.telemetry import telemetry
 from soorgeon import __version__, export
 from soorgeon import clean as clean_module
 
@@ -157,6 +158,7 @@ def test(filename, output_filename):
         _test(filename, output_filename)
 
 
+@telemetry.log_call('test')
 def _test(filename, output_filename):
     CONTACT_MESSAGE = "An error happened when executing the notebook, " \
                       "contact us for help: https://ploomber.io/community"

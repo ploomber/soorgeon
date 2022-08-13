@@ -15,6 +15,7 @@ with open('src/soorgeon/__init__.py', 'rb') as f:
             _version_re.search(f.read().decode('utf-8')).group(1)))
 
 REQUIRES = [
+    'ploomber-core>=0.0.4',
     'jupytext',
     'parso',
     'nbformat',

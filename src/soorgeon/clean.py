@@ -9,6 +9,7 @@ import isort
 import jupytext
 
 from soorgeon.exceptions import BaseException
+from soorgeon.telemetry import telemetry
 
 
 def _jupytext_fmt(text, extension):
@@ -24,11 +25,13 @@ def _jupytext_fmt(text, extension):
     return fmt_final
 
 
+@telemetry.log_call('lint')
 def lint(task_file):
     with get_file(task_file, write=False) as path:
         run_program(path, program='flake8', filename=task_file)
 
 
+@telemetry.log_call('clean')
 def basic_clean(task_file, program="black"):
     """
     Run basic clean (directly called by cli.clean())
