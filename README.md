@@ -164,3 +164,8 @@ Ploomber is a big community of data enthusiasts pushing the boundaries of Data S
 Whatever your skillset is, you can contribute to our mission. So whether you're a beginner or an experienced professional, you're welcome to join us on this journey!
 
 [Click here to know how you can contribute to Ploomber.](https://github.com/ploomber/contributing/blob/main/README.md)
+
+
+## Telemetry
+
+We collect anonymous statistics to understand and improve usage. For details, [see here](https://docs.ploomber.io/en/latest/community/user-stats.html)

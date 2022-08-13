@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.0.18dev
+* Adds anonymous telemetry
 
 ## 0.0.17 (2022-07-31)
 * Adds `soorgeon lint` command
