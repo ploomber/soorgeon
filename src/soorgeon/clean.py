@@ -36,7 +36,6 @@ def basic_clean(task_file, program="black"):
     Run basic clean (directly called by cli.clean())
     Generate intermediate files for ipynb
     """
-    # temp_file=False for clean operations that are the same for py and ipynb
     with get_file(task_file, write=True) as path:
         clean_py(path, task_file)
 
