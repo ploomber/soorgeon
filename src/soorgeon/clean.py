@@ -5,7 +5,6 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import click
-import isort
 import jupytext
 
 from soorgeon.exceptions import BaseException
@@ -37,7 +36,9 @@ def basic_clean(task_file, program="black"):
     Run basic clean (directly called by cli.clean())
     Generate intermediate files for ipynb
     """
-    with get_file(task_file, write=True) as path:
+
+    # temp_file=False for clean operations that are the same for py and ipynb
+    with get_file(task_file, write=True, temp_file=False) as path:
         clean_py(path, task_file)
 
     click.echo(f"Finished cleaning {task_file}")
@@ -45,7 +46,6 @@ def basic_clean(task_file, program="black"):
 
 def clean_py(task_file_py, filename):
     run_program(task_file_py, program="black", filename=filename)
-    isort.file(task_file_py)
 
 
 def run_program(task_file_py, program, filename):
@@ -66,8 +66,13 @@ def run_program(task_file_py, program, filename):
 
 
 @contextmanager
-def get_file(task_file, write=False):
+def get_file(task_file, write=False, temp_file=True):
+    '''
+    When temp_file is True, create temp py file for ipynb files
+    '''
     task_file = Path(task_file)
+    if not temp_file:
+        return
     create_temp = task_file.suffix != ".py"
     text = task_file.read_text()
 

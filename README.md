@@ -92,8 +92,7 @@ To learn more, check out our [guide](doc/guide.md).
 ### Cleaning
 
 Soorgeon has a `clean` command that applies
-[black](https://github.com/psf/black) and
-[isort](https://github.com/PyCQA/isort) for `.ipynb` and `.py` files:
+[black](https://github.com/psf/black) <!--and [isort](https://github.com/PyCQA/isort)-->for `.ipynb` and `.py` files:
 
 ```
 soorgeon clean path/to/notebook.ipynb
@@ -107,7 +106,7 @@ soorgeon clean path/to/script.py
 
 ## Linting
 
-Soorgeon has a `clean` command that can apply [flake8]:
+Soorgeon has a `lint` command that can apply [flake8]:
 
 ```
 soorgeon lint path/to/notebook.ipynb
