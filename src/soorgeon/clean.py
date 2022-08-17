@@ -45,7 +45,10 @@ def basic_clean(task_file, program="black"):
 
 def clean_py(task_file_py, filename):
     # reformat with black
-    black_result = format_file_in_place(task_file_py, fast=True, mode=FileMode(), write_back=WriteBack(1))
+    black_result = format_file_in_place(task_file_py,
+                                        fast=True,
+                                        mode=FileMode(),
+                                        write_back=WriteBack(1))
     if black_result:
         click.echo(f"Reformatted {filename} with black.")
 
