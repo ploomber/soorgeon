@@ -395,7 +395,7 @@ def test_clean_py(tmp_empty):
     result = runner.invoke(cli.clean, ['tasks/cell-2.py'])
     assert result.exit_code == 0
     # black
-    assert "1 file reformatted." in result.output
+    assert "Reformatted tasks/cell-2.py with black" in result.output
     # end of basic_clean()
     assert "Finished cleaning tasks/cell-2.py" in result.output
 
@@ -410,7 +410,7 @@ def test_clean_ipynb(tmp_empty):
 
     assert result.exit_code == 0
     # black
-    assert "1 file reformatted." in result.output
+    assert "Reformatted tasks/cell-2.ipynb with black" in result.output
     # end of basic_clean()
     assert "Finished cleaning tasks/cell-2.ipynb" in result.output
 
@@ -458,7 +458,7 @@ def test_clean_markdown(tmp_empty, content, fmt):
 
     assert result.exit_code == 0
     # black
-    assert "1 file reformatted." in result.output
+    assert "Reformatted file.md with black." in result.output
     # end of basic_clean()
     assert "Finished cleaning file.md" in result.output
 

@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 import tempfile
+from black import format_file_in_place, FileMode, WriteBack
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -43,7 +44,10 @@ def basic_clean(task_file, program="black"):
 
 
 def clean_py(task_file_py, filename):
-    run_program(task_file_py, program="black", filename=filename)
+    # reformat with black
+    black_result = format_file_in_place(task_file_py, fast=True, mode=FileMode(), write_back=WriteBack(1))
+    if black_result:
+        click.echo(f"Reformatted {filename} with black.")
 
 
 def run_program(task_file_py, program, filename):
