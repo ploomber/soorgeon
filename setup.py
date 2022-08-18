@@ -25,7 +25,7 @@ REQUIRES = [
     'isort',
     # for checking code errors
     'pyflakes',
-    "black"
+    "black[jupyter]>=22.6.0"
 ]
 
 DEV = [

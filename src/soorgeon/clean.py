@@ -1,11 +1,11 @@
 import shutil
 import subprocess
 import tempfile
+from black import format_file_in_place, FileMode, WriteBack
 from contextlib import contextmanager
 from pathlib import Path
 
 import click
-import isort
 import jupytext
 
 from soorgeon.exceptions import BaseException
@@ -27,7 +27,7 @@ def _jupytext_fmt(text, extension):
 
 @telemetry.log_call('lint')
 def lint(task_file):
-    with get_file(task_file, write=False) as path:
+    with get_file(task_file, write=False, output_ext=".py") as path:
         run_program(path, program='flake8', filename=task_file)
 
 
@@ -44,8 +44,13 @@ def basic_clean(task_file, program="black"):
 
 
 def clean_py(task_file_py, filename):
-    run_program(task_file_py, program="black", filename=filename)
-    isort.file(task_file_py)
+    # reformat with black
+    black_result = format_file_in_place(task_file_py,
+                                        fast=True,
+                                        mode=FileMode(),
+                                        write_back=WriteBack(1))
+    if black_result:
+        click.echo(f"Reformatted {filename} with black.")
 
 
 def run_program(task_file_py, program, filename):
@@ -66,14 +71,15 @@ def run_program(task_file_py, program, filename):
 
 
 @contextmanager
-def get_file(task_file, write=False):
+def get_file(task_file, write=False, output_ext=".ipynb"):
     task_file = Path(task_file)
-    create_temp = task_file.suffix != ".py"
+    # only works for black
+    create_temp = task_file.suffix != output_ext
     text = task_file.read_text()
 
     if create_temp:
         nb = jupytext.reads(text)
-        temp_path = tempfile.NamedTemporaryFile(suffix=".py",
+        temp_path = tempfile.NamedTemporaryFile(suffix=output_ext,
                                                 delete=False).name
         jupytext.write(nb, temp_path)
         path = Path(temp_path)
