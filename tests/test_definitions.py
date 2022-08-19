@@ -44,6 +44,10 @@ two_import_as = """
 import matplotlib.pyplot as plt, numpy as np
 """
 
+two_imports = """
+import numpy, pandas
+"""
+
 
 @pytest.mark.parametrize('code, expected', [
     [
@@ -96,6 +100,13 @@ def test_from_imports(code, expected):
                 'numpy',
             ],
         ],
+        [
+            two_imports,
+            [
+                'numpy',
+                'pandas',
+            ],
+        ],
     ],
     ids=[
         'simple',
@@ -104,6 +115,7 @@ def test_from_imports(code, expected):
         'duplicated',
         'comma',
         'two-import-as',
+        'two-imports',
     ],
 )
 def test_packages_used(code, expected):

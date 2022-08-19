@@ -35,6 +35,12 @@ def packages_used(tree):
     def flatten(elements):
         return [i for sub in elements for i in sub]
 
+    def _extract_names(node):
+        if hasattr(node, 'children'):
+            return extract_names(node.children[0])
+        else:
+            return [node.value]
+
     def extract_names(import_):
         if import_.type == 'name':
             return [import_.value]
@@ -47,9 +53,10 @@ def packages_used(tree):
             return extract_names(second.children[0])
         elif second.type == 'dotted_as_names':
             # import a as something, b as another
+
             return flatten([
-                extract_names(node.children[0])
-                for i, node in enumerate(second.children) if i % 2 == 0
+                _extract_names(node) for i, node in enumerate(second.children)
+                if i % 2 == 0
             ])
         else:
             return [second.value]
