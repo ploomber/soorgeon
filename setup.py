@@ -25,7 +25,8 @@ REQUIRES = [
     'isort',
     # for checking code errors
     'pyflakes',
-    "black[jupyter]>=22.6.0"
+    'black[jupyter]>=22.6.0',
+    'papermill'
 ]
 
 DEV = [
@@ -45,7 +46,6 @@ DEV = [
     'pandas',
     'scikit-learn',
     'seaborn',
-    'papermill',
     'pkgmt',
     'twine'
 ]
