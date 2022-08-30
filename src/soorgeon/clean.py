@@ -32,22 +32,24 @@ def lint(task_file):
 
 
 @telemetry.log_call('clean')
-def basic_clean(task_file, program="black"):
+def basic_clean(task_file, program="black", string_normalization=True):
     """
     Run basic clean (directly called by cli.clean())
     Generate intermediate files for ipynb
     """
     with get_file(task_file, write=True) as path:
-        clean_py(path, task_file)
+        clean_py(path, task_file, string_normalization=string_normalization)
 
     click.echo(f"Finished cleaning {task_file}")
 
 
-def clean_py(task_file_py, filename):
+def clean_py(task_file_py, filename, string_normalization=True):
+    mode = FileMode(string_normalization=string_normalization)
+
     # reformat with black
     black_result = format_file_in_place(task_file_py,
                                         fast=True,
-                                        mode=FileMode(),
+                                        mode=mode,
                                         write_back=WriteBack(1))
     if black_result:
         click.echo(f"Reformatted {filename} with black.")
