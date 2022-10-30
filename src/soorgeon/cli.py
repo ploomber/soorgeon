@@ -61,6 +61,9 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format,
     User guide: https://github.com/ploomber/soorgeon/blob/main/doc/guide.md
     """
 
+    # apply black
+    clean_module.basic_clean(path, string_normalization=False)
+
     export.refactor(path,
                     log,
                     product_prefix=product_prefix,
