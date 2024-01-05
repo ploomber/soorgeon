@@ -23,13 +23,6 @@ https://user-images.githubusercontent.com/989250/150660392-559eca67-b630-4ef2-b6
 
 [3-minute video tutorial](https://www.youtube.com/watch?v=EJecqsZBr3Q).
 
-Try the interactive demo:
-
-<p align="center">
-  <a href="https://mybinder.org/v2/gh/ploomber/binder-env/main?urlpath=git-pull%3Frepo%3Dhttps%253A%252F%252Fgithub.com%252Fploomber%252Fprojects%26urlpath%3Dlab%252Ftree%252Fprojects%252Fguides/refactor%252FREADME.ipynb%26branch%3Dmaster"> <img src="_static/open-jupyterlab.svg" alt="Open JupyerLab"> </a>
-</p>
-
-
 *Note: Soorgeon is in alpha, [help us make it better](CONTRIBUTING.md).*
 
 ## Install
