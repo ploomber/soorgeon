@@ -59,7 +59,9 @@ def is_comprehension(leaf):
 
     sibling = leaf.get_next_sibling()
 
-    return (sibling.type in {'testlist_comp', 'dictorsetmaker'}
+    return (hasattr(sibling, 'type')
+            and sibling.type in {'testlist_comp', 'dictorsetmaker'}
+            and hasattr(sibling.children[-1], 'type')
             and sibling.children[-1].type == 'sync_comp_for')
 
 

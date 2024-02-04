@@ -515,25 +515,21 @@ def test_get_sources_includes_import_from_exported_definitions(tmp_empty):
     assert import_ in sources['plot']
 
 
-for_loop_with_output_in_body = """# ## section
+function_that_use_global_variable = """# ## section
 
 def fn():
     print(x)
-
-
 x = 1
-
 fn()
 """
 
 
-def test_raise_an_error_if_function_uses_global_variables():
-    nb = _read(for_loop_with_output_in_body)
-
-    with pytest.raises(exceptions.InputError) as excinfo:
+def test_do_not_raise_an_error_if_function_uses_global_variables():
+    nb = _read(function_that_use_global_variable)
+    try:
         export.NotebookExporter(nb)
-
-    assert "Function 'fn' uses variables 'x'" in str(excinfo.value)
+    except exceptions.InputError:
+        pytest.fail("Should not have raise error")
 
 
 # FIXME: test logging option
@@ -656,6 +652,18 @@ y = x + something.another()
             }
         }
     }
+
+
+def test_find_funcs_that_use_globals():
+    code = """
+def fn(a, b):
+    return a + b + c
+c = 1
+"""
+
+    needs_fix = export._find_funcs_that_use_globals(code)
+    assert needs_fix[0].name == 'fn'
+    assert str(needs_fix[0].args) == "{'c'}"
 
 
 def test_check_functions_do_not_use_global_variables():
@@ -856,3 +864,107 @@ def test_appends_to_readme(tmp_empty):
 def test_find_output_file_events(code, expect):
     actual = export._find_output_file_events(code)
     assert actual == expect
+
+
+def test_reorganize_missing_args_in_correct_order():
+    code = """
+def my_function(a, b):
+    return a + b + c
+"""
+    fn = export.FunctionNeedsFix('fn', (0, 0), ['b', 'a'])
+    fn2 = export._reorganize_missing_args_in_correct_order(fn, code)
+    assert fn2.args == ['a', 'b']
+
+
+def test_get_index_for_new_arg():
+    code = """
+def fn(a, b):
+    return a + b + c
+"""
+    func_name = 'fn'
+    idx = export._get_index_for_new_arg(code, func_name)
+    assert idx == 2
+
+
+def test_fix_globals_in_cell():
+    code = """
+def fn(a, b):
+    return a + b + c
+c = 1
+fn(a, b)
+"""
+    cell = {}
+    cell['source'] = code
+    func_name = 'fn'
+    new_arg = 'c'
+    idx = 2
+    export._fix_globals_in_cell(cell, func_name, new_arg, idx)
+    expected_code = """
+def fn(a, b, c):
+    return a + b + c
+c = 1
+fn(a, b, c)
+"""
+    assert cell['source'] == expected_code
+
+
+def test_insert_param_in_func_def():
+    code = """
+def fn(a, b):
+    return a + b + c
+c = 1
+fn(a, b)
+"""
+    tree = parso.parse(code)
+    func_name = 'fn'
+    param_name = 'c'
+    idx = 2
+    export._insert_param_in_func_def(tree, func_name, param_name, idx)
+    expected_code = """
+def fn(a, b, c):
+    return a + b + c
+c = 1
+fn(a, b)
+"""
+    assert tree.get_code() == expected_code
+
+
+def test_insert_arg_in_func_calls():
+    code = """
+def fn(a, b):
+    return a + b + c
+c = 1
+fn(a, b)
+"""
+    tree = parso.parse(code)
+    func_name = 'fn'
+    arg_name = 'c'
+    idx = 2
+    export._insert_arg_in_func_calls(tree, func_name, arg_name, idx)
+    expected_code = """
+def fn(a, b):
+    return a + b + c
+c = 1
+fn(a, b, c)
+"""
+    assert tree.get_code() == expected_code
+
+
+def test_get_func_calls():
+    code = """
+def fn(a, b):
+    return a + b + c
+c = 1
+def fn2():
+    return 1
+fn(a, b)
+fn2()
+d = 1 + fn(a, b)
+print(fn(a, c) + fn2())
+"""
+    tree = parso.parse(code)
+    func_name = 'fn'
+    calls = export._get_func_calls(tree, func_name)
+    assert len(calls) == 3
+    for c in calls:
+        assert c.children[0].value == 'fn'

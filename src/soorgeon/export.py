@@ -122,6 +122,7 @@ import shutil
 import traceback
 import ast
 import pprint
+import copy
 from collections import namedtuple
 from pathlib import Path
 import logging
@@ -136,7 +137,6 @@ import nbformat
 import re
 
 from soorgeon.telemetry import telemetry
-
 from soorgeon import (split, io, definitions, proto, exceptions, magics,
                       pyflakes)
 
@@ -177,6 +177,8 @@ class NotebookExporter:
         self._definitions = None
         self._tree = None
         self._providers = None
+
+        self._fix_globals()
 
         self._check()
         self._check_output_files()
@@ -388,6 +390,44 @@ class NotebookExporter:
 
         path.write_text(content + resources.read_text(assets, 'README.md'))
 
+    def _fix_globals(self):
+        """
+            Previously, we did not support using global variables inside
+            a function's body:
+
+            x = 1
+            def sum(y):
+                return x + y
+            sum(y)
+
+            The above would break since sum is using a variable that's
+            defined outside the function's body. If a user tried to refactor
+            a notebook with code like this using soorgeon refactor, they
+            would get an error message asking them to change the code to:
+
+            x = 1
+            def sum(y, x):
+                return x + y
+            sum(y, x)
+
+            This method automate this process and modify the user's source
+            code on their behalf so they don't have to do it manually.
+            https://github.com/ploomber/soorgeon/issues/65
+            Tests for this functionality are in:
+              - tests/test_notebookexporter_fix_globals.py
+        """
+        to_fix = _find_funcs_that_use_globals(self._get_code())
+        if to_fix:
+            for fn in to_fix:
+                fn = _reorganize_missing_args_in_correct_order(
+                    fn, self._get_code())
+                for new_arg in fn.args:
+                    idx = _get_index_for_new_arg(self._get_code(), fn.name)
+                    for cell in self._nb.cells:
+                        if cell["cell_type"] == "code":
+                            _fix_globals_in_cell(cell, fn.name, new_arg, idx)
+            self._fix_globals()
+
     def _echo(self, msg):
         if self._verbose:
             click.echo(msg)
@@ -488,8 +528,7 @@ def _find_output_file_events(s):
     return False
 
 
-# see issue #12 on github
-def _check_functions_do_not_use_global_variables(code):
+def _find_funcs_that_use_globals(code):
     tree = parso.parse(code)
 
     needs_fix = []
@@ -503,7 +542,6 @@ def _check_functions_do_not_use_global_variables(code):
         # of the function as an input
         in_, _ = io.find_inputs_and_outputs(funcdef.get_code(),
                                             local_scope=local_scope)
-
         if in_:
             needs_fix.append(
                 FunctionNeedsFix(
@@ -511,6 +549,13 @@ def _check_functions_do_not_use_global_variables(code):
                     funcdef.start_pos,
                     in_,
                 ))
+
+    return needs_fix
+
+
+# see issue #12 on github
+def _check_functions_do_not_use_global_variables(code):
+    needs_fix = _find_funcs_that_use_globals(code)
 
     if needs_fix:
         message = ('Looks like the following functions are using global '
@@ -651,3 +696,113 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format,
                    'Need help? https://ploomber.io/community\n\n'
                    'Error details:\n')
             raise exceptions.InputError(msg) from e
+
+
+def _reorganize_missing_args_in_correct_order(func, code):
+    # TODO; could be simpler, since only acomplish that args
+    # has same order, doesn't matter when the global was detected
+    args_indexes = {}
+    for arg in func.args:
+        if arg not in code:
+            raise Exception(f"Argument {arg!r} not found in code")
+        args_indexes[code.index(arg)] = arg
+    ordered_args = [args_indexes[i] for i in sorted(args_indexes)]
+    return FunctionNeedsFix(func.name, func.pos, ordered_args)
+
+
+def _get_index_for_new_arg(code, func_name):
+    tree = ast.parse(code)
+    idx = 0
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == func_name:
+            idx = len(node.args.args) - len(node.args.defaults)
+            return idx
+    raise ValueError(f"Could not find function {func_name!r}")
+
+
+def _fix_globals_in_cell(cell, func_name, new_arg, idx):
+    tree = parso.parse(cell["source"])
+    _insert_param_in_func_def(tree, func_name, new_arg, idx)
+    _insert_arg_in_func_calls(tree, func_name, new_arg, idx)
+    cell["source"] = tree.get_code()
+
+
+def _insert_param_in_func_def(tree, func_name, param_name, idx):
+    """using only parso tree, no need for another library"""
+    for func_def in tree.iter_funcdefs():
+        if func_def.name.value == func_name:
+            prev_params_len = len(func_def.get_params())
+            real_idx = idx + 1  # bc 0 is the parenthesis
+            original_params = func_def.children[2].children
+            name = parso.python.tree.Name(param_name, (0, 0))
+            comma = parso.python.tree.Operator(",", (0, 0))
+            space = parso.python.tree.Operator(" ", (0, 0))
+            param = parso.python.tree.Param
+            if real_idx == 1:  # new_param will be the 1st
+                if prev_params_len == 0:  # new_param will be the only param
+                    new_param = param([name])
+                else:
+                    new_param = param([name, comma, space])
+            else:
+                if real_idx > prev_params_len:  # new_p will be the last one
+                    new_param = param([comma, space, name])
+                else:
+                    new_param = param([space, name, comma])
+            original_params.insert(real_idx, new_param)
+
+
+def _insert_arg_in_func_calls(tree, func_name, arg_name, old_idx):
+    calls = _get_func_calls(tree, func_name)
+
+    for c in calls:
+        trailer = c.children[1]
+        args = trailer.children
+
+        if len(args) < 2:
+            raise Exception("Trailer children should be at least 2")
+
+        if len(args) == 2:  # only both parens; no args
+            arglist = parso.python.tree.PythonNode("arglist", [])
+            args.insert(1, arglist)
+        elif (len(args) == 3  # 0=(,  1=arglist or other obj,  2=)
+              and args[1].type != "arglist"):  # only one arg
+            new_obj = copy.deepcopy(args[1])
+            arglist = parso.python.tree.PythonNode("arglist", [new_obj])
+            args[1] = arglist  # why would parso not made this an arglist?
+        else:
+            arglist = args[1]
+
+        new_arg = parso.python.tree.PythonNode("argument", [])
+        name = parso.python.tree.Name(arg_name, (0, 0))
+        comma = parso.python.tree.Operator(", ", (0, 0))
+
+        new_idx = old_idx * 2 - 1 if old_idx > 0 else 0
+        real_number_of_args = len(
+            [a for a in arglist.children if a.type != "operator"])
+        is_last = bool(new_idx == real_number_of_args)
+        is_first = bool(new_idx == 0)
+
+        if not is_last and is_first:
+            new_arg.children.insert(0, comma)  # 1st so it ends up at the end
+        new_arg.children.insert(0, name)
+        if not is_first:
+            new_arg.children.insert(0, comma)  # will end up before the name
+
+        arglist.children.insert(new_idx, new_arg)
+
+
+def _get_func_calls(tree, func_name):
+    calls = []
+
+    def _get_calls(tree):
+        if hasattr(tree, "type") and tree.type == "atom_expr":
+            if (tree.children[0].type == "name"
+                    and tree.children[0].value == func_name):
+                calls.append(tree)
+        if hasattr(tree, "children"):
+            for c in tree.children:
+                _get_calls(c)  # recurse if have childrens
+
+    _get_calls(tree)
+
+    return calls
