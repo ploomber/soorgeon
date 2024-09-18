@@ -37,9 +37,9 @@ import tensorflow as tf
 # %%
 data_path = "../input/entity-annotated-corpus/ner_dataset.csv"
 
-data = pd.read_csv(data_path, encoding='unicode_escape')
+data = pd.read_csv(data_path, encoding="unicode_escape")
 # filling the first column that determines which sentence each word belongs to.
-data.fillna(method='ffill', inplace=True)
+data.fillna(method="ffill", inplace=True)
 data.head()
 
 # %%
@@ -55,17 +55,18 @@ ready_data.head()
 def join_a_sentence(sentence_number, data):
     """
     Args.:
-          sentence_number: sentence number we want to join and return. 
-          
+          sentence_number: sentence number we want to join and return.
+
     Returns:
           The joined sentence.
     """
 
     sentence_number = str(sentence_number)
-    the_sentence_words_list = list(data[
-        data['Sentence #'] == 'Sentence: {}'.format(sentence_number)]['Word'])
+    the_sentence_words_list = list(
+        data[data["Sentence #"] == "Sentence: {}".format(sentence_number)]["Word"]
+    )
 
-    return ' '.join(the_sentence_words_list)
+    return " ".join(the_sentence_words_list)
 
 
 # %%
@@ -80,7 +81,7 @@ data.shape
 
 # %%
 # Number of unique sentences
-len(np.unique(data['Sentence #']))
+len(np.unique(data["Sentence #"]))
 
 # %%
 print("Number of unique words in the dataset: {}".format(data.Word.nunique()))
@@ -93,14 +94,14 @@ tags
 
 # %%
 def num_words_tags(tags, data):
-    """This functions takes the tags we want to count and the datafram 
+    """This functions takes the tags we want to count and the datafram
     and return a dict where the key is the tag and the value is the frequency
     of that tag"""
 
     tags_count = {}
 
     for tag in tags:
-        len_tag = len(data[data['Tag'] == tag])
+        len_tag = len(data[data["Tag"] == tag])
         tags_count[tag] = len_tag
 
     return tags_count
@@ -112,9 +113,9 @@ tags_count
 
 # %%
 plt.figure(figsize=(10, 6))
-plt.hist(data.Tag, log=True, label='Tags', color='olive', bins=50)
-plt.xlabel('Tags', fontsize=16)
-plt.ylabel('Count', fontsize=16)
+plt.hist(data.Tag, log=True, label="Tags", color="olive", bins=50)
+plt.xlabel("Tags", fontsize=16)
+plt.ylabel("Count", fontsize=16)
 plt.title("Tags Frequency", fontsize=20)
 plt.grid(alpha=0.3)
 plt.legend()
@@ -159,8 +160,8 @@ plt.show()
 ready_data.head()
 
 # %%
-X = list(ready_data['Sentence'])
-Y = list(ready_data['Tag'])
+X = list(ready_data["Sentence"])
+Y = list(ready_data["Tag"])
 
 # %%
 from ast import literal_eval
@@ -222,7 +223,7 @@ for key, value in word2id.items():
 
 # %%
 # pad the sequences so that all sequences are of the same size
-X_preprocessed = pad_sequences(sequences, maxlen=maxlen, padding='post')
+X_preprocessed = pad_sequences(sequences, maxlen=maxlen, padding="post")
 
 # %%
 # first example after tokenization and padding.
@@ -286,7 +287,7 @@ def preprocess_tags(tags2id, Y_ready):
         num_O_to_add = maxlen - len_new_tag_list
 
         # add 'O's to padd the tag lists
-        padded_tags = Y_place_holder + ([tags2id['O']] * num_O_to_add)
+        padded_tags = Y_place_holder + ([tags2id["O"]] * num_O_to_add)
         Y_preprocessed.append(padded_tags)
 
     return Y_preprocessed
@@ -345,29 +346,34 @@ X_preprocessed = X_preprocessed[indices]
 Y_preprocessed = Y_preprocessed[indices]
 
 # %%
-X_train = X_preprocessed[:int(0.7 * len(X_preprocessed))]
+X_train = X_preprocessed[: int(0.7 * len(X_preprocessed))]
 print("Number of training examples: {}".format(len(X_train)))
 
-X_val = X_preprocessed[int(0.7 *
-                           len(X_preprocessed)):int(0.7 *
-                                                    len(X_preprocessed)) +
-                       (int(0.15 * len(X_preprocessed)) + 1)]
+X_val = X_preprocessed[
+    int(0.7 * len(X_preprocessed)) : int(0.7 * len(X_preprocessed))
+    + (int(0.15 * len(X_preprocessed)) + 1)
+]
 print("Number of validation examples: {}".format(len(X_val)))
 
-X_test = X_preprocessed[int(0.7 * len(X_preprocessed)) +
-                        (int(0.15 * len(X_preprocessed)) + 1):]
+X_test = X_preprocessed[
+    int(0.7 * len(X_preprocessed)) + (int(0.15 * len(X_preprocessed)) + 1) :
+]
 print("Number of testing examples: {}".format(len(X_test)))
 
-Y_train = Y_preprocessed[:int(0.7 * len(X_preprocessed))]
-Y_val = Y_preprocessed[int(0.7 *
-                           len(X_preprocessed)):int(0.7 *
-                                                    len(X_preprocessed)) +
-                       (int(0.15 * len(X_preprocessed)) + 1)]
-Y_test = Y_preprocessed[int(0.7 * len(X_preprocessed)) +
-                        (int(0.15 * len(X_preprocessed)) + 1):]
+Y_train = Y_preprocessed[: int(0.7 * len(X_preprocessed))]
+Y_val = Y_preprocessed[
+    int(0.7 * len(X_preprocessed)) : int(0.7 * len(X_preprocessed))
+    + (int(0.15 * len(X_preprocessed)) + 1)
+]
+Y_test = Y_preprocessed[
+    int(0.7 * len(X_preprocessed)) + (int(0.15 * len(X_preprocessed)) + 1) :
+]
 
-print("Total number of examples after shuffling and splitting: {}".format(
-    len(X_train) + len(X_val) + len(X_test)))
+print(
+    "Total number of examples after shuffling and splitting: {}".format(
+        len(X_train) + len(X_val) + len(X_test)
+    )
+)
 
 # %% [markdown]
 # ## 5- Model Training and Evaluation
@@ -404,27 +410,28 @@ maxlen = 110
 max_words = 36000
 num_tags = len(tags)
 
-model = tf.keras.models.Sequential([
-    tf.keras.layers.Embedding(max_words, embedding_dim, input_length=maxlen),
-    tf.keras.layers.Bidirectional(
-        tf.keras.layers.LSTM(units=100,
-                             activation='tanh',
-                             return_sequences=True)),
-    tf.keras.layers.Bidirectional(
-        tf.keras.layers.LSTM(units=100,
-                             activation='tanh',
-                             return_sequences=True)),
-    tf.keras.layers.TimeDistributed(
-        tf.keras.layers.Dense(num_tags, activation='softmax'))
-])
+model = tf.keras.models.Sequential(
+    [
+        tf.keras.layers.Embedding(max_words, embedding_dim, input_length=maxlen),
+        tf.keras.layers.Bidirectional(
+            tf.keras.layers.LSTM(units=100, activation="tanh", return_sequences=True)
+        ),
+        tf.keras.layers.Bidirectional(
+            tf.keras.layers.LSTM(units=100, activation="tanh", return_sequences=True)
+        ),
+        tf.keras.layers.TimeDistributed(
+            tf.keras.layers.Dense(num_tags, activation="softmax")
+        ),
+    ]
+)
 
 # %%
 model.summary()
 
 # %%
-model.compile(loss='sparse_categorical_crossentropy',
-              optimizer='adam',
-              metrics=['accuracy'])
+model.compile(
+    loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
+)
 
 # %%
 history = model.fit(train_dataset, validation_data=val_dataset, epochs=15)
@@ -433,31 +440,31 @@ history = model.fit(train_dataset, validation_data=val_dataset, epochs=15)
 model.evaluate(test_dataset)
 
 # %%
-acc = history.history['accuracy']
-val_acc = history.history['val_accuracy']
+acc = history.history["accuracy"]
+val_acc = history.history["val_accuracy"]
 
-loss = history.history['loss']
-val_loss = history.history['val_loss']
+loss = history.history["loss"]
+val_loss = history.history["val_loss"]
 
 epochs = range(1, len(acc) + 1)
 
 fig, ax = plt.subplots(1, 2, constrained_layout=True, figsize=(6, 4), dpi=80)
 
-ax[0].plot(epochs, acc, label="Training Accuracy", color='darkblue')
-ax[0].plot(epochs, val_acc, label="Validation Accuracy", color='darkgreen')
+ax[0].plot(epochs, acc, label="Training Accuracy", color="darkblue")
+ax[0].plot(epochs, val_acc, label="Validation Accuracy", color="darkgreen")
 ax[0].grid(alpha=0.3)
-ax[0].title.set_text('Training Vs Validation Accuracy')
-ax[0].fill_between(epochs, acc, val_acc, color='crimson', alpha=0.3)
-plt.setp(ax[0], xlabel='Epochs')
-plt.setp(ax[0], ylabel='Accuracy')
+ax[0].title.set_text("Training Vs Validation Accuracy")
+ax[0].fill_between(epochs, acc, val_acc, color="crimson", alpha=0.3)
+plt.setp(ax[0], xlabel="Epochs")
+plt.setp(ax[0], ylabel="Accuracy")
 
-ax[1].plot(epochs, loss, label="Training Loss", color='darkblue')
-ax[1].plot(epochs, val_loss, label="Validation Loss", color='darkgreen')
+ax[1].plot(epochs, loss, label="Training Loss", color="darkblue")
+ax[1].plot(epochs, val_loss, label="Validation Loss", color="darkgreen")
 ax[1].grid(alpha=0.3)
-ax[1].title.set_text('Training Vs Validation Loss')
-ax[1].fill_between(epochs, loss, val_loss, color='crimson', alpha=0.3)
-plt.setp(ax[1], xlabel='Epochs')
-plt.setp(ax[1], ylabel='Loss')
+ax[1].title.set_text("Training Vs Validation Loss")
+ax[1].fill_between(epochs, loss, val_loss, color="crimson", alpha=0.3)
+plt.setp(ax[1], xlabel="Epochs")
+plt.setp(ax[1], ylabel="Loss")
 
 plt.show()
 
@@ -465,7 +472,7 @@ plt.show()
 # %%
 def make_prediction(model, preprocessed_sentence, id2word, id2tag):
 
-    #if preprocessed_sentence.shape() != (1, 110):
+    # if preprocessed_sentence.shape() != (1, 110):
     preprocessed_sentence = preprocessed_sentence.reshape((1, 110))
 
     # return preprocessed sentence to its orginal form
@@ -473,7 +480,7 @@ def make_prediction(model, preprocessed_sentence, id2word, id2tag):
     word_list = []
     for word in list(sentence):
         word_list.append(id2word[word])
-    orginal_sententce = ' '.join(word_list)
+    orginal_sententce = " ".join(word_list)
 
     len_orginal_sententce = len(word_list)
 
@@ -493,10 +500,8 @@ def make_prediction(model, preprocessed_sentence, id2word, id2tag):
 
 # %%
 orginal_sententce, pred_tag_list = make_prediction(
-    model=model,
-    preprocessed_sentence=X_test[520],
-    id2word=id2word,
-    id2tag=id2tag)
+    model=model, preprocessed_sentence=X_test[520], id2word=id2word, id2tag=id2tag
+)
 
 # %%
 print(orginal_sententce)

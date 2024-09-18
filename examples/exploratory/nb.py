@@ -22,7 +22,7 @@ import seaborn as sns
 from sklearn.datasets import load_iris
 
 # %%
-df = load_iris(as_frame=True)['data']
+df = load_iris(as_frame=True)["data"]
 
 # %% [markdown]
 # ## Clean
@@ -34,7 +34,7 @@ df
 df.shape
 
 # %%
-df = df[df['petal length (cm)'] > 2]
+df = df[df["petal length (cm)"] > 2]
 
 # %%
 df.shape
@@ -43,4 +43,4 @@ df.shape
 # ## Plot
 
 # %%
-sns.histplot(df['petal length (cm)'])
+sns.histplot(df["petal length (cm)"])

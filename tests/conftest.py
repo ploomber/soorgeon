@@ -14,16 +14,16 @@ def path_to_tests():
 
 
 def path_to_assets():
-    return path_to_tests() / 'assets'
+    return path_to_tests() / "assets"
 
 
 def read_nb(name):
-    path = path_to_assets() / f'nb-{name}.py'
+    path = path_to_assets() / f"nb-{name}.py"
     return Path(path).read_text()
 
 
 def read_snippets(name):
-    ne = NotebookExporter(jupytext.reads(read_nb(name), fmt='py:percent'))
+    ne = NotebookExporter(jupytext.reads(read_nb(name), fmt="py:percent"))
     return ne._snippets
 
 

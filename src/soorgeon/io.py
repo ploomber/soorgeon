@@ -1,6 +1,7 @@
 """
 Module to determine inputs and outputs from code snippets.
 """
+
 from functools import reduce
 
 import parso
@@ -35,7 +36,7 @@ class ImportsParser:
         names = []
 
         while leaf:
-            if leaf.type == 'name':
+            if leaf.type == "name":
                 names.append(leaf.value)
 
             leaf = leaf.get_next_leaf()
@@ -52,8 +53,9 @@ class ImportsParser:
 
         # remove duplicated elements but keep order, then join
         if imports:
-            imports_to_use = ('\n'.join(list(dict.fromkeys(imports_to_use))) +
-                              '\n\n\n').strip() or None
+            imports_to_use = (
+                "\n".join(list(dict.fromkeys(imports_to_use))) + "\n\n\n"
+            ).strip() or None
         else:
             imports_to_use = None
 
@@ -71,16 +73,16 @@ def get_local_scope(leaf):
     parent = leaf.parent
 
     while parent:
-        if parent.type == 'for_stmt':
+        if parent.type == "for_stmt":
             # call recursively for nested for loops to work
-            return (find_for_loop_def_and_io(parent)[0]
-                    | get_local_scope(parent.parent))
+            return find_for_loop_def_and_io(parent)[0] | get_local_scope(parent.parent)
 
         # FIXME: this wont work with nested functions
-        elif parent.type == 'funcdef':
+        elif parent.type == "funcdef":
             def_names = [
-                c.get_defined_names() for c in parent.children[2].children
-                if c.type == 'param'
+                c.get_defined_names()
+                for c in parent.children[2].children
+                if c.type == "param"
             ]
 
             flatten = [name.value for sub in def_names for name in sub]
@@ -100,9 +102,11 @@ def find_for_loop_def_and_io(for_stmt, local_scope=None):
     """
     # TODO: add a only_input flag for cases where we dont care about
     # parsin outputs
-    if for_stmt.type != 'for_stmt':
-        raise ValueError(f'Expected a node with type "for_stmt", '
-                         f'got: {for_stmt} with type {for_stmt.type}')
+    if for_stmt.type != "for_stmt":
+        raise ValueError(
+            f'Expected a node with type "for_stmt", '
+            f"got: {for_stmt} with type {for_stmt.type}"
+        )
 
     local_scope = local_scope or set()
 
@@ -115,7 +119,8 @@ def find_for_loop_def_and_io(for_stmt, local_scope=None):
     body_in, body_out = find_inputs_and_outputs_from_leaf(
         body_node.get_first_leaf(),
         local_scope=defined,
-        leaf_end=body_node.get_last_leaf())
+        leaf_end=body_node.get_last_leaf(),
+    )
 
     # Strictly speaking variables defined after the for keyword are also
     # outputs, since they're available after the loop ends (with the loop's
@@ -125,15 +130,16 @@ def find_for_loop_def_and_io(for_stmt, local_scope=None):
 
 def _find_type_value_idx_in_children(type_, value, node):
     for idx, child in enumerate(node.children):
-        if (child.type, getattr(child, 'value', None)) == (type_, value):
+        if (child.type, getattr(child, "value", None)) == (type_, value):
             return idx
 
     return None
 
 
 def _process_context(context):
-    if ('keyword', 'as') in ((n.type, getattr(n, 'value', None))
-                             for n in context.children):
+    if ("keyword", "as") in (
+        (n.type, getattr(n, "value", None)) for n in context.children
+    ):
         node_expression, _, node_definition = context.children
         defined = find_inputs(node_definition, parse_list_comprehension=False)
     else:
@@ -147,10 +153,11 @@ def _process_context(context):
 
 
 def find_f_string_inputs(fstring_start, local_scope=None):
-    if fstring_start.type != 'fstring_start':
+    if fstring_start.type != "fstring_start":
         raise ValueError(
             f'Expected a node with type "fstring_start", '
-            f'got: {fstring_start} with type {fstring_start.type}')
+            f"got: {fstring_start} with type {fstring_start.type}"
+        )
 
     f_string = fstring_start.parent
 
@@ -160,13 +167,15 @@ def find_f_string_inputs(fstring_start, local_scope=None):
 
 
 def find_context_manager_def_and_io(with_stmt, local_scope=None):
-    if with_stmt.type != 'with_stmt':
-        raise ValueError(f'Expected a node with type "with_stmt", '
-                         f'got: {with_stmt} with type {with_stmt.type}')
+    if with_stmt.type != "with_stmt":
+        raise ValueError(
+            f'Expected a node with type "with_stmt", '
+            f"got: {with_stmt} with type {with_stmt.type}"
+        )
 
     local_scope = local_scope or set()
 
-    idx_colon = _find_type_value_idx_in_children('operator', ':', with_stmt)
+    idx_colon = _find_type_value_idx_in_children("operator", ":", with_stmt)
 
     # get children that are relevant (ignore with keyword, commads, and colon
     # operator)
@@ -184,7 +193,8 @@ def find_context_manager_def_and_io(with_stmt, local_scope=None):
     body_in, body_out = find_inputs_and_outputs_from_leaf(
         body_node.get_first_leaf(),
         local_scope=defined,
-        leaf_end=body_node.get_last_leaf())
+        leaf_end=body_node.get_last_leaf(),
+    )
 
     return defined, (exp | body_in) - local_scope, body_out
 
@@ -204,9 +214,11 @@ def find_function_scope_and_io(funcdef, local_scope=None):
     set
         Variables declared in the body
     """
-    if funcdef.type != 'funcdef':
-        raise ValueError(f'Expected a node with type "funcdef", '
-                         f'got: {funcdef} with type {funcdef.type}')
+    if funcdef.type != "funcdef":
+        raise ValueError(
+            f'Expected a node with type "funcdef", '
+            f"got: {funcdef} with type {funcdef.type}"
+        )
 
     local_scope = local_scope or set()
 
@@ -223,26 +235,28 @@ def find_function_scope_and_io(funcdef, local_scope=None):
 
     # FIXME: test what happens if they user has a list comprehension as
     # argument. e.g. fn(x=[1,2,3])
-    parameters = find_inputs(node_signature,
-                             parse_list_comprehension=False,
-                             allow_kwargs=True)
+    parameters = find_inputs(
+        node_signature, parse_list_comprehension=False, allow_kwargs=True
+    )
 
     body_in, body_out = find_inputs_and_outputs_from_leaf(
         body_node.get_first_leaf(),
         local_scope=parameters,
-        leaf_end=body_node.get_last_leaf())
+        leaf_end=body_node.get_last_leaf(),
+    )
 
     if annotation_return:
-        body_in = body_in | find_inputs(annotation_return,
-                                        parse_list_comprehension=False)
+        body_in = body_in | find_inputs(
+            annotation_return, parse_list_comprehension=False
+        )
 
     return parameters, body_in - local_scope, body_out
 
 
 # TODO: add unit tests
 def find_lambda_scope_and_inputs(lambda_, local_scope=None):
-    if lambda_.type != 'lambdef':
-        raise ValueError(f'Expected a lambdef, got {lambda_}')
+    if lambda_.type != "lambdef":
+        raise ValueError(f"Expected a lambdef, got {lambda_}")
 
     local_scope = local_scope or set()
 
@@ -250,9 +264,9 @@ def find_lambda_scope_and_inputs(lambda_, local_scope=None):
 
     # FIXME: test what happens if they user has a list comprehension as
     # argument. e.g. fn(x=[1,2,3])
-    parameters = find_inputs(node_signature,
-                             parse_list_comprehension=False,
-                             allow_kwargs=True)
+    parameters = find_inputs(
+        node_signature, parse_list_comprehension=False, allow_kwargs=True
+    )
 
     body_in = find_inputs(body_node)
 
@@ -260,14 +274,15 @@ def find_lambda_scope_and_inputs(lambda_, local_scope=None):
 
 
 def _flatten_sync_comp_for(node):
-    if node.type != 'sync_comp_for':
-        raise ValueError('Expected node type to be '
-                         f'"syncompfor" but got: {node.type}')
+    if node.type != "sync_comp_for":
+        raise ValueError(
+            "Expected node type to be " f'"syncompfor" but got: {node.type}'
+        )
 
     total = [node]
 
     for child in node.children:
-        if child.type == 'sync_comp_for':
+        if child.type == "sync_comp_for":
             nodes = _flatten_sync_comp_for(child)
             total += nodes
 
@@ -280,8 +295,7 @@ def _find_sync_comp_for_inputs_and_scope(synccompfor):
     parses a single node, for parsing nested ones use find_comprehension_inputs
     """
     # these are the variables that the list comprehension declares
-    declared = find_inputs(synccompfor.children[1],
-                           parse_list_comprehension=False)
+    declared = find_inputs(synccompfor.children[1], parse_list_comprehension=False)
 
     # parse the variables in the right expression
     # e,g, given: [x for x in expression(10)]
@@ -289,20 +303,17 @@ def _find_sync_comp_for_inputs_and_scope(synccompfor):
     # the expression part should be the element at index 3, note that this
     # is not the same as getting the last one because if the list comprehension
     # has an 'if' statement, that will be the last element
-    inputs_right = find_inputs(synccompfor.children[3],
-                               parse_list_comprehension=False)
+    inputs_right = find_inputs(synccompfor.children[3], parse_list_comprehension=False)
 
     return inputs_right, declared
 
 
 def find_comprehension_inputs(node):
-    """Find inpust for list/set/dict comprehension or generator
-    """
-    types = {'testlist_comp', 'dictorsetmaker'}
+    """Find inpust for list/set/dict comprehension or generator"""
+    types = {"testlist_comp", "dictorsetmaker"}
 
     if node.type not in types:
-        raise ValueError('Expected node type be one of '
-                         f'{types!r}, got: {node.type}')
+        raise ValueError("Expected node type be one of " f"{types!r}, got: {node.type}")
 
     # list/set comprehension or generator
     if len(node.children) == 2:
@@ -323,8 +334,9 @@ def find_comprehension_inputs(node):
     else:
         synccompfor = node.children[-1]
 
-        inputs_left = find_inputs_for_each(node.children[:-1],
-                                           parse_list_comprehension=False)
+        inputs_left = find_inputs_for_each(
+            node.children[:-1], parse_list_comprehension=False
+        )
 
     inputs, declared = set(), set()
 
@@ -336,28 +348,29 @@ def find_comprehension_inputs(node):
     return (inputs_left | inputs) - declared
 
 
-def find_inputs_for_each(nodes,
-                         parse_list_comprehension=True,
-                         only_getitem_and_attribute_access=False):
-    """Like find_inputs, but takes a list of nodes
-    """
+def find_inputs_for_each(
+    nodes, parse_list_comprehension=True, only_getitem_and_attribute_access=False
+):
+    """Like find_inputs, but takes a list of nodes"""
     inputs = set()
 
     for node in nodes:
         inputs_new = find_inputs(
             node,
             parse_list_comprehension=parse_list_comprehension,
-            only_getitem_and_attribute_access=only_getitem_and_attribute_access
+            only_getitem_and_attribute_access=only_getitem_and_attribute_access,
         )
         inputs = inputs | inputs_new
 
     return inputs
 
 
-def find_inputs(node,
-                parse_list_comprehension=True,
-                only_getitem_and_attribute_access=False,
-                allow_kwargs=False):
+def find_inputs(
+    node,
+    parse_list_comprehension=True,
+    only_getitem_and_attribute_access=False,
+    allow_kwargs=False,
+):
     """
     Extract inputs from an expression
     e.g. function(x, y) returns {'function', 'x', 'y'}
@@ -389,15 +402,13 @@ def find_inputs(node,
         else:
             # ignore f-string format specs {number:.2f}
             # and f-string conversions {object!r}
-            if leaf.parent.type in {
-                    'fstring_format_spec', 'fstring_conversion'
-            }:
+            if leaf.parent.type in {"fstring_format_spec", "fstring_conversion"}:
                 leaf = leaf.get_next_leaf()
                 continue
 
             # is this a kwarg?
             try:
-                key_arg = leaf.get_next_leaf().value == '='
+                key_arg = leaf.get_next_leaf().value == "="
             except Exception:
                 key_arg = False
 
@@ -406,26 +417,31 @@ def find_inputs(node,
 
             # is this an attribute?
             try:
-                is_attr = leaf.get_previous_leaf().value == '.'
+                is_attr = leaf.get_previous_leaf().value == "."
             except Exception:
                 is_attr = False
 
-            if (leaf.type == 'name' and not key_arg and not is_attr
-                    and leaf.value not in _BUILTIN):
+            if (
+                leaf.type == "name"
+                and not key_arg
+                and not is_attr
+                and leaf.value not in _BUILTIN
+            ):
                 # not allowing reads, check that this is not geitem
                 # or that is accessing an attribute in the next leaf
                 try:
-                    is_getitem = leaf.get_next_leaf().value == '['
+                    is_getitem = leaf.get_next_leaf().value == "["
                 except Exception:
                     is_getitem = False
 
                 try:
-                    is_accessing_attr = leaf.get_next_leaf().value == '.'
+                    is_accessing_attr = leaf.get_next_leaf().value == "."
                 except Exception:
                     is_accessing_attr = False
 
-                if (only_getitem_and_attribute_access
-                        and (is_getitem or is_accessing_attr)):
+                if only_getitem_and_attribute_access and (
+                    is_getitem or is_accessing_attr
+                ):
                     names.append(leaf.value)
                 elif not only_getitem_and_attribute_access:
                     names.append(leaf.value)
@@ -458,13 +474,14 @@ def find_inputs_and_outputs_from_tree(tree, local_scope=None):
     # NOTE: we use this in find_inputs_and_outputs and ImportParser, maybe
     # move the functionality to a class so we only compute it once
     defined_names = set(definitions.from_imports(tree)) | set(
-        definitions.from_def_and_class(tree))
+        definitions.from_def_and_class(tree)
+    )
 
     local_scope = local_scope or set()
 
-    return find_inputs_and_outputs_from_leaf(leaf,
-                                             local_scope=local_scope
-                                             | defined_names)
+    return find_inputs_and_outputs_from_leaf(
+        leaf, local_scope=local_scope | defined_names
+    )
 
 
 # FIXME: try nested functions, and also functions inside for loops and loops
@@ -504,7 +521,8 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             _, candidates_in = find_lambda_scope_and_inputs(
-                leaf.parent, local_scope=local_scope)
+                leaf.parent, local_scope=local_scope
+            )
             inputs.extend(clean_up_candidates(candidates_in, local_variables))
             # lambda's last leaf is the next one after the last in the
             # lambda node
@@ -513,7 +531,8 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_for_loop_def_and_io(
-                leaf.parent, local_scope=local_scope)
+                leaf.parent, local_scope=local_scope
+            )
             inputs.extend(clean_up_candidates(candidates_in, local_variables))
             outputs = outputs | candidates_out
             # jump to the end of the foor loop
@@ -521,9 +540,9 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
         elif detect.is_context_manager(leaf):
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
-            (_, candidates_in,
-             candidates_out) = find_context_manager_def_and_io(
-                 leaf.parent, local_scope=local_scope)
+            (_, candidates_in, candidates_out) = find_context_manager_def_and_io(
+                leaf.parent, local_scope=local_scope
+            )
             inputs.extend(clean_up_candidates(candidates_in, local_variables))
             outputs = outputs | candidates_out
             # jump to the end of the foor loop
@@ -535,7 +554,8 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             # FIXME: i think is hould also pass the current foudn inputs
             # to local scope - write a test to break this
             (_, candidates_in, candidates_out) = find_function_scope_and_io(
-                leaf.parent, local_scope=local_scope)
+                leaf.parent, local_scope=local_scope
+            )
             inputs.extend(clean_up_candidates(candidates_in, local_variables))
             outputs = outputs | candidates_out
             # jump to the end of the function definition loop
@@ -550,7 +570,7 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             leaf = leaf.parent.get_last_leaf()
 
         # the = operator is an indicator of [outputs] = [inputs]
-        elif leaf.type == 'operator' and leaf.value == '=':
+        elif leaf.type == "operator" and leaf.value == "=":
             next_s = leaf.get_next_sibling()
             previous = leaf.get_previous_leaf()
 
@@ -565,8 +585,11 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
 
                 # only mark a variable as input if it hasn't been defined
                 # locally
-                if (variable not in outputs and variable not in local_scope
-                        and variable not in local_variables):
+                if (
+                    variable not in outputs
+                    and variable not in local_scope
+                    and variable not in local_variables
+                ):
                     inputs.append(variable)
 
             # Process outputs
@@ -580,7 +603,7 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
             # a['x'] = 1
             # a.b = 1
 
-            if previous.parent.type != 'argument':
+            if previous.parent.type != "argument":
 
                 prev_sibling = leaf.get_previous_sibling()
 
@@ -596,15 +619,16 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
                 # e.g., a, b = 1, 2 (testlist_star_expr)
                 # [a, b] = 1, 2 (atom)
                 # (a, b) = 1, 2 (atom)
-                if prev_sibling.type in {'testlist_star_expr', 'atom'}:
+                if prev_sibling.type in {"testlist_star_expr", "atom"}:
                     target = target | set(
-                        name.value
-                        for name in prev_sibling.parent.get_defined_names())
+                        name.value for name in prev_sibling.parent.get_defined_names()
+                    )
                 # nope, only one value
-                elif prev_sibling.type == 'atom_expr':
-                    target = target | (find_inputs(
-                        prev_sibling, parse_list_comprehension=False) -
-                                       modified)
+                elif prev_sibling.type == "atom_expr":
+                    target = target | (
+                        find_inputs(prev_sibling, parse_list_comprehension=False)
+                        - modified
+                    )
                 elif previous.value not in modified:
                     target.add(previous.value)
 
@@ -623,7 +647,8 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
                     inputs_candidates = find_inputs(
                         prev_sibling,
                         parse_list_comprehension=False,
-                        only_getitem_and_attribute_access=True)
+                        only_getitem_and_attribute_access=True,
+                    )
 
                     # add to inputs if they haven't been locally defined or
                     # modified
@@ -644,17 +669,24 @@ def find_inputs_and_outputs_from_leaf(leaf, local_scope=None, leaf_end=None):
         # go to the first conditional, and the next leaf is the function call
         # so then we go into this conditional - we're skipping the left part
         # but not the right part of = yet
-        elif (leaf.type == 'name' and (detect.is_inside_function_call(leaf)
-                                       or detect.is_accessing_variable(leaf)
-                                       or detect.is_inside_funcdef(leaf))
-              # skip if this is to the left of an '=', because we'll check it
-              # when we get to that token since it'll go to the first
-              # conditional
-              and not detect.is_left_side_of_assignment(leaf) and
-              not detect.is_inside_list_comprehension(leaf) and
-              leaf.value not in outputs and leaf.value not in local_scope and
-              leaf.value not in _BUILTIN and leaf.value not in local_scope and
-              leaf.value not in local_variables):
+        elif (
+            leaf.type == "name"
+            and (
+                detect.is_inside_function_call(leaf)
+                or detect.is_accessing_variable(leaf)
+                or detect.is_inside_funcdef(leaf)
+            )
+            # skip if this is to the left of an '=', because we'll check it
+            # when we get to that token since it'll go to the first
+            # conditional
+            and not detect.is_left_side_of_assignment(leaf)
+            and not detect.is_inside_list_comprehension(leaf)
+            and leaf.value not in outputs
+            and leaf.value not in local_scope
+            and leaf.value not in _BUILTIN
+            and leaf.value not in local_scope
+            and leaf.value not in local_variables
+        ):
             inputs.extend(find_inputs(leaf))
 
         if leaf_end and leaf == leaf_end:
@@ -675,7 +707,7 @@ def _get_modified_objects(leaf, outputs, names_from_imports):
     # iterate over leaves and grab names since the assignment may be modifying
     # more than one object
     while current:
-        if current.type == 'name':
+        if current.type == "name":
             if current.value in existing:
                 names.append(current.value)
 
@@ -739,9 +771,11 @@ class ProviderMapping:
         provider = providers.get(variable)
 
         if not provider:
-            raise KeyError(f'Error parsing inputs for section {task_name!r} '
-                           'notebook: could not find an earlier section '
-                           f'declaring variable {variable!r}')
+            raise KeyError(
+                f"Error parsing inputs for section {task_name!r} "
+                "notebook: could not find an earlier section "
+                f"declaring variable {variable!r}"
+            )
 
         return provider
 
@@ -793,9 +827,7 @@ def find_upstream(snippets):
 
 def _find_providers(io):
     # variable -> snippet that defines variable mapping
-    providers = [
-        _map_outputs(snippet_name, v[1]) for snippet_name, v in io.items()
-    ]
+    providers = [_map_outputs(snippet_name, v[1]) for snippet_name, v in io.items()]
 
     providers = dict([i for sub in providers for i in sub])
 
@@ -812,8 +844,7 @@ def find_io(snippets):
 
     # FIXME: find_upstream already calls this, we should only compute it once
     io = {
-        snippet_name: find_inputs_and_outputs(snippet,
-                                              local_scope=im.get(snippet_name))
+        snippet_name: find_inputs_and_outputs(snippet, local_scope=im.get(snippet_name))
         for snippet_name, snippet in snippets.items()
     }
 
@@ -857,7 +888,7 @@ def remove_imports(code_str):
     to_remove = []
 
     for leaf in _leaf_iterator(tree):
-        if leaf.parent.type in {'import_name', 'import_from'}:
+        if leaf.parent.type in {"import_name", "import_from"}:
             to_remove.append(leaf)
 
     for leaf in to_remove:

@@ -25,7 +25,8 @@ import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 # For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
 
 import os
-for dirname, _, filenames in os.walk('/kaggle/input'):
+
+for dirname, _, filenames in os.walk("/kaggle/input"):
     for filename in filenames:
         print(os.path.join(dirname, filename))
 
@@ -44,7 +45,15 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import scale, StandardScaler
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
-from sklearn.metrics import confusion_matrix, accuracy_score, mean_squared_error, r2_score, roc_auc_score, roc_curve, classification_report
+from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score,
+    mean_squared_error,
+    r2_score,
+    roc_auc_score,
+    roc_curve,
+    classification_report,
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
@@ -87,13 +96,19 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 models = [
-    LogisticRegression, KNeighborsClassifier, SVC, MLPClassifier,
-    DecisionTreeClassifier, RandomForestClassifier, GradientBoostingClassifier,
-    XGBClassifier, LGBMClassifier
-]  #,CatBoostClassifier
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', 10)
-pd.set_option('display.float_format', lambda x: '%.5f' % x)
+    LogisticRegression,
+    KNeighborsClassifier,
+    SVC,
+    MLPClassifier,
+    DecisionTreeClassifier,
+    RandomForestClassifier,
+    GradientBoostingClassifier,
+    XGBClassifier,
+    LGBMClassifier,
+]  # ,CatBoostClassifier
+pd.set_option("display.max_columns", None)
+pd.set_option("display.max_rows", 10)
+pd.set_option("display.float_format", lambda x: "%.5f" % x)
 
 # %% [markdown]
 # ## Adding Functions
@@ -102,55 +117,50 @@ pd.set_option('display.float_format', lambda x: '%.5f' % x)
 # %%
 def degisken_tiplerine_ayirma(data, cat_th, car_th):
     """
-   Veri:data parametresi ili fonksiyona girilen verinin değişkenlerin sınıflandırılması.
-   Parameters
-   ----------
-   data: pandas.DataFrame
-   İşlem yapılacak veri seti
+    Veri:data parametresi ili fonksiyona girilen verinin değişkenlerin sınıflandırılması.
+    Parameters
+    ----------
+    data: pandas.DataFrame
+    İşlem yapılacak veri seti
 
-   cat_th:int
-   categoric değişken threshold değeri
+    cat_th:int
+    categoric değişken threshold değeri
 
-   car_th:int
-   Cardinal değişkenler için threshold değeri
+    car_th:int
+    Cardinal değişkenler için threshold değeri
 
-   Returns
-   -------
-    cat_deg:list
-    categorik değişken listesi
-    num_deg:list
-    numeric değişken listesi
-    car_deg:list
-    categoric ama cardinal değişken listesi
+    Returns
+    -------
+     cat_deg:list
+     categorik değişken listesi
+     num_deg:list
+     numeric değişken listesi
+     car_deg:list
+     categoric ama cardinal değişken listesi
 
-   Examples
-   -------
-    df = dataset_yukle("breast_cancer")
-    cat,num,car=degisken_tiplerine_ayirma(df,10,20)
-   Notes
-   -------
-    cat_deg + num_deg + car_deg = toplam değişken sayısı
+    Examples
+    -------
+     df = dataset_yukle("breast_cancer")
+     cat,num,car=degisken_tiplerine_ayirma(df,10,20)
+    Notes
+    -------
+     cat_deg + num_deg + car_deg = toplam değişken sayısı
 
-   """
+    """
 
     num_but_cat = [
-        i for i in data.columns
-        if data[i].dtypes != "O" and data[i].nunique() < cat_th
+        i for i in data.columns if data[i].dtypes != "O" and data[i].nunique() < cat_th
     ]
 
     car_deg = [
-        i for i in data.columns
-        if data[i].dtypes == "O" and data[i].nunique() > car_th
+        i for i in data.columns if data[i].dtypes == "O" and data[i].nunique() > car_th
     ]
 
     num_deg = [
-        i for i in data.columns
-        if data[i].dtypes != "O" and i not in num_but_cat
+        i for i in data.columns if data[i].dtypes != "O" and i not in num_but_cat
     ]
 
-    cat_deg = [
-        i for i in data.columns if data[i].dtypes == "O" and i not in car_deg
-    ]
+    cat_deg = [i for i in data.columns if data[i].dtypes == "O" and i not in car_deg]
 
     cat_deg = cat_deg + num_but_cat
 
@@ -201,16 +211,19 @@ def categoric_ozet(data, degisken, plot=False, null_control=False):
     """
 
     print(
-        pd.DataFrame({
+        pd.DataFrame(
+            {
+                degisken: data[degisken].value_counts(),
+                "Ratio": 100 * data[degisken].value_counts() / len(data),
+            }
+        )
+    )
+    tablo = pd.DataFrame(
+        {
             degisken: data[degisken].value_counts(),
-            "Ratio": 100 * data[degisken].value_counts() / len(data)
-        }))
-    tablo = pd.DataFrame({
-        degisken:
-        data[degisken].value_counts(),
-        "Ratio":
-        100 * data[degisken].value_counts() / len(data)
-    })
+            "Ratio": 100 * data[degisken].value_counts() / len(data),
+        }
+    )
     print("##########################################")
     if plot:
         sns.countplot(x=data[degisken], data=data)
@@ -258,8 +271,8 @@ def threshold_degisimi(data, degisken):
     alt_limit, ust_limit = outlier_threshold(data, degisken)
     data.loc[(data[degisken] < alt_limit), degisken] = alt_limit
     data.loc[(data[degisken] > ust_limit), degisken] = ust_limit
-    #data[data[degisken]<alt_limit][degisken]=alt_limit
-    #data[data[degisken]>ust_limit][degisken]=ust_limit
+    # data[data[degisken]<alt_limit][degisken]=alt_limit
+    # data[data[degisken]>ust_limit][degisken]=ust_limit
     return data
 
 
@@ -292,9 +305,7 @@ def numeric_ozet(data, degisken, plot=False, null_control=False):
     for i in cat_deg:
         tablo=categoric_ozet(df,i,True,True)
     """
-    quantiles = [
-        0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99
-    ]
+    quantiles = [0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99]
     print(data[degisken].describe(quantiles).T)
 
     if plot:
@@ -309,16 +320,15 @@ def numeric_ozet(data, degisken, plot=False, null_control=False):
 
 
 def missing_values_table(dataframe, na_name=False):
-    na_columns = [
-        col for col in dataframe.columns if dataframe[col].isnull().sum() > 0
-    ]
+    na_columns = [col for col in dataframe.columns if dataframe[col].isnull().sum() > 0]
 
     n_miss = dataframe[na_columns].isnull().sum().sort_values(ascending=False)
-    ratio = (dataframe[na_columns].isnull().sum() / dataframe.shape[0] *
-             100).sort_values(ascending=False)
-    missing_df = pd.concat([n_miss, np.round(ratio, 2)],
-                           axis=1,
-                           keys=['n_miss', 'ratio'])
+    ratio = (
+        dataframe[na_columns].isnull().sum() / dataframe.shape[0] * 100
+    ).sort_values(ascending=False)
+    missing_df = pd.concat(
+        [n_miss, np.round(ratio, 2)], axis=1, keys=["n_miss", "ratio"]
+    )
     print(missing_df, end="\n")
 
     if na_name:
@@ -326,9 +336,9 @@ def missing_values_table(dataframe, na_name=False):
 
 
 def one_hot_encoder(dataframe, categorical_cols, drop_first=True):
-    dataframe = pd.get_dummies(dataframe,
-                               columns=categorical_cols,
-                               drop_first=drop_first)
+    dataframe = pd.get_dummies(
+        dataframe, columns=categorical_cols, drop_first=drop_first
+    )
     return dataframe
 
 
@@ -337,10 +347,9 @@ def model_karsilastirma(df, model, target):
 
     y = df[target]
 
-    X_train, X_test, y_train, y_test = train_test_split(X,
-                                                        y,
-                                                        test_size=0.15,
-                                                        random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.15, random_state=42
+    )
     model_fit = model().fit(X_train, y_train)
     y_pred = model_fit.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
@@ -352,19 +361,23 @@ def target_analyser(dataframe, target, num_deg, cat_deg):
     for degisken in dataframe.columns:
         if degisken in cat_deg:
             print(degisken, ":", len(dataframe[degisken].value_counts()))
-            print(pd.DataFrame({
-                "COUNT":
-                dataframe[degisken].value_counts(),
-                "RATIO":
-                dataframe[degisken].value_counts() / len(dataframe),
-                "TARGET_MEAN":
-                dataframe.groupby(degisken)[target].mean()
-            }),
-                  end="\n\n\n")
+            print(
+                pd.DataFrame(
+                    {
+                        "COUNT": dataframe[degisken].value_counts(),
+                        "RATIO": dataframe[degisken].value_counts() / len(dataframe),
+                        "TARGET_MEAN": dataframe.groupby(degisken)[target].mean(),
+                    }
+                ),
+                end="\n\n\n",
+            )
         if degisken in num_deg:
-            print(pd.DataFrame(
-                {"TARGET_MEAN": dataframe.groupby(target)[degisken].mean()}),
-                  end="\n\n\n")
+            print(
+                pd.DataFrame(
+                    {"TARGET_MEAN": dataframe.groupby(target)[degisken].mean()}
+                ),
+                end="\n\n\n",
+            )
 
 
 # %% [markdown]
@@ -372,7 +385,7 @@ def target_analyser(dataframe, target, num_deg, cat_deg):
 # ![This is an image](https://www.sbbs-soc.com/wp-content/uploads/2020/09/Heart-Disease.jpg)
 
 # %%
-#loading dataset
+# loading dataset
 df = pd.read_csv("../input/heart-disease-uci/heart.csv")
 df.head()
 
@@ -394,12 +407,12 @@ df.head()
 # * target: Heart disease (0 = no, 1 = yes)
 
 # %%
-#Analysis of Dataset
+# Analysis of Dataset
 dataset_ozet(df)
 cat_deg, num_deg, car_deg = degisken_tiplerine_ayirma(df, 10, 20)
 
 # %%
-#EDA of Dataset
+# EDA of Dataset
 for i in cat_deg:
     categoric_ozet(df, i, True, True)
 
@@ -407,62 +420,60 @@ for i in num_deg:
     numeric_ozet(df, i, True, True)
 
 # %%
-#All columns analaysis based on target column
+# All columns analaysis based on target column
 target_analyser(df, "target", num_deg, cat_deg)
 
 # %%
-#Filling missing values
+# Filling missing values
 null_cols = missing_values_table(df, True)
 for i in null_cols:
     df[i].fillna(df[i].transform("mean"), inplace=True)
-#There is no missing values
+# There is no missing values
 
 # %%
-#Outlier processing
+# Outlier processing
 for i in num_deg:
     df = threshold_degisimi(df, i)
 
 # %%
-#Data Extraction
+# Data Extraction
 
 df.age.describe()
-df.loc[(df["age"] < 40), 'NEW_AGE_CAT'] = 'Young'
-df.loc[(df["age"] >= 40) & (df["age"] < 50), 'NEW_AGE_CAT'] = 'Middle Age'
-df.loc[(df["age"] >= 50) & (df["age"] < 60), 'NEW_AGE_CAT'] = 'Pre-Old'
-df.loc[(df["age"] >= 60), 'NEW_AGE_CAT'] = 'Old'
-df.groupby('NEW_AGE_CAT')["target"].mean()
+df.loc[(df["age"] < 40), "NEW_AGE_CAT"] = "Young"
+df.loc[(df["age"] >= 40) & (df["age"] < 50), "NEW_AGE_CAT"] = "Middle Age"
+df.loc[(df["age"] >= 50) & (df["age"] < 60), "NEW_AGE_CAT"] = "Pre-Old"
+df.loc[(df["age"] >= 60), "NEW_AGE_CAT"] = "Old"
+df.groupby("NEW_AGE_CAT")["target"].mean()
 
 # %%
 df.trestbps.describe()
-df.loc[(df["trestbps"] < 90), 'NEW_RBP_CAT'] = 'Low'
-df.loc[(df["trestbps"] >= 90) & (df["trestbps"] < 120),
-       'NEW_RBP_CAT'] = 'Ideal'
-df.loc[(df["trestbps"] >= 120) & (df["trestbps"] < 140),
-       'NEW_RBP_CAT'] = 'Pre-HIGH'
-df.loc[(df["trestbps"] >= 140), 'NEW_RBP_CAT'] = 'Hypertension'
-df.groupby('NEW_RBP_CAT')["target"].mean()
+df.loc[(df["trestbps"] < 90), "NEW_RBP_CAT"] = "Low"
+df.loc[(df["trestbps"] >= 90) & (df["trestbps"] < 120), "NEW_RBP_CAT"] = "Ideal"
+df.loc[(df["trestbps"] >= 120) & (df["trestbps"] < 140), "NEW_RBP_CAT"] = "Pre-HIGH"
+df.loc[(df["trestbps"] >= 140), "NEW_RBP_CAT"] = "Hypertension"
+df.groupby("NEW_RBP_CAT")["target"].mean()
 
 # %%
 df.chol.describe()
-df.loc[(df["chol"] < 200), 'NEW_CHOL_CAT'] = 'Ideal'
-df.loc[(df["chol"] >= 200) & (df["chol"] < 240), 'NEW_CHOL_CAT'] = 'HIGH'
-df.loc[(df["chol"] >= 240), 'NEW_CHOL_CAT'] = 'Very Risky'
-df.groupby('NEW_CHOL_CAT')["target"].mean()
+df.loc[(df["chol"] < 200), "NEW_CHOL_CAT"] = "Ideal"
+df.loc[(df["chol"] >= 200) & (df["chol"] < 240), "NEW_CHOL_CAT"] = "HIGH"
+df.loc[(df["chol"] >= 240), "NEW_CHOL_CAT"] = "Very Risky"
+df.groupby("NEW_CHOL_CAT")["target"].mean()
 
 # %%
-#Encoding of categoric columns
+# Encoding of categoric columns
 cat_deg, num_deg, car_deg = degisken_tiplerine_ayirma(df, 10, 20)
 cat_deg = [i for i in cat_deg if i != "target"]
 df = one_hot_encoder(df, cat_deg)
 df.head()
 
 # %%
-#Scaling of numeric columns
+# Scaling of numeric columns
 scaler = StandardScaler()
 df[num_deg] = scaler.fit_transform(df[num_deg])
 
 # %%
-#Comparing of all models
+# Comparing of all models
 for mod in models:
     model_karsilastirma(df, mod, "target")
 
@@ -473,10 +484,9 @@ for mod in models:
 X = df.drop(columns="target")
 y = df["target"]
 
-X_train, X_test, y_train, y_test = train_test_split(X,
-                                                    y,
-                                                    test_size=0.15,
-                                                    random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.15, random_state=42
+)
 
 svm = SVC()
 svm_tuned = SVC(C=1, kernel="linear").fit(X_train, y_train)
@@ -492,10 +502,9 @@ print("SVM accuracy: ", acc)
 X = df.drop(columns="target")
 y = df["target"]
 
-X_train, X_test, y_train, y_test = train_test_split(X,
-                                                    y,
-                                                    test_size=0.15,
-                                                    random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.15, random_state=42
+)
 
 loj_model = LogisticRegression(solver="liblinear").fit(X_train, y_train)
 
@@ -510,13 +519,13 @@ print("Lojistic_model accuracy: ", acc)
 X = df.drop(columns="target")
 y = df["target"]
 
-X_train, X_test, y_train, y_test = train_test_split(X,
-                                                    y,
-                                                    test_size=0.15,
-                                                    random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.15, random_state=42
+)
 
-lgbm_tuned = LGBMClassifier(learning_rate=0.01, max_depth=5,
-                            n_estimators=250).fit(X_train, y_train)
+lgbm_tuned = LGBMClassifier(learning_rate=0.01, max_depth=5, n_estimators=250).fit(
+    X_train, y_train
+)
 
 y_pred = lgbm_tuned.predict(X_test)
 acc = accuracy_score(y_test, y_pred)

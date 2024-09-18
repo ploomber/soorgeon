@@ -4,15 +4,21 @@ since ploomber has many dependencies, at some point we'll either move
 this functionality into soorgeon or create a ploomber-core package
 and move things over there
 """
+
 import warnings
 from io import StringIO
 
 from pyflakes import api as pyflakes_api
 from pyflakes.reporter import Reporter
-from pyflakes.messages import (UndefinedName, UndefinedLocal,
-                               DuplicateArgument, ReturnOutsideFunction,
-                               YieldOutsideFunction, ContinueOutsideLoop,
-                               BreakOutsideLoop)
+from pyflakes.messages import (
+    UndefinedName,
+    UndefinedLocal,
+    DuplicateArgument,
+    ReturnOutsideFunction,
+    YieldOutsideFunction,
+    ContinueOutsideLoop,
+    BreakOutsideLoop,
+)
 
 from soorgeon.exceptions import InputWontRunError, InputSyntaxError
 
@@ -29,7 +35,7 @@ _ERRORS = (
 
 
 def _process_messages(mesages):
-    return '\n'.join(str(msg) for msg in mesages)
+    return "\n".join(str(msg) for msg in mesages)
 
 
 def process_errors_and_warnings(messages):
@@ -57,17 +63,15 @@ class MyReporter(Reporter):
     def flake(self, message):
         self._stdout_raw.append(message)
         self._stdout.write(str(message))
-        self._stdout.write('\n')
+        self._stdout.write("\n")
 
     def unexpectedError(self, *args, **kwargs):
-        """pyflakes calls this when ast.parse raises an unexpected error
-        """
+        """pyflakes calls this when ast.parse raises an unexpected error"""
         self._unexpected = True
         return super().unexpectedError(*args, **kwargs)
 
     def syntaxError(self, *args, **kwargs):
-        """pyflakes calls this when ast.parse raises a SyntaxError
-        """
+        """pyflakes calls this when ast.parse raises a SyntaxError"""
         self._syntax = True
         return super().syntaxError(*args, **kwargs)
 
@@ -76,10 +80,12 @@ class MyReporter(Reporter):
         self._stderr.seek(0)
 
     def _make_error_message(self, error):
-        return ('Errors detected in your source code:'
-                f'\n{error}\n\n'
-                '(ensure that your notebook executes from top-to-bottom '
-                'and try again)')
+        return (
+            "Errors detected in your source code:"
+            f"\n{error}\n\n"
+            "(ensure that your notebook executes from top-to-bottom "
+            "and try again)"
+        )
 
     def _check(self):
         self._seek_zero()
@@ -87,13 +93,15 @@ class MyReporter(Reporter):
         # syntax errors are stored in _stderr
         # https://github.com/PyCQA/pyflakes/blob/master/pyflakes/api.py
 
-        error_message = '\n'.join(self._stderr.readlines())
+        error_message = "\n".join(self._stderr.readlines())
 
         if self._syntax:
             raise InputSyntaxError(self._make_error_message(error_message))
         elif self._unexpected:
-            warnings.warn('An unexpected error happened '
-                          f'when analyzing code: {error_message.strip()!r}')
+            warnings.warn(
+                "An unexpected error happened "
+                f"when analyzing code: {error_message.strip()!r}"
+            )
         else:
             errors, warnings_ = process_errors_and_warnings(self._stdout_raw)
 
@@ -129,13 +137,12 @@ def check_notebook(nb):
         When certain pyflakes errors are detected (e.g., undefined name)
     """
     # concatenate all cell's source code in a single string
-    source_code = '\n'.join(c['source'] for c in nb.cells
-                            if c.cell_type == 'code')
+    source_code = "\n".join(c["source"] for c in nb.cells if c.cell_type == "code")
 
     # this objects are needed to capture pyflakes output
     reporter = MyReporter()
 
     # run pyflakes.api.check on the source code
-    pyflakes_api.check(source_code, filename='', reporter=reporter)
+    pyflakes_api.check(source_code, filename="", reporter=reporter)
 
     reporter._check()

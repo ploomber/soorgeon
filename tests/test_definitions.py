@@ -49,37 +49,35 @@ import numpy, pandas
 """
 
 
-@pytest.mark.parametrize('code, expected', [
+@pytest.mark.parametrize(
+    "code, expected",
     [
-        simple_imports, {
-            'np': 'import numpy as np',
-            'pd': '\nimport pandas as pd'
-        }
+        [simple_imports, {"np": "import numpy as np", "pd": "\nimport pandas as pd"}],
     ],
-])
+)
 def test_from_imports(code, expected):
     assert definitions.from_imports(parso.parse(code)) == expected
 
 
 @pytest.mark.parametrize(
-    'code, expected',
+    "code, expected",
     [
         [
             simple_imports,
             [
-                'numpy',
-                'pandas',
+                "numpy",
+                "pandas",
             ],
         ],
         [
             mixed_imports,
             [
-                'another',
-                'matplotlib',
-                'numpy',
-                'pandas',
-                'scikit-learn',
-            ]
+                "another",
+                "matplotlib",
+                "numpy",
+                "pandas",
+                "scikit-learn",
+            ],
         ],
         [
             relative_imports,
@@ -87,35 +85,35 @@ def test_from_imports(code, expected):
         ],
         [
             duplicated_imports,
-            ['scikit-learn'],
+            ["scikit-learn"],
         ],
         [
             comma_imports,
-            ['scikit-learn'],
+            ["scikit-learn"],
         ],
         [
             two_import_as,
             [
-                'matplotlib',
-                'numpy',
+                "matplotlib",
+                "numpy",
             ],
         ],
         [
             two_imports,
             [
-                'numpy',
-                'pandas',
+                "numpy",
+                "pandas",
             ],
         ],
     ],
     ids=[
-        'simple',
-        'mixed',
-        'relative',
-        'duplicated',
-        'comma',
-        'two-import-as',
-        'two-imports',
+        "simple",
+        "mixed",
+        "relative",
+        "duplicated",
+        "comma",
+        "two-import-as",
+        "two-imports",
     ],
 )
 def test_packages_used(code, expected):
@@ -123,30 +121,34 @@ def test_packages_used(code, expected):
 
 
 @pytest.mark.parametrize(
-    'code, expected',
-    [["""
+    "code, expected",
+    [
+        [
+            """
 def x():
     pass
-""", {
-        'x': '\ndef x():\n    pass'
-    }], ["""
+""",
+            {"x": "\ndef x():\n    pass"},
+        ],
+        [
+            """
 class X:
     pass
-""", {
-        'X': '\nclass X:\n    pass'
-    }],
-     [
-         """
+""",
+            {"X": "\nclass X:\n    pass"},
+        ],
+        [
+            """
 def x():
     pass
 
 class X:
     pass
-""", {
-             'X': '\nclass X:\n    pass',
-             'x': '\ndef x():\n    pass'
-         }
-     ]])
+""",
+            {"X": "\nclass X:\n    pass", "x": "\ndef x():\n    pass"},
+        ],
+    ],
+)
 def test_find_defined_names_from_def_and_class(code, expected):
-    out = (definitions.from_def_and_class(parso.parse(code)))
+    out = definitions.from_def_and_class(parso.parse(code))
     assert out == expected

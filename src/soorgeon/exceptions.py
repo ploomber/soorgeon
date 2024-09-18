@@ -6,7 +6,7 @@ from gettext import gettext as _
 
 
 def _format_message(exception):
-    if hasattr(exception, 'format_message'):
+    if hasattr(exception, "format_message"):
         return exception.format_message()
     else:
         return str(exception)
@@ -16,7 +16,7 @@ def _build_message(exception):
     msg = _format_message(exception)
 
     while exception.__cause__:
-        msg += f'\n{_format_message(exception.__cause__)}'
+        msg += f"\n{_format_message(exception.__cause__)}"
         exception = exception.__cause__
 
     return msg
@@ -37,18 +37,18 @@ class BaseException(ClickException):
 
 
 class InputWontRunError(BaseException):
-    """Raised when there are errors that make running the input infeasible
-    """
+    """Raised when there are errors that make running the input infeasible"""
+
     pass
 
 
 class InputError(BaseException):
-    """Raised when the input has issues and needs user's editing
-    """
+    """Raised when the input has issues and needs user's editing"""
+
     pass
 
 
 class InputSyntaxError(InputWontRunError):
-    """Raised if the notebook has invalid syntax
-    """
+    """Raised if the notebook has invalid syntax"""
+
     pass

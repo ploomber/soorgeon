@@ -24,7 +24,8 @@ import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 # For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
 
 import os
-for dirname, _, filenames in os.walk('/kaggle/input'):
+
+for dirname, _, filenames in os.walk("/kaggle/input"):
     for filename in filenames:
         print(os.path.join(dirname, filename))
 
@@ -35,7 +36,7 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
 import os
 import warnings
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 import time as t
 import pandas as pd
 import numpy as np
@@ -45,7 +46,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import resample
 from imblearn.over_sampling import SMOTE
-from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, recall_score, precision_score, classification_report, roc_curve, auc, roc_auc_score
+from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score,
+    f1_score,
+    recall_score,
+    precision_score,
+    classification_report,
+    roc_curve,
+    auc,
+    roc_auc_score,
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -62,8 +73,7 @@ from sklearn.naive_bayes import GaussianNB
 
 
 # %%
-def data_load(
-):  #check for the availability of the dataset and change cwd if not found
+def data_load():  # check for the availability of the dataset and change cwd if not found
     df = pd.read_csv("../input/breast-cancer-prediction/data.csv")
     return df
 
@@ -73,15 +83,15 @@ def data_clean(df):
 
 
 def X_y_split(df):
-    X = df.drop(['diagnosis'], axis=1)
-    y = df['diagnosis']
+    X = df.drop(["diagnosis"], axis=1)
+    y = df["diagnosis"]
     return X, y
 
 
 def data_split_scale(X, y, sampling):
-    #Splitting dataset into Train and Test Set
+    # Splitting dataset into Train and Test Set
     X_tr, X_test, y_tr, y_test = train_test_split(X, y, test_size=0.3)
-    #Feature Scaling using Standardization
+    # Feature Scaling using Standardization
     ss = StandardScaler()
     X_tr = ss.fit_transform(X_tr)
     X_test = ss.fit_transform(X_test)
@@ -91,8 +101,7 @@ def data_split_scale(X, y, sampling):
     samp_sel = int(input("Now enter your selection for sampling strategy: \t"))
     samp = [sampling.upsample, sampling.downsample, sampling.smote]
     temp = samp[samp_sel - 1]
-    X_train, y_train = temp(X_train=pd.DataFrame(X_tr),
-                            y_train=pd.DataFrame(y_tr))
+    X_train, y_train = temp(X_train=pd.DataFrame(X_tr), y_train=pd.DataFrame(y_tr))
     return pd.DataFrame(X_train), pd.DataFrame(X_test), y_train, y_test
 
 
@@ -107,29 +116,28 @@ def data_split_scale(X, y, sampling):
 class sampling:
 
     def upsample(X_train, y_train):
-        #combine them back for resampling
+        # combine them back for resampling
         train_data = pd.concat([X_train, y_train], axis=1)
         # separate minority and majority classes
         negative = train_data[train_data.diagnosis == 0]
         positive = train_data[train_data.diagnosis == 1]
         # upsample minority
-        pos_upsampled = resample(positive,
-                                 replace=True,
-                                 n_samples=len(negative),
-                                 random_state=30)
+        pos_upsampled = resample(
+            positive, replace=True, n_samples=len(negative), random_state=30
+        )
         # combine majority and upsampled minority
         upsampled = pd.concat([negative, pos_upsampled])
         # check new class counts
-        #print(upsampled.diagnosis.value_counts())
+        # print(upsampled.diagnosis.value_counts())
         print(upsampled.diagnosis.value_counts())
         upsampled = upsampled.sample(frac=1)
         X_train = upsampled.iloc[:, 0:-2]
         y_train = upsampled.iloc[:, -1]
-        #graph barplot counts
+        # graph barplot counts
         return X_train, y_train
 
     def downsample(X_train, y_train):
-        #combine them back for resampling
+        # combine them back for resampling
         train_data = pd.concat([X_train, y_train], axis=1)
         # separate minority and majority classes
         negative = train_data[train_data.diagnosis == 0]
@@ -139,7 +147,8 @@ class sampling:
             negative,
             replace=True,  # sample with replacement
             n_samples=len(positive),  # match number in minority class
-            random_state=30)  # reproducible results
+            random_state=30,
+        )  # reproducible results
         # combine minority and downsampled majority
         downsampled = pd.concat([positive, neg_downsampled])
         downsampled = downsampled.sample(frac=1)
@@ -147,15 +156,15 @@ class sampling:
         y_train = downsampled.iloc[:, -1]
         # check new class counts
         print(downsampled.diagnosis.value_counts())
-        #graph
+        # graph
         return X_train, y_train
 
     def smote(X_train, y_train):
         sm = SMOTE(random_state=30)
         X_train, y_train = sm.fit_resample(X_train, y_train)
-        y_train = pd.DataFrame(y_train, columns=['diagnosis'])
+        y_train = pd.DataFrame(y_train, columns=["diagnosis"])
         print(y_train.diagnosis.value_counts())
-        #graph
+        # graph
         return X_train, y_train
 
 
@@ -207,10 +216,20 @@ class feat:
         df = data_load()  # Loading Dataset into Dataframe
         df = data_clean(df)
         drop_cols = [
-            'radius_worst', 'texture_worst', 'perimeter_worst', 'area_worst',
-            'symmetry_worst', 'fractal_dimension_worst', 'perimeter_mean',
-            'perimeter_se', 'area_mean', 'area_se', 'concavity_mean',
-            'concavity_se', 'concave points_mean', 'concave points_se'
+            "radius_worst",
+            "texture_worst",
+            "perimeter_worst",
+            "area_worst",
+            "symmetry_worst",
+            "fractal_dimension_worst",
+            "perimeter_mean",
+            "perimeter_se",
+            "area_mean",
+            "area_se",
+            "concavity_mean",
+            "concavity_se",
+            "concave points_mean",
+            "concave points_se",
         ]
         df_sf = df.drop(drop_cols, axis=1)
         X, y = X_y_split(df_sf)
@@ -221,9 +240,7 @@ class feat:
             "'\t The number '1' stands for 'ALL- FEATURES'. \n \t The number '2' stands for 'MEAN- FEATURES' . \n \t The number '3' stands for 'SQUARED- ERROR FEATURES'. \n \t The number '4' stands for 'WORST- FEATURES'. \n \t The number '5' stands for 'SELECTED- FEATURES'.'"
         )
         selection = input("\t Enter your choice of feature selection: \t")
-        feat_options = [
-            feat.feat1, feat.feat2, feat.feat3, feat.feat4, feat.feat5
-        ]
+        feat_options = [feat.feat1, feat.feat2, feat.feat3, feat.feat4, feat.feat5]
         return feat_options[int(selection) - 1]()
 
 
@@ -274,7 +291,7 @@ class models:
     def knn(dat):
         # K-Nearest Neighbors
         start = t.time()
-        knn = KNeighborsClassifier(n_neighbors=5, metric='minkowski', p=2)
+        knn = KNeighborsClassifier(n_neighbors=5, metric="minkowski", p=2)
         model_knn = knn.fit(dat[0], dat[2])
         pred = model_knn.predict(dat[1])
         pred_prob = model_knn.predict_proba(dat[1])
@@ -284,7 +301,7 @@ class models:
     def svc_l(dat):
         # Linear SVM
         start = t.time()
-        svc_l = SVC(kernel='linear', random_state=0, probability=True)
+        svc_l = SVC(kernel="linear", random_state=0, probability=True)
         model_svc_l = svc_l.fit(dat[0], dat[2])
         pred = model_svc_l.predict(dat[1])
         pred_prob = model_svc_l.predict_proba(dat[1])
@@ -294,7 +311,7 @@ class models:
     def svc_r(dat):
         # Kernel SVM
         start = t.time()
-        svc_r = SVC(kernel='rbf', random_state=0, probability=True)
+        svc_r = SVC(kernel="rbf", random_state=0, probability=True)
         model_svc_r = svc_r.fit(dat[0], dat[2])
         pred = model_svc_r.predict(dat[1])
         pred_prob = model_svc_r.predict_proba(dat[1])
@@ -320,8 +337,13 @@ class models:
 def train_n_test():
     ft = feat.feature()
     modelsss = [
-        models.lr, models.dtc, models.rfc, models.knn, models.svc_l,
-        models.svc_r, models.gnb
+        models.lr,
+        models.dtc,
+        models.rfc,
+        models.knn,
+        models.svc_l,
+        models.svc_r,
+        models.gnb,
     ]
     print(
         "'\t The number '1' stands for 'LOGISTIC REGRESSION'. \n \t The number '2' stands for 'Decision Tree' . \n \t The number '3' stands for 'Random Forest Classifier'. \n \t The number '4' stands for 'KNN'. \n \t The number '5' stands for 'Liner SVM'. \n \t The number '6' stands for 'Kernal SVM'. \n \t The number '7' stands for 'Guassian NB'.'"
@@ -339,9 +361,13 @@ def train_n_test():
 def performance():
     out, y_test, mdl_selection = train_n_test()
     models = [
-        "Logistic Regression", "Desicion Tree Classifier",
-        "Random Forest Classifier", "KNN", "Liner SVM", "Kernal SVM",
-        "Guassian NB"
+        "Logistic Regression",
+        "Desicion Tree Classifier",
+        "Random Forest Classifier",
+        "KNN",
+        "Liner SVM",
+        "Kernal SVM",
+        "Guassian NB",
     ]
     cm_lr = confusion_matrix(y_test, out[2])
     sns.heatmap(cm_lr, annot=True, cmap="Reds")
@@ -350,50 +376,60 @@ def performance():
     rs = recall_score(y_test, out[2])
     fs = f1_score(y_test, out[2])
     ps = precision_score(y_test, out[2])
-    #Report Bar Plot
-    report = pd.DataFrame(
-        classification_report(y_test, out[2], output_dict=True))
+    # Report Bar Plot
+    report = pd.DataFrame(classification_report(y_test, out[2], output_dict=True))
     rg = report.drop(report.index[3]).drop(report.columns[2:], axis=1)
-    plt.style.use('seaborn')
-    rg.plot(kind='bar', color=["red", "salmon"])
+    plt.style.use("seaborn")
+    rg.plot(kind="bar", color=["red", "salmon"])
     plt.title("Classification Report of {}".format(models[mdl_selection - 1]))
-    plt.legend(report.columns,
-               ncol=2,
-               loc="lower center",
-               bbox_to_anchor=(0.5, -0.3))
+    plt.legend(report.columns, ncol=2, loc="lower center", bbox_to_anchor=(0.5, -0.3))
     plt.yticks(np.arange(0, 1.05, step=0.05))
     print(
-        '\n\t The accuracy score of {} with given parameters is: {}%.'.format(
-            models[mdl_selection - 1], acs * 100))
-    print('\n\t The recall score of {} with given parameters is: {}%.'.format(
-        models[mdl_selection - 1], rs * 100))
+        "\n\t The accuracy score of {} with given parameters is: {}%.".format(
+            models[mdl_selection - 1], acs * 100
+        )
+    )
     print(
-        '\n\t The precision score of {} with given parameters is: {}%.'.format(
-            models[mdl_selection - 1], ps * 100))
-    print('\n\t The F1 score of {} with given parameters is: {}%.'.format(
-        models[mdl_selection - 1], fs * 100))
+        "\n\t The recall score of {} with given parameters is: {}%.".format(
+            models[mdl_selection - 1], rs * 100
+        )
+    )
     print(
-        '\n\t The training and testing time taken by {} with given parameters is: {} seconds.'
-        .format(models[mdl_selection - 1], out[1]))
+        "\n\t The precision score of {} with given parameters is: {}%.".format(
+            models[mdl_selection - 1], ps * 100
+        )
+    )
+    print(
+        "\n\t The F1 score of {} with given parameters is: {}%.".format(
+            models[mdl_selection - 1], fs * 100
+        )
+    )
+    print(
+        "\n\t The training and testing time taken by {} with given parameters is: {} seconds.".format(
+            models[mdl_selection - 1], out[1]
+        )
+    )
     prob = out[3]
     prob = prob[:, 1]
-    #ROC
+    # ROC
     false_pos, true_pos, thresh = roc_curve(y_test, prob, pos_label=1)
     auc_score = roc_auc_score(y_test, prob)
     rand_pr = [0 for i in range(len(y_test))]
     p_fpr, p_tpr, _ = roc_curve(y_test, rand_pr, pos_label=1)
     plt.figure()
-    plt.style.use('seaborn')
-    plt.plot(false_pos,
-             true_pos,
-             linestyle='--',
-             color='orange',
-             label=models[mdl_selection - 1])
-    plt.plot(p_fpr, p_tpr, linestyle='--', color='green')
-    plt.title('ROC Curve')
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.legend(loc='best')
+    plt.style.use("seaborn")
+    plt.plot(
+        false_pos,
+        true_pos,
+        linestyle="--",
+        color="orange",
+        label=models[mdl_selection - 1],
+    )
+    plt.plot(p_fpr, p_tpr, linestyle="--", color="green")
+    plt.title("ROC Curve")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.legend(loc="best")
 
     return out[0], out[2], auc_score
 
