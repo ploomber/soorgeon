@@ -5,7 +5,6 @@ import papermill as pm
 from click.exceptions import ClickException
 from papermill.exceptions import PapermillExecutionError
 from os.path import abspath, dirname, splitext, join
-from soorgeon.telemetry import telemetry
 from soorgeon import __version__, export
 from soorgeon import clean as clean_module
 
@@ -17,36 +16,36 @@ def cli():
 
 
 @cli.command()
-@click.argument('path', type=click.Path(exists=True))
-@click.option('--log', '-l', default=None)
+@click.argument("path", type=click.Path(exists=True))
+@click.option("--log", "-l", default=None)
 @click.option(
-    '--df-format',
-    '-d',
+    "--df-format",
+    "-d",
     default=None,
-    type=click.Choice(('parquet', 'csv')),
-    help='Format for variables with the df prefix. Otherwise uses pickle')
-@click.option('--product-prefix',
-              '-p',
-              default=None,
-              help='Prefix for all products')
-@click.option('--single-task',
-              '-s',
-              is_flag=True,
-              help='Create a pipeline with a single task')
+    type=click.Choice(("parquet", "csv")),
+    help="Format for variables with the df prefix. Otherwise uses pickle",
+)
+@click.option("--product-prefix", "-p", default=None, help="Prefix for all products")
 @click.option(
-    '--file-format',
-    '-f',
+    "--single-task", "-s", is_flag=True, help="Create a pipeline with a single task"
+)
+@click.option(
+    "--file-format",
+    "-f",
     default=None,
-    type=click.Choice(('py', 'ipynb')),
-    help=('Format for pipeline tasks, if empty keeps the same format '
-          'as the input'))
-@click.option('--serializer',
-              '-z',
-              default=None,
-              type=click.Choice(('cloudpickle', 'dill')),
-              help='Serializer for non-picklable data')
-def refactor(path, log, product_prefix, df_format, single_task, file_format,
-             serializer):
+    type=click.Choice(("py", "ipynb")),
+    help=("Format for pipeline tasks, if empty keeps the same format " "as the input"),
+)
+@click.option(
+    "--serializer",
+    "-z",
+    default=None,
+    type=click.Choice(("cloudpickle", "dill")),
+    help="Serializer for non-picklable data",
+)
+def refactor(
+    path, log, product_prefix, df_format, single_task, file_format, serializer
+):
     """
     Refactor a monolithic notebook.
 
@@ -64,18 +63,20 @@ def refactor(path, log, product_prefix, df_format, single_task, file_format,
     # apply black
     clean_module.basic_clean(path, string_normalization=False)
 
-    export.refactor(path,
-                    log,
-                    product_prefix=product_prefix,
-                    df_format=df_format,
-                    single_task=single_task,
-                    file_format=file_format,
-                    serializer=serializer)
+    export.refactor(
+        path,
+        log,
+        product_prefix=product_prefix,
+        df_format=df_format,
+        single_task=single_task,
+        file_format=file_format,
+        serializer=serializer,
+    )
 
-    click.secho(f'Finished refactoring {path!r}, use Ploomber to continue.',
-                fg='green')
+    click.secho(f"Finished refactoring {path!r}, use Ploomber to continue.", fg="green")
 
-    click.echo("""
+    click.echo(
+        """
 Install dependencies (this will install ploomber):
     $ pip install -r requirements.txt
 
@@ -91,7 +92,8 @@ Plot pipeline:
 * Documentation: https://docs.ploomber.io
 * Jupyter integration: https://ploomber.io/s/jupyter
 * Other editors: https://ploomber.io/s/editors
-""")
+"""
+    )
 
 
 @cli.command()
@@ -126,9 +128,7 @@ def lint(filename):
 
 @cli.command()
 @click.argument("filename", type=click.Path(exists=True))
-@click.argument("output_filename",
-                type=click.Path(exists=False),
-                required=False)
+@click.argument("output_filename", type=click.Path(exists=False), required=False)
 def test(filename, output_filename):
     """
     check if a .py or .ipynb file runs.
@@ -149,61 +149,67 @@ def test(filename, output_filename):
         output_filename = join(directory, f"{name}-soorgeon-test.ipynb")
     else:
         output_filename = join(directory, output_filename)
-    if extension.lower() == '.py':
+    if extension.lower() == ".py":
         nb = jupytext.read(filename)
         # convert ipynb to py and create a temp file in current directory
-        with tempfile.NamedTemporaryFile(suffix=".ipynb",
-                                         delete=True,
-                                         dir=directory) as temp_file:
+        with tempfile.NamedTemporaryFile(
+            suffix=".ipynb", delete=True, dir=directory
+        ) as temp_file:
             jupytext.write(nb, temp_file.name)
             _test(temp_file.name, output_filename)
     else:
         _test(filename, output_filename)
 
 
-@telemetry.log_call('test')
 def _test(filename, output_filename):
-    CONTACT_MESSAGE = "An error happened when executing the notebook, " \
-                      "contact us for help: https://ploomber.io/community"
+    CONTACT_MESSAGE = (
+        "An error happened when executing the notebook, "
+        "contact us for help: https://ploomber.io/community"
+    )
     try:
-        pm.execute_notebook(filename, output_filename, kernel_name='python3')
+        pm.execute_notebook(filename, output_filename, kernel_name="python3")
     except PapermillExecutionError as err:
         error_traceback = err.traceback
         error_suggestion_dict = {
-            "ModuleNotFoundError":
-            "Some packages are missing, please install them "
+            "ModuleNotFoundError": "Some packages are missing, please install them "
             "with 'pip install {package-name}'\n",
-            "AttributeError":
-            "AttributeErrors might be due to changes in the libraries "
+            "AttributeError": "AttributeErrors might be due to changes in the libraries "
             "you're using.\n",
-            "SyntaxError":
-            "There are syntax errors in the notebook.\n",
+            "SyntaxError": "There are syntax errors in the notebook.\n",
         }
         for error, suggestion in error_suggestion_dict.items():
             if any(error in error_line for error_line in error_traceback):
-                click.secho(f"""\
+                click.secho(
+                    f"""\
 {error} encountered while executing the notebook: {err}
 {suggestion}
 Output notebook: {output_filename}\n""",
-                            fg='red')
+                    fg="red",
+                )
                 raise ClickException(CONTACT_MESSAGE)
 
-        click.secho(f"""\
+        click.secho(
+            f"""\
 Error encountered while executing the notebook: {err}
 
 Output notebook: {output_filename}\n""",
-                    fg='red')
+            fg="red",
+        )
         raise ClickException(CONTACT_MESSAGE)
     except Exception as err:
         # handling errors other than PapermillExecutionError
         error_type = type(err).__name__
-        click.echo(f"""\
+        click.echo(
+            f"""\
 {error_type} encountered while executing the notebook: {err}
 
-Output notebook: {output_filename}""")
+Output notebook: {output_filename}"""
+        )
         raise ClickException(CONTACT_MESSAGE)
     else:
-        click.secho(f"""\
+        click.secho(
+            f"""\
 Finished executing {filename}, no error encountered.
 Output notebook: {output_filename}\n""",
-                    fg='green')
+            fg="green",
+        )

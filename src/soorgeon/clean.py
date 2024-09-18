@@ -9,29 +9,26 @@ import click
 import jupytext
 
 from soorgeon.exceptions import BaseException
-from soorgeon.telemetry import telemetry
 
 
 def _jupytext_fmt(text, extension):
     """
     Determine the jupytext fmt string to use based on the content and extension
     """
-    if extension != 'ipynb':
+    if extension != "ipynb":
         fmt, _ = jupytext.guess_format(text, extension)
-        fmt_final = f'{extension}:{fmt}'
+        fmt_final = f"{extension}:{fmt}"
     else:
-        fmt_final = '.ipynb'
+        fmt_final = ".ipynb"
 
     return fmt_final
 
 
-@telemetry.log_call('lint')
 def lint(task_file):
     with get_file(task_file, write=False, output_ext=".py") as path:
-        run_program(path, program='flake8', filename=task_file)
+        run_program(path, program="flake8", filename=task_file)
 
 
-@telemetry.log_call('clean')
 def basic_clean(task_file, program="black", string_normalization=True):
     """
     Run basic clean (directly called by cli.clean())
@@ -47,10 +44,9 @@ def clean_py(task_file_py, filename, string_normalization=True):
     mode = FileMode(string_normalization=string_normalization)
 
     # reformat with black
-    black_result = format_file_in_place(task_file_py,
-                                        fast=True,
-                                        mode=mode,
-                                        write_back=WriteBack(1))
+    black_result = format_file_in_place(
+        task_file_py, fast=True, mode=mode, write_back=WriteBack(1)
+    )
     if black_result:
         click.echo(f"Reformatted {filename} with black.")
 
@@ -61,12 +57,12 @@ def run_program(task_file_py, program, filename):
     (util method only called by basic_clean())
     """
     if shutil.which(program) is None:
-        raise BaseException(f'{program} is missing, please install it with:\n'
-                            f'pip install {program}\nand try again')
+        raise BaseException(
+            f"{program} is missing, please install it with:\n"
+            f"pip install {program}\nand try again"
+        )
     # black
-    result = subprocess.run([program, task_file_py],
-                            text=True,
-                            capture_output=True)
+    result = subprocess.run([program, task_file_py], text=True, capture_output=True)
 
     click.echo(result.stdout.replace(str(task_file_py), filename))
     click.echo(result.stderr)
@@ -81,8 +77,7 @@ def get_file(task_file, write=False, output_ext=".ipynb"):
 
     if create_temp:
         nb = jupytext.reads(text)
-        temp_path = tempfile.NamedTemporaryFile(suffix=output_ext,
-                                                delete=False).name
+        temp_path = tempfile.NamedTemporaryFile(suffix=output_ext, delete=False).name
         jupytext.write(nb, temp_path)
         path = Path(temp_path)
 
@@ -93,9 +88,11 @@ def get_file(task_file, write=False, output_ext=".ipynb"):
         yield path
     finally:
         if write:
-            jupytext.write(jupytext.read(path),
-                           task_file,
-                           fmt=_jupytext_fmt(text, task_file.suffix[1:]))
+            jupytext.write(
+                jupytext.read(path),
+                task_file,
+                fmt=_jupytext_fmt(text, task_file.suffix[1:]),
+            )
 
         if create_temp:
             Path(path).unlink()
