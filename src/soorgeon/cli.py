@@ -173,8 +173,8 @@ def _test(filename, output_filename):
         error_suggestion_dict = {
             "ModuleNotFoundError": "Some packages are missing, please install them "
             "with 'pip install {package-name}'\n",
-            "AttributeError": "AttributeErrors might be due to changes in the libraries "
-            "you're using.\n",
+            "AttributeError": "AttributeErrors might be due to changes in the "
+            "libraries you're using.\n",
             "SyntaxError": "There are syntax errors in the notebook.\n",
         }
         for error, suggestion in error_suggestion_dict.items():
