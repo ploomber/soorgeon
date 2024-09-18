@@ -8,10 +8,13 @@ def from_imports(tree):
     # build a defined-name -> import-statement-code mapping. Note that
     # the same code may appear more than once if it defines more than one name
     # e.g. from package import a, b, c
-    imports = [{
-        name.value: import_.get_code().rstrip()
-        for name in import_.get_defined_names()
-    } for import_ in tree.iter_imports()]
+    imports = [
+        {
+            name.value: import_.get_code().rstrip()
+            for name in import_.get_defined_names()
+        }
+        for import_ in tree.iter_imports()
+    ]
 
     if imports:
         imports = reduce(lambda x, y: {**x, **y}, imports)
@@ -29,35 +32,38 @@ def packages_used(tree):
     Returns None if fails to parse them
     """
     pkg_name = {
-        'sklearn': 'scikit-learn',
+        "sklearn": "scikit-learn",
     }
 
     def flatten(elements):
         return [i for sub in elements for i in sub]
 
     def _extract_names(node):
-        if hasattr(node, 'children'):
+        if hasattr(node, "children"):
             return extract_names(node.children[0])
         else:
             return [node.value]
 
     def extract_names(import_):
-        if import_.type == 'name':
+        if import_.type == "name":
             return [import_.value]
-        elif import_.type in {'dotted_name', 'dotted_as_name'}:
+        elif import_.type in {"dotted_name", "dotted_as_name"}:
             return [import_.children[0].value]
 
         second = import_.children[1]
 
-        if second.type in {'dotted_name', 'dotted_as_name'}:
+        if second.type in {"dotted_name", "dotted_as_name"}:
             return extract_names(second.children[0])
-        elif second.type == 'dotted_as_names':
+        elif second.type == "dotted_as_names":
             # import a as something, b as another
 
-            return flatten([
-                _extract_names(node) for i, node in enumerate(second.children)
-                if i % 2 == 0
-            ])
+            return flatten(
+                [
+                    _extract_names(node)
+                    for i, node in enumerate(second.children)
+                    if i % 2 == 0
+                ]
+            )
         else:
             return [second.value]
 
@@ -65,8 +71,7 @@ def packages_used(tree):
 
     # replace using pkg_name mapping and ignore standard lib
     pkgs_final = [
-        pkg_name.get(name, name) for name in pkgs
-        if place_module(name) == 'THIRDPARTY'
+        pkg_name.get(name, name) for name in pkgs if place_module(name) == "THIRDPARTY"
     ]
 
     # remove duplicates and sort
@@ -74,10 +79,7 @@ def packages_used(tree):
 
 
 def from_def_and_class(tree):
-    fns = {
-        fn.name.value: fn.get_code().rstrip()
-        for fn in tree.iter_funcdefs()
-    }
+    fns = {fn.name.value: fn.get_code().rstrip() for fn in tree.iter_funcdefs()}
 
     classes = {
         class_.name.value: class_.get_code().rstrip()

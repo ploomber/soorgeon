@@ -19,15 +19,15 @@
 # In this Notebook we will see how to apply KNN and how to use H2o.ai automl library for classification task. If you find this notebook usefull please Upvote!
 
 # %% id="-eFeHGM7wjXi"
-#importing Libraries
+# importing Libraries
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 # %% id="BeFbH5mmwjXj" outputId="1d28b870-a332-42d9-db22-6bf5979bd77b"
-#importing dataset
-df = pd.read_csv('../input/heart-failure-prediction/heart.csv')
+# importing dataset
+df = pd.read_csv("../input/heart-failure-prediction/heart.csv")
 df.head()
 
 # %% id="58V7HLIKwjXk" outputId="16830d86-2484-458f-bf53-30e988f99219"
@@ -41,7 +41,7 @@ df.describe()
 
 # %% id="vCpUngBKVac2" outputId="68162c6f-6bd5-4794-c332-e15701dabfe5"
 df.isnull().sum()
-#There is no null values
+# There is no null values
 
 # %% [markdown] id="o2qmlr1DdLX9"
 # ## Data Exploration
@@ -51,14 +51,14 @@ df.isnull().sum()
 #  Now we can plot the distribution of data wrt dependent variable i.e HeartDisease
 
 # %% id="JsDv6UI4wjXn" outputId="6b218281-de0c-472c-b871-6595a7d069d2"
-sns.pairplot(df, hue='HeartDisease')
+sns.pairplot(df, hue="HeartDisease")
 
 # %% [markdown] id="ahSOpNk1zEta"
 #   5. Which are most useful variable in classification? Prove using correlation.
 
 # %% id="uXcHuo7pzCLZ" outputId="6c4cdfd1-7b22-4967-89e8-ffb3e9e2a152"
 corr = df.corr()
-corr.style.background_gradient(cmap='coolwarm')
+corr.style.background_gradient(cmap="coolwarm")
 
 # %% id="OG7hK1UJ0Rja" outputId="85b4bd55-da22-45b9-cce1-4cfea00ab94f"
 sns.set_theme(style="whitegrid")
@@ -71,17 +71,17 @@ ax = fig.gca()
 df.hist(ax=ax)
 
 # %% id="kzgu_ezi03y8" outputId="76bbae80-a830-45c2-b0e6-e6c787ecd193"
-df.HeartDisease.value_counts().plot(kind='bar')
+df.HeartDisease.value_counts().plot(kind="bar")
 plt.xlabel("Heart Diseases or Not")
 plt.ylabel("Count")
 plt.title("Heart Diseases")
-#Here we can see that dataset is not much imbalanced so there is no need to balance.
+# Here we can see that dataset is not much imbalanced so there is no need to balance.
 
 # %% [markdown] id="-7E3IpLKdRV1"
 # ## Data Preprocessing
 
 # %% id="zaHcUNcbWjkZ"
-cat = ['Sex', 'ChestPainType', 'RestingECG', 'ExerciseAngina', 'ST_Slope']
+cat = ["Sex", "ChestPainType", "RestingECG", "ExerciseAngina", "ST_Slope"]
 
 # %% id="tVKS4fLEWBZc"
 from sklearn.preprocessing import LabelEncoder
@@ -90,20 +90,17 @@ lb = LabelEncoder()
 df[cat] = df[cat].apply(lb.fit_transform)
 
 # %% id="4OPXop0HwjXo" outputId="997a4068-3bfd-4298-8a60-584126552665"
-X = df.drop('HeartDisease', axis=1)
+X = df.drop("HeartDisease", axis=1)
 X.head()
 
 # %% id="KLJJYpttwjXo" outputId="00502435-bf1a-42e9-d631-c767be3f82bc"
-y = df['HeartDisease']
+y = df["HeartDisease"]
 y.head()
 
 # %% id="0T5IVw1awjXp"
 from sklearn.model_selection import train_test_split
 
-X_train, X_test, y_train, y_test = train_test_split(X,
-                                                    y,
-                                                    test_size=0.2,
-                                                    random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 # %% id="Cw17uwfRwjXp" outputId="e218a7c7-4a0e-42b3-c151-3b0b3d4e5205"
 X_train.shape
@@ -128,7 +125,7 @@ X_test = scaler.transform(X_test)
 from sklearn.neighbors import KNeighborsClassifier
 
 # %% id="ruOf41A6wjXw" outputId="d39b639a-1acf-484a-dbea-0684c9945b3b"
-knn = KNeighborsClassifier(n_neighbors=5, metric='euclidean', p=2)
+knn = KNeighborsClassifier(n_neighbors=5, metric="euclidean", p=2)
 knn.fit(X_train, y_train)
 
 # %% id="To358l1ewjXw" outputId="67755f95-06f1-427d-aa9b-49660f3c2c51"
@@ -154,14 +151,14 @@ mat
 # %% id="vefokjVQ2loi" outputId="73ce3707-11c8-40c1-c6b4-b5f4b9eefb18"
 from sklearn.metrics import classification_report
 
-target_names = ['Heart Diseases', 'Normal']
+target_names = ["Heart Diseases", "Normal"]
 print(classification_report(y_test, y_pred, target_names=target_names))
 
 # %% [markdown] id="mIL4fznQ3A4P"
 # To select optimize k value we will use elbow method
 
 # %% id="OrZlJRGMwjXy"
-#For selecting K value
+# For selecting K value
 error_rate = []
 
 # Will take some time
@@ -176,22 +173,24 @@ for i in range(1, 40):
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(10, 6))
-plt.plot(range(1, 40),
-         error_rate,
-         color='red',
-         linestyle='dashed',
-         marker='o',
-         markerfacecolor='green',
-         markersize=10)
-plt.title('Error Rate vs. K Value')
-plt.xlabel('K')
-plt.ylabel('Error Rate')
+plt.plot(
+    range(1, 40),
+    error_rate,
+    color="red",
+    linestyle="dashed",
+    marker="o",
+    markerfacecolor="green",
+    markersize=10,
+)
+plt.title("Error Rate vs. K Value")
+plt.xlabel("K")
+plt.ylabel("Error Rate")
 
 # %% id="AgeM11Jv3F9X" outputId="d58693b2-1908-4924-e1a6-2b16792815d9"
-#From graph we can see that optimize k value is 16,17,18
+# From graph we can see that optimize k value is 16,17,18
 # Now we will train our KNN classifier with this k values
 
-knn = KNeighborsClassifier(n_neighbors=3, metric='euclidean', p=2)
+knn = KNeighborsClassifier(n_neighbors=3, metric="euclidean", p=2)
 knn.fit(X_train, y_train)
 
 # %% id="dCLyRoU13X9n" outputId="f7ae117c-2e18-496c-925d-a78728eefabe"
@@ -211,7 +210,7 @@ sns.heatmap(mat, annot=True)
 # %% id="Z7NJY1xg3a2v" outputId="203352f9-cb86-433d-c406-68e139682617"
 from sklearn.metrics import classification_report
 
-target_names = ['Diabetes', 'Normal']
+target_names = ["Diabetes", "Normal"]
 print(classification_report(y_test, y_pred, target_names=target_names))
 
 # %% [markdown] id="IkXajhdm4Pur"
@@ -241,6 +240,7 @@ print(classification_report(y_test, y_pred, target_names=target_names))
 
 # %% id="bXVffHNX4JkT" outputId="360dcee6-ea22-4555-9cfe-0e117b36fe41"
 import h2o
+
 # We will be using default parameter Here with H2O init method
 h2o.init()
 
@@ -250,7 +250,7 @@ hf = h2o.H2OFrame(df)
 
 # %% id="DlXM7bxrY8Fn" outputId="28a1baa7-be21-4f52-8b36-05d90ba90c7e"
 # Data Transform - Split train : test datasets
-train, valid = hf.split_frame(ratios=[.80], seed=1234)
+train, valid = hf.split_frame(ratios=[0.80], seed=1234)
 print("Training Dataset", train.shape)
 print("Validation Dataset", valid.shape)
 
@@ -272,10 +272,9 @@ from h2o.automl import H2OAutoML
 
 # Run AutoML for YY base models (limited to 1 hour max runtime by default)
 aml = H2OAutoML(max_models=12, seed=1234, balance_classes=True)
-aml.train(x=featureColumns,
-          y=targetColumn,
-          training_frame=train,
-          validation_frame=valid)
+aml.train(
+    x=featureColumns, y=targetColumn, training_frame=train, validation_frame=valid
+)
 
 # %% id="ql70026xZfdI" outputId="95e3404d-ad3b-46fe-a432-ab34593de3bc"
 lb = aml.leaderboard
@@ -303,24 +302,29 @@ predicted_data = predicted_y.as_data_frame()
 valid_dataset = valid.as_data_frame()
 
 # Evaluate the skill of the Trained model
-acc = accuracy_score(valid_dataset[targetColumn],
-                     np.round(abs(predicted_data['predict'])))
-classReport = classification_report(valid_dataset[targetColumn],
-                                    np.round(abs(predicted_data['predict'])))
-confMatrix = confusion_matrix(valid_dataset[targetColumn],
-                              np.round(abs(predicted_data['predict'])))
+acc = accuracy_score(
+    valid_dataset[targetColumn], np.round(abs(predicted_data["predict"]))
+)
+classReport = classification_report(
+    valid_dataset[targetColumn], np.round(abs(predicted_data["predict"]))
+)
+confMatrix = confusion_matrix(
+    valid_dataset[targetColumn], np.round(abs(predicted_data["predict"]))
+)
 
 print()
-print('Testing Results of the trained model: ')
+print("Testing Results of the trained model: ")
 print()
-print('Accuracy : ', acc)
+print("Accuracy : ", acc)
 print()
-print('Confusion Matrix :\n', confMatrix)
+print("Confusion Matrix :\n", confMatrix)
 print()
-print('Classification Report :\n', classReport)
+print("Classification Report :\n", classReport)
 
 # Confusion matrix
-skplt.metrics.plot_confusion_matrix(valid_dataset[targetColumn],
-                                    np.round(abs(predicted_data['predict'])),
-                                    figsize=(7, 7))
+skplt.metrics.plot_confusion_matrix(
+    valid_dataset[targetColumn],
+    np.round(abs(predicted_data["predict"])),
+    figsize=(7, 7),
+)
 plt.show()

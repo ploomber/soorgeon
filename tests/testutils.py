@@ -11,11 +11,11 @@ def get_first_leaf_with_value(code, value):
 
         leaf = leaf.get_next_leaf()
 
-    raise ValueError(f'could not find leaf with value {value}')
+    raise ValueError(f"could not find leaf with value {value}")
 
 
 def _read(nb_str):
-    return jupytext.reads(nb_str, fmt='py:light')
+    return jupytext.reads(nb_str, fmt="py:light")
 
 
 exploratory = """# # Exploratory data analysis

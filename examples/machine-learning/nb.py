@@ -24,12 +24,12 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 # %%
-plt.style.use('ggplot')
-mpl.rcParams['figure.figsize'] = (12, 8)
+plt.style.use("ggplot")
+mpl.rcParams["figure.figsize"] = (12, 8)
 
 # %%
 ca_housing = datasets.fetch_california_housing(as_frame=True)
-df = ca_housing['frame']
+df = ca_housing["frame"]
 
 # %%
 df.head()
@@ -66,14 +66,13 @@ sns.histplot(df.MedHouseVal)
 from sklearn.model_selection import train_test_split  # noqa
 
 # %%
-X = df.drop('MedHouseVal', axis='columns')
+X = df.drop("MedHouseVal", axis="columns")
 y = df.MedHouseVal
 
 # %%
-X_train, X_test, y_train, y_test = train_test_split(X,
-                                                    y,
-                                                    test_size=0.33,
-                                                    random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.33, random_state=42
+)
 
 # %% [markdown]
 # ## Linear regression

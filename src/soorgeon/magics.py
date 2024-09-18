@@ -1,18 +1,18 @@
 import copy
 import re
 
-_IS_IPYTHON_CELL_MAGIC = r'^\s*%{2}[a-zA-Z]+'
-_IS_IPYTHON_LINE_MAGIC = r'^\s*%{1}[a-zA-Z]+'
-_IS_INLINE_SHELL = r'^\s*!{1}.+'
+_IS_IPYTHON_CELL_MAGIC = r"^\s*%{2}[a-zA-Z]+"
+_IS_IPYTHON_LINE_MAGIC = r"^\s*%{1}[a-zA-Z]+"
+_IS_INLINE_SHELL = r"^\s*!{1}.+"
 
-_IS_COMMENTED_LINE_MAGIC = r'^(.+) # \[magic\] (%.*)'
+_IS_COMMENTED_LINE_MAGIC = r"^(.+) # \[magic\] (%.*)"
 
-_PREFIX = '# [magic] '
+_PREFIX = "# [magic] "
 _PREFIX_LEN = len(_PREFIX)
 
 # these are magics that can modify the dependency structure beacuse they
 # may declare new variables or use existing ones as inputs
-HAS_INLINE_PYTHON = {'%%capture', '%%timeit', '%%time', '%time', '%timeit'}
+HAS_INLINE_PYTHON = {"%%capture", "%%timeit", "%%time", "%time", "%timeit"}
 
 
 def comment_magics(nb):
@@ -22,8 +22,8 @@ def comment_magics(nb):
     nb = copy.deepcopy(nb)
 
     for cell in nb.cells:
-        if cell.cell_type == 'code':
-            cell['source'] = _comment_if_ipython_magic(cell['source'])
+        if cell.cell_type == "code":
+            cell["source"] = _comment_if_ipython_magic(cell["source"])
 
     return nb
 
@@ -35,32 +35,29 @@ def uncomment_magics(nb):
     nb = copy.deepcopy(nb)
 
     for cell in nb.cells:
-        if cell.cell_type == 'code':
-            cell['source'] = _uncomment_magics_cell(cell['source'])
+        if cell.cell_type == "code":
+            cell["source"] = _uncomment_magics_cell(cell["source"])
 
     return nb
 
 
 def _delete_magic(line):
-    """Returns an empty line if it starts with the # [magic] prefix
-    """
-    return '' if line.startswith(_PREFIX) else line
+    """Returns an empty line if it starts with the # [magic] prefix"""
+    return "" if line.startswith(_PREFIX) else line
 
 
 def _delete_magics_cell(source):
-    """Reverts the comments applied to magics (cell level)
-    """
+    """Reverts the comments applied to magics (cell level)"""
     if not source:
         return source
 
     lines = source.splitlines()
     lines_new = [_delete_magic(line) for line in lines]
-    return '\n'.join(lines_new).strip()
+    return "\n".join(lines_new).strip()
 
 
 def _uncomment_magic(line):
-    """Reverts the comments applied to magics (line level)
-    """
+    """Reverts the comments applied to magics (line level)"""
     if line.startswith(_PREFIX):
         return line[_PREFIX_LEN:]
 
@@ -68,23 +65,21 @@ def _uncomment_magic(line):
 
     if parts:
         code, magic = parts
-        return f'{magic} {code}'
+        return f"{magic} {code}"
     else:
         return line
 
 
 def _uncomment_magics_cell(source):
-    """Reverts the comments applied to magics (cell level)
-    """
+    """Reverts the comments applied to magics (cell level)"""
     lines = source.splitlines()
     lines_new = [_uncomment_magic(line) for line in lines]
-    return '\n'.join(lines_new)
+    return "\n".join(lines_new)
 
 
 def _comment(line):
-    """Adds the # [magic] prefix (line level)
-    """
-    return f'# [magic] {line}'
+    """Adds the # [magic] prefix (line level)"""
+    return f"# [magic] {line}"
 
 
 def _comment_ipython_line_magic(line, magic):
@@ -96,12 +91,11 @@ def _comment_ipython_line_magic(line, magic):
     Into:
     x = 1 # [magic] %timeit
     """
-    return line.replace(magic, '').strip() + f' # [magic] {magic.strip()}'
+    return line.replace(magic, "").strip() + f" # [magic] {magic.strip()}"
 
 
 def _comment_if_ipython_magic(source):
-    """Comments lines into comments if they're IPython magics (cell level)
-    """
+    """Comments lines into comments if they're IPython magics (cell level)"""
     # TODO: support for nested cell magics. e.g.,
     # %%timeit
     # %%timeit
@@ -152,7 +146,7 @@ def _comment_if_ipython_magic(source):
             else:
                 lines_out.append(line)
 
-    return '\n'.join(lines_out)
+    return "\n".join(lines_out)
 
 
 # NOTE: the code in the following lines is based on Ploomber's source code.

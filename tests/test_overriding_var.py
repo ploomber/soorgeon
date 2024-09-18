@@ -53,8 +53,8 @@ df_2 = df + 1
 def test_overriding_same_cell(nb):
     export.from_nb(_read(nb))
 
-    dag = DAGSpec('pipeline.yaml').to_dag().render()
-    assert set(dag['loading-df'].upstream) == set()
+    dag = DAGSpec("pipeline.yaml").to_dag().render()
+    assert set(dag["loading-df"].upstream) == set()
     assert set(dag["reload-df-and-load-df-2"].upstream) == set()
 
 
@@ -62,8 +62,8 @@ def test_overriding_same_cell(nb):
 def test_overriding_diff_cell(nb):
     export.from_nb(_read(nb))
 
-    dag = DAGSpec('pipeline.yaml').to_dag().render()
+    dag = DAGSpec("pipeline.yaml").to_dag().render()
 
-    assert set(dag['load-df'].upstream) == set()
-    assert set(dag['load-df-again'].upstream) == set()
-    assert set(dag['load-df-2'].upstream) == {'load-df-again'}
+    assert set(dag["load-df"].upstream) == set()
+    assert set(dag["load-df-again"].upstream) == set()
+    assert set(dag["load-df-2"].upstream) == {"load-df-again"}

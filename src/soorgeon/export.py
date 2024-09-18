@@ -118,6 +118,7 @@ Step 8. Generate step.
 
 Finally, we generate the pipeline.yaml file.
 """
+
 import shutil
 import traceback
 import ast
@@ -135,34 +136,30 @@ import yaml
 import nbformat
 import re
 
-from soorgeon.telemetry import telemetry
 
-from soorgeon import (split, io, definitions, proto, exceptions, magics,
-                      pyflakes)
+from soorgeon import split, io, definitions, proto, exceptions, magics, pyflakes
 
 logger = logging.getLogger(__name__)
 pp = pprint.PrettyPrinter(indent=4)
 
 
 class NotebookExporter:
-    """Converts a notebook into a Ploomber pipeline
-    """
+    """Converts a notebook into a Ploomber pipeline"""
 
-    def __init__(self,
-                 nb,
-                 verbose=True,
-                 df_format=None,
-                 serializer=None,
-                 py=False):
-        if df_format not in {None, 'parquet', 'csv'}:
-            raise ValueError("df_format must be one of "
-                             "None, 'parquet' or 'csv', "
-                             f"got: {df_format!r}")
+    def __init__(self, nb, verbose=True, df_format=None, serializer=None, py=False):
+        if df_format not in {None, "parquet", "csv"}:
+            raise ValueError(
+                "df_format must be one of "
+                "None, 'parquet' or 'csv', "
+                f"got: {df_format!r}"
+            )
 
-        if serializer not in {None, 'cloudpickle', 'dill'}:
-            raise ValueError("serializer must be one of "
-                             "None, 'cloudpickle' or 'dill', "
-                             f"got: {serializer!r}")
+        if serializer not in {None, "cloudpickle", "dill"}:
+            raise ValueError(
+                "serializer must be one of "
+                "None, 'cloudpickle' or 'dill', "
+                f"got: {serializer!r}"
+            )
 
         # NOTE: we're commenting magics here but removing them in ProtoTask,
         # maybe we should comment magics also in ProtoTask?
@@ -195,7 +192,7 @@ class NotebookExporter:
         product_prefix : str
             A prefix to append to all products. If None, it is set to 'output'
         """
-        product_prefix = product_prefix or 'output'
+        product_prefix = product_prefix or "output"
 
         # export functions and classes to a separate file
         self.export_definitions()
@@ -210,19 +207,19 @@ class NotebookExporter:
 
         sources = self.get_sources()
 
-        dag_spec = {'tasks': list(task_specs.values())}
+        dag_spec = {"tasks": list(task_specs.values())}
 
         for name, task_spec in task_specs.items():
-            path = Path(task_spec['source'])
+            path = Path(task_spec["source"])
             path.parent.mkdir(exist_ok=True, parents=True)
             path.write_text(sources[name])
 
         out = yaml.dump(dag_spec, sort_keys=False)
         # pyyaml doesn't have an easy way to control whitespace, but we want
         # tasks to have an empty line between them
-        out = out.replace('\n- ', '\n\n- ')
+        out = out.replace("\n- ", "\n\n- ")
 
-        Path('pipeline.yaml').write_text(out)
+        Path("pipeline.yaml").write_text(out)
 
         self.export_readme()
 
@@ -251,17 +248,18 @@ class NotebookExporter:
                 output_lines.append(i.get_code())
 
         if len(output_lines) != 0:
-            click.secho('Looks like the following lines are storing files:\n')
+            click.secho("Looks like the following lines are storing files:\n")
             for line in output_lines:
                 click.secho(line)
-            url = 'https://docs.ploomber.io/en/latest/' \
-                  'get-started/basic-concepts.html'
-            click.secho(f'Please see the guide on '
-                        f'how to add them as products: \n{url}\n')
+            url = (
+                "https://docs.ploomber.io/en/latest/" "get-started/basic-concepts.html"
+            )
+            click.secho(
+                f"Please see the guide on " f"how to add them as products: \n{url}\n"
+            )
 
     def _init_proto_tasks(self, nb, py):
-        """Break notebook into smaller sections
-        """
+        """Break notebook into smaller sections"""
         # use H2 headers to break notebook
         breaks = split.find_breaks(nb)
 
@@ -279,12 +277,12 @@ class NotebookExporter:
                 df_format=self._df_format,
                 serializer=self._serializer,
                 py=py,
-            ) for name, cell_group in zip(names, cells_split)
+            )
+            for name, cell_group in zip(names, cells_split)
         ]
 
     def get_task_specs(self, product_prefix=None):
-        """Return task specs (dictionary) for each proto task
-        """
+        """Return task specs (dictionary) for each proto task"""
         return {
             pt.name: pt.to_spec(self.io, product_prefix=product_prefix)
             for pt in self._proto_tasks
@@ -311,47 +309,49 @@ class NotebookExporter:
         }
 
     def export_definitions(self):
-        """Create an exported.py file with function and class definitions
-        """
+        """Create an exported.py file with function and class definitions"""
         # do not create exported.py if there are no definitions
         if not self.definitions:
             return
 
-        out = '\n\n'.join(self.definitions.values())
+        out = "\n\n".join(self.definitions.values())
 
         ip = io.ImportsParser(self._get_code())
         imports = ip.get_imports_cell_for_task(out)
 
         if imports:
-            exported = f'{imports}\n\n\n{out}'
+            exported = f"{imports}\n\n\n{out}"
         else:
             exported = out
 
-        Path('exported.py').write_text(exported)
+        Path("exported.py").write_text(exported)
 
     def export_requirements(self):
         """Generates requirements.txt file, appends it at the end if already
         exists
         """
-        reqs = Path('requirements.txt')
+        reqs = Path("requirements.txt")
 
         # ploomber is added by default (pinned to >=0.14.7 because earlier
         # versions throw an error when using the inline bash IPython magic
         # during the static_analysis stage)
-        pkgs = ['ploomber>=0.14.7'] + definitions.packages_used(self.tree)
+        pkgs = ["ploomber>=0.14.7"] + definitions.packages_used(self.tree)
 
         # add pyarrow to requirements if needed
-        if (self._df_format == 'parquet' and 'pyarrow' not in pkgs
-                and 'fastparquet' not in pkgs):
-            pkgs = ['pyarrow'] + pkgs
+        if (
+            self._df_format == "parquet"
+            and "pyarrow" not in pkgs
+            and "fastparquet" not in pkgs
+        ):
+            pkgs = ["pyarrow"] + pkgs
 
         # add cloudpickle/dill to requirements if needed
-        if (self._serializer == 'cloudpickle' and 'cloudpickle' not in pkgs):
-            pkgs = ['cloudpickle'] + pkgs
-        elif (self._serializer == 'dill' and 'dill' not in pkgs):
-            pkgs = ['dill'] + pkgs
+        if self._serializer == "cloudpickle" and "cloudpickle" not in pkgs:
+            pkgs = ["cloudpickle"] + pkgs
+        elif self._serializer == "dill" and "dill" not in pkgs:
+            pkgs = ["dill"] + pkgs
 
-        pkgs_txt = '\n'.join(sorted(pkgs))
+        pkgs_txt = "\n".join(sorted(pkgs))
 
         out = f"""\
 # Auto-generated file, may need manual editing
@@ -363,30 +363,29 @@ class NotebookExporter:
             reqs.write_text(out)
 
     def _get_code(self):
-        """Returns the source of code cells
-        """
-        return '\n'.join(cell['source'] for cell in self._nb.cells
-                         if cell['cell_type'] == 'code')
+        """Returns the source of code cells"""
+        return "\n".join(
+            cell["source"] for cell in self._nb.cells if cell["cell_type"] == "code"
+        )
 
     def export_gitignore(self, product_prefix):
         if product_prefix and not Path(product_prefix).is_absolute():
-            path = Path('.gitignore')
-            content = '' if not path.exists() else path.read_text() + '\n'
-            path.write_text(content + product_prefix + '\n')
-            self._echo(f'Added {str(product_prefix)!r} directory'
-                       ' to .gitignore...')
+            path = Path(".gitignore")
+            content = "" if not path.exists() else path.read_text() + "\n"
+            path.write_text(content + product_prefix + "\n")
+            self._echo(f"Added {str(product_prefix)!r} directory" " to .gitignore...")
 
     def export_readme(self):
-        path = Path('README.md')
+        path = Path("README.md")
 
         if path.exists():
-            content = path.read_text() + '\n'
-            self._echo('README.md found, appended auto-generated content')
+            content = path.read_text() + "\n"
+            self._echo("README.md found, appended auto-generated content")
         else:
-            content = ''
-            self._echo('Added README.md')
+            content = ""
+            self._echo("Added README.md")
 
-        path.write_text(content + resources.read_text(assets, 'README.md'))
+        path.write_text(content + resources.read_text(assets, "README.md"))
 
     def _echo(self, msg):
         if self._verbose:
@@ -395,7 +394,7 @@ class NotebookExporter:
     @property
     def definitions(self):
         if self._definitions is None:
-            self._definitions = (definitions.from_def_and_class(self.tree))
+            self._definitions = definitions.from_def_and_class(self.tree)
 
         return self._definitions
 
@@ -422,11 +421,11 @@ class NotebookExporter:
         if self._io is None:
             io_ = self._get_raw_io()
 
-            logging.info(f'io: {pp.pformat(io_)}\n')
+            logging.info(f"io: {pp.pformat(io_)}\n")
 
             self._io = io.prune_io(io_)
 
-            logging.info(f'pruned io: {pp.pformat(self._io)}\n')
+            logging.info(f"pruned io: {pp.pformat(self._io)}\n")
 
         return self._io
 
@@ -434,7 +433,7 @@ class NotebookExporter:
         return io.find_io(self._snippets)
 
 
-FunctionNeedsFix = namedtuple('FunctionNeedsFix', ['name', 'pos', 'args'])
+FunctionNeedsFix = namedtuple("FunctionNeedsFix", ["name", "pos", "args"])
 
 
 def _check_syntax(code):
@@ -446,8 +445,9 @@ def _check_syntax(code):
         error = None
 
     if error:
-        raise exceptions.InputSyntaxError(f'Could not refactor notebook due '
-                                          f'to invalid syntax\n\n {error}')
+        raise exceptions.InputSyntaxError(
+            f"Could not refactor notebook due " f"to invalid syntax\n\n {error}"
+        )
 
 
 def _check_no_star_imports(code):
@@ -458,28 +458,29 @@ def _check_no_star_imports(code):
     ]
 
     if star_imports:
-        star_imports_ = '\n'.join(import_.get_code()
-                                  for import_ in star_imports)
-        url = ('https://github.com/ploomber/soorgeon/blob/main/doc'
-               '/star-imports.md')
+        star_imports_ = "\n".join(import_.get_code() for import_ in star_imports)
+        url = "https://github.com/ploomber/soorgeon/blob/main/doc" "/star-imports.md"
         raise exceptions.InputError(
-            'Star imports are not supported, please change '
-            f'the following:\n\n{star_imports_}\n\n'
-            f'For more details, see: {url}')
+            "Star imports are not supported, please change "
+            f"the following:\n\n{star_imports_}\n\n"
+            f"For more details, see: {url}"
+        )
 
 
 def _find_output_file_events(s):
-    is_output = ['.write_text(', '.write_bytes(', '.to_csv(', '.to_parquet(']
+    is_output = [".write_text(", ".write_bytes(", ".to_csv(", ".to_parquet("]
 
-    if s.startswith('#'):
+    if s.startswith("#"):
         return False
     if "'''" in s:
         return False
 
-    if 'open(' in s:
-        if not (re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'r'\)[^\n]*", s)
-                or re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'rb'\)[^\n]*", s)
-                or re.match(r"[^\n]*open\('[^,]+'\)[^\n]*", s)):
+    if "open(" in s:
+        if not (
+            re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'r'\)[^\n]*", s)
+            or re.match(r"[^\n]*open\('[^\n]+'[\s]*,[\s]*'rb'\)[^\n]*", s)
+            or re.match(r"[^\n]*open\('[^,]+'\)[^\n]*", s)
+        ):
             return True
 
     if any(cmd in s for cmd in is_output):
@@ -501,8 +502,7 @@ def _check_functions_do_not_use_global_variables(code):
         # again, but for some reason,
         # using find_inputs_and_outputs_from_tree(funcdef) returns the name
         # of the function as an input
-        in_, _ = io.find_inputs_and_outputs(funcdef.get_code(),
-                                            local_scope=local_scope)
+        in_, _ = io.find_inputs_and_outputs(funcdef.get_code(), local_scope=local_scope)
 
         if in_:
             needs_fix.append(
@@ -510,31 +510,32 @@ def _check_functions_do_not_use_global_variables(code):
                     funcdef.name.value,
                     funcdef.start_pos,
                     in_,
-                ))
+                )
+            )
 
     if needs_fix:
-        message = ('Looks like the following functions are using global '
-                   'variables, this is unsupported. Please add all missing '
-                   'arguments. See this to learn more:\n'
-                   'https://github.com/ploomber/soorgeon/blob'
-                   '/main/doc/fn-global.md\n\n')
+        message = (
+            "Looks like the following functions are using global "
+            "variables, this is unsupported. Please add all missing "
+            "arguments. See this to learn more:\n"
+            "https://github.com/ploomber/soorgeon/blob"
+            "/main/doc/fn-global.md\n\n"
+        )
 
         def comma_separated(args):
-            return ','.join(f"'{arg}'" for arg in args)
+            return ",".join(f"'{arg}'" for arg in args)
 
-        message += '\n'.join(
-            f'* Function {f.name!r} uses variables {comma_separated(f.args)}'
-            for f in needs_fix)
+        message += "\n".join(
+            f"* Function {f.name!r} uses variables {comma_separated(f.args)}"
+            for f in needs_fix
+        )
 
         raise exceptions.InputError(message)
 
 
-def from_nb(nb,
-            log=None,
-            product_prefix=None,
-            df_format=None,
-            serializer=None,
-            py=False):
+def from_nb(
+    nb, log=None, product_prefix=None, df_format=None, serializer=None, py=False
+):
     """Refactor a notebook by passing a notebook object
 
     Parameters
@@ -546,10 +547,7 @@ def from_nb(nb,
     if log:
         logging.basicConfig(level=log.upper())
 
-    exporter = NotebookExporter(nb,
-                                df_format=df_format,
-                                serializer=serializer,
-                                py=py)
+    exporter = NotebookExporter(nb, df_format=df_format, serializer=serializer, py=py)
 
     exporter.export(product_prefix=product_prefix)
 
@@ -569,85 +567,93 @@ def from_path(path, log=None, product_prefix=None, df_format=None, py=False):
         the notebook, and if it fails, it will generate a pipeline with
         a single task
     """
-    from_nb(jupytext.read(path),
-            log=log,
-            product_prefix=product_prefix,
-            df_format=df_format,
-            py=py)
+    from_nb(
+        jupytext.read(path),
+        log=log,
+        product_prefix=product_prefix,
+        df_format=df_format,
+        py=py,
+    )
 
 
 def single_task_from_path(path, product_prefix, file_format):
-    """Refactor a notebook into a single task Ploomber pipeline
-    """
+    """Refactor a notebook into a single task Ploomber pipeline"""
     path = Path(path)
 
-    click.echo('Creating a pipeline with a single task...')
+    click.echo("Creating a pipeline with a single task...")
 
-    cell = nbformat.v4.new_code_cell(source='upstream = None',
-                                     metadata=dict(tags=['parameters']))
+    cell = nbformat.v4.new_code_cell(
+        source="upstream = None", metadata=dict(tags=["parameters"])
+    )
 
     nb = jupytext.read(path)
     nb.cells.insert(0, cell)
 
     name = path.stem
-    path_backup = path.with_name(f'{name}-backup{path.suffix}')
+    path_backup = path.with_name(f"{name}-backup{path.suffix}")
 
     # output
     ext = path.suffix[1:] if file_format is None else file_format
-    path_to_task = f'{name}.{ext}'
+    path_to_task = f"{name}.{ext}"
 
     # create backup
     shutil.copy(path, path_backup)
 
-    jupytext.write(nb,
-                   path_to_task,
-                   fmt='py:percent' if ext == 'py' else 'ipynb')
+    jupytext.write(nb, path_to_task, fmt="py:percent" if ext == "py" else "ipynb")
 
     spec = {
-        'tasks': [{
-            'source':
-            path_to_task,
-            'product':
-            str(Path(product_prefix or 'products', f'{name}-report.ipynb'))
-        }]
+        "tasks": [
+            {
+                "source": path_to_task,
+                "product": str(
+                    Path(product_prefix or "products", f"{name}-report.ipynb")
+                ),
+            }
+        ]
     }
 
-    pipeline = 'pipeline.yaml'
-    click.echo(f'Done. Copied code to {path_to_task!r} and added it to '
-               f'{pipeline!r}. Created backup of original notebook '
-               f'at {str(path_backup)!r}.')
+    pipeline = "pipeline.yaml"
+    click.echo(
+        f"Done. Copied code to {path_to_task!r} and added it to "
+        f"{pipeline!r}. Created backup of original notebook "
+        f"at {str(path_backup)!r}."
+    )
 
-    Path('pipeline.yaml').write_text(yaml.safe_dump(spec, sort_keys=False))
+    Path("pipeline.yaml").write_text(yaml.safe_dump(spec, sort_keys=False))
 
 
-@telemetry.log_call('refactor')
-def refactor(path, log, product_prefix, df_format, single_task, file_format,
-             serializer):
+def refactor(
+    path, log, product_prefix, df_format, single_task, file_format, serializer
+):
 
     if single_task:
-        single_task_from_path(path=path,
-                              product_prefix=product_prefix,
-                              file_format=file_format)
+        single_task_from_path(
+            path=path, product_prefix=product_prefix, file_format=file_format
+        )
     else:
         ext = Path(path).suffix[1:] if file_format is None else file_format
 
         try:
-            from_nb(jupytext.read(path),
-                    log=log,
-                    product_prefix=product_prefix,
-                    df_format=df_format,
-                    serializer=serializer,
-                    py=ext == 'py')
+            from_nb(
+                jupytext.read(path),
+                log=log,
+                product_prefix=product_prefix,
+                df_format=df_format,
+                serializer=serializer,
+                py=ext == "py",
+            )
         # InputError means the input is broken
         except exceptions.InputWontRunError:
             raise
         # This implies an error on our end
         except Exception as e:
-            logger.exception('Error calling from_nb')
-            cmd = f'soorgeon refactor {path} --single-task'
-            msg = ('An error occurred when refactoring '
-                   'notebook.\n\nTry refactoring '
-                   f'as a single task pipeline:\n\n$ {cmd}\n\n'
-                   'Need help? https://ploomber.io/community\n\n'
-                   'Error details:\n')
+            logger.exception("Error calling from_nb")
+            cmd = f"soorgeon refactor {path} --single-task"
+            msg = (
+                "An error occurred when refactoring "
+                "notebook.\n\nTry refactoring "
+                f"as a single task pipeline:\n\n$ {cmd}\n\n"
+                "Need help? https://ploomber.io/community\n\n"
+                "Error details:\n"
+            )
             raise exceptions.InputError(msg) from e

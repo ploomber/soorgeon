@@ -24,7 +24,8 @@ import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 # For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
 
 import os
-for dirname, _, filenames in os.walk('/kaggle/input'):
+
+for dirname, _, filenames in os.walk("/kaggle/input"):
     for filename in filenames:
         print(os.path.join(dirname, filename))
 import numpy as np
@@ -54,27 +55,32 @@ HighestGrossers = pd.read_csv(
 )
 Data_Annual_Ticket = pd.read_csv(
     "/kaggle/input/hollywood-theatrical-market-synopsis-1995-to-2021/AnnualTicketSales.csv",
-    thousands=',')
+    thousands=",",
+)
 
 # %% [markdown]
 # ## **Cleaning and Tiding Data**
 
 # %%
-Data_Annual_Ticket["TICKETS SOLD"] = Data_Annual_Ticket[
-    "TICKETS SOLD"].replace(',', '')
+Data_Annual_Ticket["TICKETS SOLD"] = Data_Annual_Ticket["TICKETS SOLD"].replace(",", "")
 
 Data_Annual_Ticket["TOTAL BOX OFFICE"] = Data_Annual_Ticket[
-    "TOTAL BOX OFFICE"].str.replace(',', '')
+    "TOTAL BOX OFFICE"
+].str.replace(",", "")
 Data_Annual_Ticket["TOTAL BOX OFFICE"] = Data_Annual_Ticket[
-    "TOTAL BOX OFFICE"].str.replace('$', '')
+    "TOTAL BOX OFFICE"
+].str.replace("$", "")
 
 Data_Annual_Ticket["TOTAL INFLATION ADJUSTED BOX OFFICE"] = Data_Annual_Ticket[
-    "TOTAL INFLATION ADJUSTED BOX OFFICE"].str.replace(',', '')
+    "TOTAL INFLATION ADJUSTED BOX OFFICE"
+].str.replace(",", "")
 Data_Annual_Ticket["TOTAL INFLATION ADJUSTED BOX OFFICE"] = Data_Annual_Ticket[
-    "TOTAL INFLATION ADJUSTED BOX OFFICE"].str.replace('$', '')
+    "TOTAL INFLATION ADJUSTED BOX OFFICE"
+].str.replace("$", "")
 
 Data_Annual_Ticket["AVERAGE TICKET PRICE"] = Data_Annual_Ticket[
-    "AVERAGE TICKET PRICE"].str.replace('$', '')
+    "AVERAGE TICKET PRICE"
+].str.replace("$", "")
 
 Data_Annual_Ticket = Data_Annual_Ticket.drop(labels="Unnamed: 5", axis=1)
 
@@ -85,26 +91,28 @@ Data_Annual_Ticket.head(5)
 # ## **Changing the type of Data(object to float)**
 
 # %%
-Data_Annual_Ticket['TICKETS SOLD'] = Data_Annual_Ticket['TICKETS SOLD'].astype(
-    float)
-Data_Annual_Ticket['TOTAL BOX OFFICE'] = Data_Annual_Ticket[
-    'TOTAL BOX OFFICE'].astype(float)
+Data_Annual_Ticket["TICKETS SOLD"] = Data_Annual_Ticket["TICKETS SOLD"].astype(float)
+Data_Annual_Ticket["TOTAL BOX OFFICE"] = Data_Annual_Ticket["TOTAL BOX OFFICE"].astype(
+    float
+)
 
 # %% [markdown]
 # ## **Using bar chart to illustrate the total box office each year**
 
 # %%
-px.bar(Data_Annual_Ticket,
-       x='YEAR',
-       y='TOTAL BOX OFFICE',
-       title='Total Box Office vs. Year')
+px.bar(
+    Data_Annual_Ticket,
+    x="YEAR",
+    y="TOTAL BOX OFFICE",
+    title="Total Box Office vs. Year",
+)
 
 # %% [markdown]
 # ## **Calculating the total box office if last two years were normal years (*using linear regression*)**
 
 # %%
 x = list(range(0, (2020 - 1995)))
-y = list(Data_Annual_Ticket['TOTAL BOX OFFICE'])
+y = list(Data_Annual_Ticket["TOTAL BOX OFFICE"])
 y.reverse()
 y.pop()
 y.pop()
@@ -112,36 +120,36 @@ slope, intercept, r, p, std_err = stats.linregress(x, y)
 x1 = list(range(0, (2022 - 1995)))
 y1 = [slope * x + intercept for x in x1]
 y1.reverse()
-Data_Annual_Ticket['TOTAL BOX OFFICE WITHOUT COVID'] = y1
-Data_Annual_Ticket["Diff"] = Data_Annual_Ticket[
-    'TOTAL BOX OFFICE WITHOUT COVID'] - Data_Annual_Ticket['TOTAL BOX OFFICE']
+Data_Annual_Ticket["TOTAL BOX OFFICE WITHOUT COVID"] = y1
+Data_Annual_Ticket["Diff"] = (
+    Data_Annual_Ticket["TOTAL BOX OFFICE WITHOUT COVID"]
+    - Data_Annual_Ticket["TOTAL BOX OFFICE"]
+)
 
 # %% [markdown]
 # ## **Illustrate the difference between total box office with covid and without covid**
 
 # %%
-px.line(Data_Annual_Ticket,
-        x='YEAR',
-        y=["TOTAL BOX OFFICE", "TOTAL BOX OFFICE WITHOUT COVID"],
-        labels={
-            'YEAR': "Years",
-            "value": "Total Sale"
-        },
-        title='TOTAL BOX OFFICE vs TOTAL BOX OFFICE WITHOUT COVID')
+px.line(
+    Data_Annual_Ticket,
+    x="YEAR",
+    y=["TOTAL BOX OFFICE", "TOTAL BOX OFFICE WITHOUT COVID"],
+    labels={"YEAR": "Years", "value": "Total Sale"},
+    title="TOTAL BOX OFFICE vs TOTAL BOX OFFICE WITHOUT COVID",
+)
 
 # %% [markdown]
 # ## **Calculate that how much does covid-19 affect on last two years**
 
 # %%
-px.bar(Data_Annual_Ticket,
-       x='YEAR',
-       y="Diff",
-       labels={
-           'YEAR': "Year",
-           "Diff": "Financial Loss"
-       },
-       title='Financial Loss (just last two years are important)',
-       barmode='group')
+px.bar(
+    Data_Annual_Ticket,
+    x="YEAR",
+    y="Diff",
+    labels={"YEAR": "Year", "Diff": "Financial Loss"},
+    title="Financial Loss (just last two years are important)",
+    barmode="group",
+)
 
 # %% [markdown]
 #
@@ -149,18 +157,24 @@ px.bar(Data_Annual_Ticket,
 
 # %%
 Data_Annual_Ticket["Percentage of Financial Loss"] = (
-    Data_Annual_Ticket["TOTAL BOX OFFICE WITHOUT COVID"] -
-    Data_Annual_Ticket["TOTAL BOX OFFICE"]
-) / Data_Annual_Ticket["TOTAL BOX OFFICE WITHOUT COVID"] * 100
+    (
+        Data_Annual_Ticket["TOTAL BOX OFFICE WITHOUT COVID"]
+        - Data_Annual_Ticket["TOTAL BOX OFFICE"]
+    )
+    / Data_Annual_Ticket["TOTAL BOX OFFICE WITHOUT COVID"]
+    * 100
+)
 
-px.bar(Data_Annual_Ticket,
-       x='YEAR',
-       y="Percentage of Financial Loss",
-       labels={
-           'YEAR': "Year",
-           "Percentage of Financial Loss": "Percentage of Financial Loss %"
-       },
-       title='Financial Loss % (just last two years are important) ')
+px.bar(
+    Data_Annual_Ticket,
+    x="YEAR",
+    y="Percentage of Financial Loss",
+    labels={
+        "YEAR": "Year",
+        "Percentage of Financial Loss": "Percentage of Financial Loss %",
+    },
+    title="Financial Loss % (just last two years are important) ",
+)
 
 # %% [markdown]
 # ## **Now Visualizing the Highest Grossers**
@@ -170,16 +184,18 @@ px.bar(Data_Annual_Ticket,
 
 # %%
 HighestGrossers["TOTAL IN 2019 DOLLARS"] = HighestGrossers[
-    "TOTAL IN 2019 DOLLARS"].str.replace(',', '')
+    "TOTAL IN 2019 DOLLARS"
+].str.replace(",", "")
 HighestGrossers["TOTAL IN 2019 DOLLARS"] = HighestGrossers[
-    "TOTAL IN 2019 DOLLARS"].str.replace('$', '')
+    "TOTAL IN 2019 DOLLARS"
+].str.replace("$", "")
 
-HighestGrossers["TICKETS SOLD"] = HighestGrossers["TICKETS SOLD"].str.replace(
-    ',', '')
+HighestGrossers["TICKETS SOLD"] = HighestGrossers["TICKETS SOLD"].str.replace(",", "")
 
-HighestGrossers['TOTAL IN 2019 DOLLARS'] = HighestGrossers[
-    'TOTAL IN 2019 DOLLARS'].astype(float)
-HighestGrossers['TICKETS SOLD'] = HighestGrossers['TICKETS SOLD'].astype(float)
+HighestGrossers["TOTAL IN 2019 DOLLARS"] = HighestGrossers[
+    "TOTAL IN 2019 DOLLARS"
+].astype(float)
+HighestGrossers["TICKETS SOLD"] = HighestGrossers["TICKETS SOLD"].astype(float)
 
 # %%
 HighestGrossers.head(5)
@@ -191,50 +207,66 @@ HighestGrossers.head(5)
 # ## **We use pie chart to illustrate the percentage of different thing**
 
 # %%
-px.pie(HighestGrossers,
-       values='TOTAL IN 2019 DOLLARS',
-       names='DISTRIBUTOR',
-       title='Percentage of Each Distributors in Total Ticket Sale',
-       color_discrete_sequence=px.colors.sequential.RdBu,
-       height=600)
+px.pie(
+    HighestGrossers,
+    values="TOTAL IN 2019 DOLLARS",
+    names="DISTRIBUTOR",
+    title="Percentage of Each Distributors in Total Ticket Sale",
+    color_discrete_sequence=px.colors.sequential.RdBu,
+    height=600,
+)
 
 # %%
-px.pie(HighestGrossers,
-       values='TOTAL IN 2019 DOLLARS',
-       names='MPAA RATING',
-       title='Percentage of Each MPAA Rating in Total Ticket Sale',
-       color_discrete_sequence=px.colors.sequential.RdBu,
-       height=600)
+px.pie(
+    HighestGrossers,
+    values="TOTAL IN 2019 DOLLARS",
+    names="MPAA RATING",
+    title="Percentage of Each MPAA Rating in Total Ticket Sale",
+    color_discrete_sequence=px.colors.sequential.RdBu,
+    height=600,
+)
 
 # %% [markdown]
 # ## **using bar chart to state the sum of total ticket sale each distributor and each genre**
 
 # %%
-df_g = HighestGrossers.groupby(
-    by=['DISTRIBUTOR', 'GENRE'])['TICKETS SOLD'].sum().unstack().iplot(
-        kind='bar')
+df_g = (
+    HighestGrossers.groupby(by=["DISTRIBUTOR", "GENRE"])["TICKETS SOLD"]
+    .sum()
+    .unstack()
+    .iplot(kind="bar")
+)
 
 # %% [markdown]
 # ## **using bar chart to state the count of total ticket sale each distributor and each genre**
 
 # %%
-df_g = HighestGrossers.groupby(
-    by=['DISTRIBUTOR', 'GENRE'])['TICKETS SOLD'].count().unstack().iplot(
-        kind='bar')
+df_g = (
+    HighestGrossers.groupby(by=["DISTRIBUTOR", "GENRE"])["TICKETS SOLD"]
+    .count()
+    .unstack()
+    .iplot(kind="bar")
+)
 
 # %% [markdown]
 # ## **doing the same thing to the MPAA rating**
 #
 
 # %%
-df_g = HighestGrossers.groupby(
-    by=['DISTRIBUTOR', 'MPAA RATING'])['TICKETS SOLD'].sum().unstack().iplot(
-        kind='bar')
+df_g = (
+    HighestGrossers.groupby(by=["DISTRIBUTOR", "MPAA RATING"])["TICKETS SOLD"]
+    .sum()
+    .unstack()
+    .iplot(kind="bar")
+)
 
 # %%
-df_g = HighestGrossers.groupby(
-    by=['DISTRIBUTOR', 'MPAA RATING'])['TICKETS SOLD'].count().unstack().iplot(
-        kind='bar')
+df_g = (
+    HighestGrossers.groupby(by=["DISTRIBUTOR", "MPAA RATING"])["TICKETS SOLD"]
+    .count()
+    .unstack()
+    .iplot(kind="bar")
+)
 
 # %% [markdown]
 # ## **now visualising the Popular Creative Types**
@@ -243,74 +275,91 @@ df_g = HighestGrossers.groupby(
 PopularCreativeTypes.head(5)
 
 # %%
-PopularCreativeTypes["TOTAL GROSS"] = PopularCreativeTypes[
-    "TOTAL GROSS"].str.replace(',', '')
-PopularCreativeTypes["TOTAL GROSS"] = PopularCreativeTypes[
-    "TOTAL GROSS"].str.replace('$', '')
+PopularCreativeTypes["TOTAL GROSS"] = PopularCreativeTypes["TOTAL GROSS"].str.replace(
+    ",", ""
+)
+PopularCreativeTypes["TOTAL GROSS"] = PopularCreativeTypes["TOTAL GROSS"].str.replace(
+    "$", ""
+)
 
 PopularCreativeTypes["AVERAGE GROSS"] = PopularCreativeTypes[
-    "AVERAGE GROSS"].str.replace(',', '')
+    "AVERAGE GROSS"
+].str.replace(",", "")
 PopularCreativeTypes["AVERAGE GROSS"] = PopularCreativeTypes[
-    "AVERAGE GROSS"].str.replace('$', '')
+    "AVERAGE GROSS"
+].str.replace("$", "")
 
-PopularCreativeTypes["MARKET SHARE"] = PopularCreativeTypes[
-    "MARKET SHARE"].str.replace('%', '')
+PopularCreativeTypes["MARKET SHARE"] = PopularCreativeTypes["MARKET SHARE"].str.replace(
+    "%", ""
+)
 
-PopularCreativeTypes["MOVIES"] = PopularCreativeTypes["MOVIES"].str.replace(
-    ',', '')
+PopularCreativeTypes["MOVIES"] = PopularCreativeTypes["MOVIES"].str.replace(",", "")
 
 # %%
 PopularCreativeTypes = PopularCreativeTypes.drop(index=9, axis=0)
 
 # %%
 PopularCreativeTypes["MOVIES"] = PopularCreativeTypes["MOVIES"].astype(float)
-PopularCreativeTypes["TOTAL GROSS"] = PopularCreativeTypes[
-    "TOTAL GROSS"].astype(float)
-PopularCreativeTypes["AVERAGE GROSS"] = PopularCreativeTypes[
-    "AVERAGE GROSS"].astype(float)
-PopularCreativeTypes["MARKET SHARE"] = PopularCreativeTypes[
-    "MARKET SHARE"].astype(float)
+PopularCreativeTypes["TOTAL GROSS"] = PopularCreativeTypes["TOTAL GROSS"].astype(float)
+PopularCreativeTypes["AVERAGE GROSS"] = PopularCreativeTypes["AVERAGE GROSS"].astype(
+    float
+)
+PopularCreativeTypes["MARKET SHARE"] = PopularCreativeTypes["MARKET SHARE"].astype(
+    float
+)
 
 # %%
-px.pie(PopularCreativeTypes,
-       values='TOTAL GROSS',
-       names='CREATIVE TYPES',
-       title='Percentage of Creative Types in Total Gross',
-       color_discrete_sequence=px.colors.sequential.RdBu,
-       height=600)
+px.pie(
+    PopularCreativeTypes,
+    values="TOTAL GROSS",
+    names="CREATIVE TYPES",
+    title="Percentage of Creative Types in Total Gross",
+    color_discrete_sequence=px.colors.sequential.RdBu,
+    height=600,
+)
 
 # %%
-px.bar(PopularCreativeTypes,
-       x="TOTAL GROSS",
-       y="CREATIVE TYPES",
-       title="Total Gross of Different type")
+px.bar(
+    PopularCreativeTypes,
+    x="TOTAL GROSS",
+    y="CREATIVE TYPES",
+    title="Total Gross of Different type",
+)
 
 # %%
-px.pie(PopularCreativeTypes,
-       values='AVERAGE GROSS',
-       names='CREATIVE TYPES',
-       title='Percentage of Creative Types in Average Gross',
-       color_discrete_sequence=px.colors.sequential.RdBu,
-       height=600)
+px.pie(
+    PopularCreativeTypes,
+    values="AVERAGE GROSS",
+    names="CREATIVE TYPES",
+    title="Percentage of Creative Types in Average Gross",
+    color_discrete_sequence=px.colors.sequential.RdBu,
+    height=600,
+)
 
 # %%
-px.bar(PopularCreativeTypes,
-       x="AVERAGE GROSS",
-       y="CREATIVE TYPES",
-       title="Average Gross in Different type")
+px.bar(
+    PopularCreativeTypes,
+    x="AVERAGE GROSS",
+    y="CREATIVE TYPES",
+    title="Average Gross in Different type",
+)
 
 # %%
-px.pie(PopularCreativeTypes,
-       values='MOVIES',
-       names='CREATIVE TYPES',
-       title='Percentage of Number of Muvies in Each Types',
-       color_discrete_sequence=px.colors.sequential.RdBu,
-       height=600)
+px.pie(
+    PopularCreativeTypes,
+    values="MOVIES",
+    names="CREATIVE TYPES",
+    title="Percentage of Number of Muvies in Each Types",
+    color_discrete_sequence=px.colors.sequential.RdBu,
+    height=600,
+)
 
 # %%
-px.bar(PopularCreativeTypes,
-       x="MOVIES",
-       y="CREATIVE TYPES",
-       title="Number of Muvies in Different type")
+px.bar(
+    PopularCreativeTypes,
+    x="MOVIES",
+    y="CREATIVE TYPES",
+    title="Number of Muvies in Different type",
+)
 
 # %%

@@ -7,11 +7,10 @@ from invoke import task
 
 @task
 def test(c, nbs=False):
-    """Run unit tests + flake8
-    """
-    args = '' if nbs else '--ignore=tests/test_sample_notebooks.py'
-    c.run(f'pytest {args}', pty=True)
-    c.run('flake8')
+    """Run unit tests + flake8"""
+    args = "" if nbs else "--ignore=tests/test_sample_notebooks.py"
+    c.run(f"pytest {args}", pty=True)
+    c.run("flake8")
 
 
 @task
@@ -19,61 +18,63 @@ def setup(c, version=None):
     """
     Setup dev environment, requires conda
     """
-    version = version or '3.9'
-    suffix = '' if version == '3.9' else version.replace('.', '')
-    env_name = f'soorgeon{suffix}'
+    version = version or "3.9"
+    suffix = "" if version == "3.9" else version.replace(".", "")
+    env_name = f"soorgeon{suffix}"
 
-    c.run(f'conda create --name {env_name} python={version} --yes')
-    c.run('eval "$(conda shell.bash hook)" '
-          f'&& conda activate {env_name} '
-          '&& pip install --editable .[dev]')
+    c.run(f"conda create --name {env_name} python={version} --yes")
+    c.run(
+        'eval "$(conda shell.bash hook)" '
+        f"&& conda activate {env_name} "
+        "&& pip install --editable .[dev]"
+    )
 
-    print(f'Done! Activate your environment with:\nconda activate {env_name}')
+    print(f"Done! Activate your environment with:\nconda activate {env_name}")
 
 
-@task(aliases=['v'])
+@task(aliases=["v"])
 def version(c):
-    """Create a new version of this project
-    """
+    """Create a new version of this project"""
     from pkgmt import versioneer
-    versioneer.version(project_root='.', tag=True)
+
+    versioneer.version(project_root=".", tag=True)
 
 
-@task(aliases=['r'])
+@task(aliases=["r"])
 def release(c, tag, production=True):
-    """Upload to PyPI (prod by default): inv upload {tag}
-    """
+    """Upload to PyPI (prod by default): inv upload {tag}"""
     from pkgmt import versioneer
+
     versioneer.upload(tag, production=production)
 
 
 @task
 def install_git_hook(c, force=False):
-    """Installs pre-push git hook
-    """
-    path = Path('.git/hooks/pre-push')
+    """Installs pre-push git hook"""
+    path = Path(".git/hooks/pre-push")
     hook_exists = path.is_file()
 
     if hook_exists:
         if force:
             path.unlink()
         else:
-            sys.exit('Error: pre-push hook already exists. '
-                     'Run: "invoke install-git-hook -f" to force overwrite.')
+            sys.exit(
+                "Error: pre-push hook already exists. "
+                'Run: "invoke install-git-hook -f" to force overwrite.'
+            )
 
-    shutil.copy('.githooks/pre-push', '.git/hooks')
-    print(f'pre-push hook installed at {str(path)}')
+    shutil.copy(".githooks/pre-push", ".git/hooks")
+    print(f"pre-push hook installed at {str(path)}")
 
 
 @task
 def uninstall_git_hook(c):
-    """Uninstalls pre-push git hook
-    """
-    path = Path('.git/hooks/pre-push')
+    """Uninstalls pre-push git hook"""
+    path = Path(".git/hooks/pre-push")
     hook_exists = path.is_file()
 
     if hook_exists:
         path.unlink()
-        print(f'Deleted {str(path)}.')
+        print(f"Deleted {str(path)}.")
     else:
-        print('Hook doesn\'t exist, nothing to delete.')
+        print("Hook doesn't exist, nothing to delete.")
